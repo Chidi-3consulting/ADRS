@@ -41,6 +41,18 @@ if ($trimmed === '/categories/edit' || $trimmed === '/categories/edit.php') {
     exit;
 }
 
+if ($trimmed === '/categories/view' || $trimmed === '/categories/view.php') {
+    require_login();
+    require __DIR__ . '/src/pages/categories/view.php';
+    exit;
+}
+
+if ($trimmed === '/categories/delete' || $trimmed === '/categories/delete.php') {
+    require_login();
+    require __DIR__ . '/src/pages/categories/delete.php';
+    exit;
+}
+
 if ($trimmed === '/records' || $trimmed === '/records/index.php') {
     require_login();
     require __DIR__ . '/src/pages/records/index.php';
@@ -62,6 +74,12 @@ if ($trimmed === '/records/edit' || $trimmed === '/records/edit.php') {
 if ($trimmed === '/records/view' || $trimmed === '/records/view.php') {
     require_login();
     require __DIR__ . '/src/pages/records/view.php';
+    exit;
+}
+
+if ($trimmed === '/records/reassign' || $trimmed === '/records/reassign.php') {
+    require_login();
+    require __DIR__ . '/src/pages/records/reassign.php';
     exit;
 }
 
