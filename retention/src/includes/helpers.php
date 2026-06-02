@@ -79,7 +79,10 @@ function get_client_ip(): string {
 
 /* ---------------- CSRF ---------------- */
 
-function _session(): void { if (session_status() === PHP_SESSION_NONE) { session_start(); } }
+function _session(): void {
+    if (PHP_SAPI === 'cli') { $_SESSION = $_SESSION ?? []; return; }
+    if (session_status() === PHP_SESSION_NONE) { session_start(); }
+}
 
 /** Current CSRF token (64 hex chars), created on first use. */
 function csrf_token(): string {

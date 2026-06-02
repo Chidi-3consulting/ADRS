@@ -1,7 +1,11 @@
 <?php
 require_once __DIR__ . '/helpers.php';
 
-function _auth_session(): void { if (session_status() === PHP_SESSION_NONE) { session_start(); } }
+function _auth_session(): void {
+    // Under CLI (tests) there is no HTTP session; $_SESSION still works as a plain array.
+    if (PHP_SAPI === 'cli') { $_SESSION = $_SESSION ?? []; return; }
+    if (session_status() === PHP_SESSION_NONE) { session_start(); }
+}
 
 function is_logged_in(): bool { _auth_session(); return !empty($_SESSION['user']); }
 
@@ -36,7 +40,7 @@ function login_user(PDO $pdo, string $email, string $password): bool {
         return false;
     }
     _auth_session();
-    session_regenerate_id(true);
+    if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_ACTIVE) { session_regenerate_id(true); }
     unset($user['password_hash']);
     $_SESSION['user'] = $user;
     $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE id = :id")->execute(['id' => $user['id']]);
