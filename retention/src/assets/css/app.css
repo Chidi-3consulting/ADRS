@@ -1,0 +1,20 @@
+:root{
+  --3c-orange:#C85C1A; --3c-teal:#1A6187; --3c-yellow:#E8A84C;
+  --3c-light:#F7F7F7; --3c-dark:#1A1A2E;
+}
+body{ background:var(--3c-light); }
+.wrapper{ min-height:100vh; }
+.sidebar{ width:260px; min-height:100vh; background:var(--3c-dark); color:#fff; position:fixed; top:0; left:0; display:flex; flex-direction:column; }
+.sidebar .brand{ color:var(--3c-orange); font-weight:700; font-size:1.4rem; padding:1rem 1.25rem; }
+.sidebar a{ color:#cfd2dc; text-decoration:none; display:block; padding:.6rem 1.25rem; border-left:4px solid transparent; }
+.sidebar a:hover{ background:rgba(255,255,255,.06); color:#fff; }
+.sidebar a.active{ border-left-color:var(--3c-orange); background:rgba(255,255,255,.08); color:#fff; }
+.main-content{ margin-left:260px; }
+.topbar{ background:#fff; border-bottom:1px solid #e5e5e5; padding:.75rem 1.5rem; }
+.btn-primary{ background:var(--3c-orange); border-color:var(--3c-orange); }
+.btn-primary:hover{ background:#a94c14; border-color:#a94c14; }
+.card-header-teal{ background:var(--3c-teal); color:#fff; }
+.card-header-orange{ background:var(--3c-orange); color:#fff; }
+.badge-gdpr{ background:#003399; } .badge-ndpr{ background:#008751; } .badge-both{ background:#6f42c1; }
+@media (max-width: 768px){ .sidebar{ position:static; width:100%; min-height:auto; } .main-content{ margin-left:0; } }
+@media print{ .sidebar,.topbar,.btn{ display:none!important; } .main-content{ margin-left:0; } }

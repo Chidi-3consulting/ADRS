@@ -13,7 +13,7 @@ function has_role(string ...$roles): bool {
 }
 
 function require_login(): void {
-    if (!is_logged_in()) { redirect(APP_URL . '/src/pages/login.php'); }
+    if (!is_logged_in()) { redirect(APP_URL . '/login'); }
 }
 
 function require_role(string ...$roles): void {
@@ -52,7 +52,7 @@ function logout_user(PDO $pdo): never {
     _auth_session();
     session_unset();
     session_destroy();
-    redirect(APP_URL . '/src/pages/login.php');
+    redirect(APP_URL . '/login');
 }
 
 /* ---------------- Password reset tokens (1-hour expiry, SHA-256 hashed) ---------------- */
