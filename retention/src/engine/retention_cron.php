@@ -9,6 +9,7 @@ if (PHP_SAPI !== 'cli') { http_response_code(403); exit('CLI only.'); }
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/mailer.php';
 require_once __DIR__ . '/engine_lib.php';
 
 date_default_timezone_set(TIMEZONE);
@@ -36,6 +37,8 @@ try {
         $log('=== Retention engine START ===');
         $s = run_retention_engine($pdo);
         $log("Flagged: {$s['flagged']} | Consent-disposed: {$s['consent_disposed']} | Auto-disposed: {$s['auto_disposed']} | Dual-approval SKIPPED: {$s['dual_skipped']} | Escalated: {$s['escalated']} | DSAR alerts: {$s['dsar_alerts']} | Review notifications: {$s['review_notifications']}");
+        $mail = dispatch_pending_notifications($pdo);
+        $log("Emails sent: {$mail['sent']} | failed: {$mail['failed']}");
         $log('=== Engine COMPLETE in ' . round(microtime(true) - $start, 2) . 's ===');
     }
     exit(0);

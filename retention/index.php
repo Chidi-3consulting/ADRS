@@ -185,6 +185,12 @@ if ($trimmed === '/audit' || $trimmed === '/audit/index.php') {
     exit;
 }
 
+if ($trimmed === '/audit/export' || $trimmed === '/audit/export.php') {
+    require_login();
+    require __DIR__ . '/src/pages/audit/export.php';
+    exit;
+}
+
 if ($trimmed === '/settings' || $trimmed === '/settings/index.php') {
     require_login();
     require __DIR__ . '/src/pages/settings/index.php';
