@@ -1,84 +1,47 @@
 <?php
-require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/helpers.php';
-require_once __DIR__ . '/../includes/enterprise_dispatch.php';
+/**
+ * Daily retention engine (CLI only). Cron examples:
+ *   0 1 * * *        php src/engine/retention_cron.php
+ *   0 8 1 1,4,7,10 * php src/engine/retention_cron.php --task=quarterly_review
+ * Thin wrapper around engine_lib.php so the logic stays unit-testable.
+ */
+if (PHP_SAPI !== 'cli') { http_response_code(403); exit('CLI only.'); }
 
-$pdo = get_pdo();
-$pdo->beginTransaction();
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/engine_lib.php';
+
+date_default_timezone_set(TIMEZONE);
+set_time_limit(0);
+
+$task = 'daily';
+foreach ($argv as $arg) { if (str_starts_with($arg, '--task=')) { $task = substr($arg, 7); } }
+
+$logFile = rtrim(LOG_PATH, '/\\') . DIRECTORY_SEPARATOR . 'retention_cron.log';
+if (!is_dir(LOG_PATH)) { @mkdir(LOG_PATH, 0755, true); }
+$log = function (string $m) use ($logFile) {
+    $line = '[' . date('Y-m-d H:i:s') . '] ' . $m . PHP_EOL;
+    @file_put_contents($logFile, $line, FILE_APPEND);
+    echo $line;
+};
+
+$pdo = get_db();
+$start = microtime(true);
 
 try {
-    $today = new DateTimeImmutable('now', new DateTimeZone('+01:00'));
-    $reviewWindow = $today->modify('+30 days')->format('Y-m-d');
-
-    // Flag date-based records approaching retention end date.
-    $stmt = $pdo->prepare(
-        'UPDATE data_records SET status = "due_review", review_flagged_at = NOW()
-         WHERE status = "active"
-           AND disposal_requested_at IS NULL
-           AND legal_hold = 0
-           AND disposal_requested_at IS NULL
-           AND consent_withdrawn_at IS NULL
-           AND retention_end_date IS NOT NULL
-           AND retention_end_date <= :review_window'
-    );
-    $stmt->execute(['review_window' => $reviewWindow]);
-    $flagged = $stmt->rowCount();
-
-    if ($flagged > 0) {
-        $stmtLog = $pdo->prepare('INSERT INTO audit_log (action, entity_type, entity_id, performed_by, details, ip_address) VALUES ("record_flagged_review", "data_record", NULL, NULL, :details, :ip)');
-        $stmtLog->execute(['details' => json_encode(['count' => $flagged]), 'ip' => '127.0.0.1']);
+    if ($task === 'quarterly_review') {
+        $r = run_quarterly_review($pdo);
+        $log("Quarterly review complete: " . json_encode($r));
+    } else {
+        $log('=== Retention engine START ===');
+        $s = run_retention_engine($pdo);
+        $log("Flagged: {$s['flagged']} | Consent-disposed: {$s['consent_disposed']} | Auto-disposed: {$s['auto_disposed']} | Dual-approval SKIPPED: {$s['dual_skipped']} | Escalated: {$s['escalated']} | DSAR alerts: {$s['dsar_alerts']} | Review notifications: {$s['review_notifications']}");
+        $log('=== Engine COMPLETE in ' . round(microtime(true) - $start, 2) . 's ===');
     }
-
-    // Consent-withdrawal based disposal support (Enterprise only if table exists)
-    $stmt = $pdo->prepare(
-        'UPDATE data_records SET status = "due_review"
-         WHERE consent_withdrawn_at IS NOT NULL
-           AND status != "disposed"
-           AND consent_withdrawn_at <= :consent_threshold'
-    );
-    $stmt->execute(['consent_threshold' => $today->modify('-30 days')->format('Y-m-d H:i:s')]);
-    $consentFlagged = $stmt->rowCount();
-
-    if ($consentFlagged > 0) {
-        $stmtLog = $pdo->prepare('INSERT INTO audit_log (action, entity_type, entity_id, performed_by, details, ip_address) VALUES ("consent_withdrawn", "data_record", NULL, NULL, :details, :ip)');
-        $stmtLog->execute(['details' => json_encode(['count' => $consentFlagged]), 'ip' => '127.0.0.1']);
-    }
-
-    // Auto-dispose review records past retention end date.
-    $stmt = $pdo->prepare(
-        'SELECT dr.id, dr.category_id, dc.disposal_method
-         FROM data_records dr
-         JOIN data_categories dc ON dr.category_id = dc.id
-         WHERE dr.status = "due_review"
-           AND dr.legal_hold = 0
-           AND dr.retention_end_date IS NOT NULL
-           AND dr.retention_end_date < :today'
-    );
-    $stmt->execute(['today' => $today->format('Y-m-d')]);
-    $records = $stmt->fetchAll();
-
-    foreach ($records as $record) {
-        $disposalMethod = $record['disposal_method'];
-        $action = 'record_disposed_' . $disposalMethod;
-
-        $update = $pdo->prepare('UPDATE data_records SET status = "disposed", disposed_at = NOW(), disposed_by = NULL WHERE id = :id');
-        $update->execute(['id' => $record['id']]);
-
-        $stmtLog = $pdo->prepare('INSERT INTO audit_log (action, entity_type, entity_id, performed_by, details, ip_address) VALUES (:action, "data_record", :entity_id, NULL, :details, :ip)');
-        $stmtLog->execute(['action' => $action, 'entity_id' => $record['id'], 'details' => json_encode(['method' => $disposalMethod]), 'ip' => '127.0.0.1']);
-
-        if (get_setting($pdo, 'adrs_tier', 'core') === 'enterprise') {
-            queue_disposal_dispatch($pdo, (int)$record['id'], $disposalMethod);
-        }
-    }
-
-    $pdo->commit();
-} catch (Exception $e) {
-    $pdo->rollBack();
-    file_put_contents(__DIR__ . '/../../cron_error.log', '[' . date('c') . '] ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
-    http_response_code(500);
-    echo 'Cron failed.';
-    exit;
+    exit(0);
+} catch (Throwable $e) {
+    $errFile = rtrim(LOG_PATH, '/\\') . DIRECTORY_SEPARATOR . 'cron_errors.log';
+    @file_put_contents($errFile, '[' . date('c') . '] ' . $e->getMessage() . PHP_EOL . $e->getTraceAsString() . PHP_EOL, FILE_APPEND);
+    $log('ERROR: ' . $e->getMessage() . ' — see cron_errors.log');
+    exit(1);
 }
-
-echo 'Retention cron completed successfully.';
