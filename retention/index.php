@@ -83,6 +83,14 @@ if ($trimmed === '/records/reassign' || $trimmed === '/records/reassign.php') {
     exit;
 }
 
+foreach (['dispose','approve','legal_hold','consent'] as $__act) {
+    if ($trimmed === '/records/' . $__act || $trimmed === '/records/' . $__act . '.php') {
+        require_login();
+        require __DIR__ . '/src/pages/records/' . $__act . '.php';
+        exit;
+    }
+}
+
 if ($trimmed === '/dsar' || $trimmed === '/dsar/index.php') {
     require_login();
     require __DIR__ . '/src/pages/dsar/index.php';

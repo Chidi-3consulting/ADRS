@@ -23,6 +23,10 @@ $audit = $pdo->prepare("SELECT * FROM audit_log WHERE entity_type='data_record' 
 $audit->execute(['id' => $id]);
 $auditRows = $audit->fetchAll();
 $allCats = $pdo->query("SELECT id, name FROM data_categories WHERE deleted_at IS NULL AND is_active=1 ORDER BY name")->fetchAll();
+$attStmt = $pdo->prepare("SELECT * FROM attachments WHERE record_id=:id AND deleted_at IS NULL ORDER BY id DESC");
+$attStmt->execute(['id' => $id]);
+$attachments = $attStmt->fetchAll();
+$canAct = has_role('admin', 'dpo');
 
 $page_title = 'Record ' . $record['record_reference'];
 $active_nav = 'records';
@@ -73,6 +77,74 @@ require __DIR__ . '/../../includes/layout_header.php';
   </div>
 
   <div class="col-lg-5">
+    <?php if ($canAct && $record['status'] !== 'disposed'): ?>
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <h5 class="card-title">Actions</h5>
+
+      <?php if ($record['status'] === 'disposal_requested'): ?>
+        <div class="alert alert-warning py-2 small">⏳ Awaiting second approval (requested by user #<?= (int)$record['disposal_requested_by'] ?>). A <strong>different</strong> authorised user must confirm.</div>
+        <form method="post" action="<?= APP_URL ?>/records/approve" class="d-inline">
+          <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>"><input type="hidden" name="decision" value="approve">
+          <button class="btn btn-danger btn-sm" onclick="return confirm('Confirm disposal of this record?')">Approve disposal</button>
+        </form>
+        <form method="post" action="<?= APP_URL ?>/records/approve" class="d-inline">
+          <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>"><input type="hidden" name="decision" value="reject">
+          <button class="btn btn-outline-secondary btn-sm">Reject</button>
+        </form>
+      <?php elseif ((int)$record['legal_hold'] !== 1): ?>
+        <form method="post" action="<?= APP_URL ?>/records/dispose" class="mb-2">
+          <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>">
+          <button class="btn btn-outline-danger btn-sm" onclick="return confirm('<?= (int)$record['requires_dual_approval'] ? 'This sensitive record needs two-person approval. Submit a disposal request?' : 'Dispose this record now?' ?>')">
+            <?= (int)$record['requires_dual_approval'] ? 'Request disposal (dual approval)' : 'Dispose record' ?>
+          </button>
+        </form>
+      <?php endif; ?>
+
+      <?php if ($record['disposal_trigger'] === 'consent_withdrawal' && $record['consent_withdrawn_at'] === null && $record['status'] !== 'disposed'): ?>
+        <form method="post" action="<?= APP_URL ?>/records/consent" class="mb-2">
+          <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>">
+          <button class="btn btn-outline-warning btn-sm">Log consent withdrawal</button>
+        </form>
+      <?php endif; ?>
+
+      <?php if ((int)$record['legal_hold'] === 1): ?>
+        <form method="post" action="<?= APP_URL ?>/records/legal_hold">
+          <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>"><input type="hidden" name="action" value="lift">
+          <button class="btn btn-outline-secondary btn-sm">Lift legal hold</button>
+        </form>
+      <?php else: ?>
+        <form method="post" action="<?= APP_URL ?>/records/legal_hold" class="mt-2">
+          <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>">
+          <div class="input-group input-group-sm">
+            <input name="reason" class="form-control" placeholder="Legal hold reason" required>
+            <button class="btn btn-outline-dark">🔒 Hold</button>
+          </div>
+        </form>
+      <?php endif; ?>
+    </div></div>
+    <?php endif; ?>
+
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <div class="d-flex justify-content-between"><h5 class="card-title">Attachments</h5></div>
+      <?php if ($attachments): ?>
+        <ul class="list-unstyled small mb-2">
+          <?php foreach ($attachments as $a): ?>
+            <li class="border-bottom py-1 d-flex justify-content-between">
+              <span><?= escape_html($a['original_filename']) ?> <span class="text-muted">(<?= number_format((int)$a['file_size']) ?>b)</span></span>
+              <a href="<?= APP_URL ?>/attachments/download?id=<?= (int)$a['id'] ?>">Download</a>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php else: ?><p class="text-muted small">No attachments.</p><?php endif; ?>
+      <?php if ($canAct): ?>
+      <form method="post" action="<?= APP_URL ?>/attachments/upload" enctype="multipart/form-data" class="input-group input-group-sm">
+        <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>">
+        <input type="file" name="file" class="form-control" required>
+        <button class="btn btn-outline-primary">Upload</button>
+      </form>
+      <?php endif; ?>
+    </div></div>
+
     <div class="card shadow-sm mb-3"><div class="card-body">
       <h5 class="card-title">Audit history</h5>
       <?php if (empty($auditRows)): ?><p class="text-muted mb-0">No audit entries.</p><?php else: ?>
