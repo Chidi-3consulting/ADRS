@@ -1,154 +1,67 @@
 <?php
-$pdo = get_pdo();
-$id = (int)($_GET['id'] ?? 0);
-$error = null;
-
-if ($id <= 0) {
-    http_response_code(404);
-    echo 'DSAR request not found.';
-    exit;
-}
-
-$users = $pdo->query('SELECT id, name FROM users WHERE deleted_at IS NULL ORDER BY name')->fetchAll();
-$statusOptions = ['open','identity_check','in_progress','completed','rejected','extended'];
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/dsar_lib.php';
+require_role('admin', 'dpo');
+$pdo = get_db();
+$id = (int) ($_GET['id'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!validate_csrf($_POST['csrf_token'] ?? '')) {
-        $error = 'Invalid CSRF token.';
-    } else {
-        $status = $_POST['status'] ?? 'open';
-        $assignedTo = (int)($_POST['assigned_to'] ?? 0) ?: null;
-        $internalNotes = trim($_POST['internal_notes'] ?? '');
-        $responseNotes = trim($_POST['response_notes'] ?? '');
-
-        if (!in_array($status, $statusOptions, true)) {
-            $error = 'Invalid status selected.';
-        } else {
-            $stmt = $pdo->prepare(
-                'UPDATE dsar_requests SET status = :status, assigned_to = :assigned_to, internal_notes = :internal_notes, response_notes = :response_notes, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
-            );
-            $stmt->execute([
-                'status' => $status,
-                'assigned_to' => $assignedTo,
-                'internal_notes' => $internalNotes ?: null,
-                'response_notes' => $responseNotes ?: null,
-                'id' => $id,
-            ]);
-
-            flash_set('success', 'DSAR request updated successfully.');
-            redirect('/retention/dsar/view?id=' . $id);
-        }
-    }
+    csrf_verify();
+    $do = $_POST['do'] ?? '';
+    try {
+        if ($do === 'verify') { verify_dsar_identity($pdo, $id, (int) current_user()['id']); flash('success', 'Identity verified.'); }
+        elseif ($do === 'status') { update_dsar_status($pdo, $id, $_POST['status'] ?? 'open', (int) current_user()['id'], trim($_POST['response_notes'] ?? '') ?: null); flash('success', 'DSAR updated.'); }
+    } catch (Throwable $e) { flash('error', $e->getMessage()); }
+    redirect(APP_URL . '/dsar/view?id=' . $id);
 }
 
-$stmt = $pdo->prepare(
-    'SELECT dr.*, u.name AS created_by_name, a.name AS assigned_to_name
-     FROM dsar_requests dr
-     LEFT JOIN users u ON dr.created_by = u.id
-     LEFT JOIN users a ON dr.assigned_to = a.id
-     WHERE dr.id = :id'
-);
-$stmt->execute(['id' => $id]);
-$dsar = $stmt->fetch();
-
-if (!$dsar) {
-    http_response_code(404);
-    echo 'DSAR request not found.';
-    exit;
-}
+$d = fetch_dsar($pdo, $id);
+if ($d === null) { http_response_code(404); require __DIR__ . '/../../../404.php'; exit; }
+$page_title = 'DSAR ' . $d['reference'];
+$active_nav = 'dsar';
+require __DIR__ . '/../../includes/layout_header.php';
+$overdue = $d['due_date'] < date('Y-m-d') && !in_array($d['status'], ['completed','rejected'], true);
 ?>
-<?php require __DIR__ . '/../../includes/layout_header.php'; ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h1 class="h4">DSAR request</h1>
-    <p class="text-muted mb-0">Reference <?= escape_html($dsar['reference']) ?> — status <?= escape_html($dsar['status']) ?></p>
-  </div>
-  <a href="/retention/dsar" class="btn btn-secondary">Back to DSAR list</a>
+  <h1 class="h4 mb-0"><?= escape_html($d['reference']) ?> <span class="badge bg-secondary"><?= escape_html(str_replace('_',' ',$d['status'])) ?></span></h1>
+  <a href="<?= APP_URL ?>/dsar" class="btn btn-secondary">Back</a>
 </div>
-<?php if ($error): ?>
-<div class="alert alert-danger"><?= escape_html($error) ?></div>
-<?php endif; ?>
-<div class="row">
-  <div class="col-lg-7">
-    <div class="card shadow-sm mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Request details</h5>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <strong>Request type</strong>
-            <p><?= escape_html($dsar['request_type']) ?></p>
-          </div>
-          <div class="col-md-6 mb-3">
-            <strong>Compliance</strong>
-            <p><?= escape_html($dsar['compliance_framework']) ?></p>
-          </div>
-          <div class="col-md-6 mb-3">
-            <strong>Data subject</strong>
-            <p><?= escape_html($dsar['data_subject_name']) ?></p>
-          </div>
-          <div class="col-md-6 mb-3">
-            <strong>Received date</strong>
-            <p><?= escape_html($dsar['received_date']) ?></p>
-          </div>
-          <div class="col-md-6 mb-3">
-            <strong>Due date</strong>
-            <p><?= escape_html($dsar['due_date']) ?></p>
-          </div>
-          <div class="col-md-6 mb-3">
-            <strong>Assigned to</strong>
-            <p><?= escape_html($dsar['assigned_to_name'] ?? 'Unassigned') ?></p>
-          </div>
-          <div class="col-md-12 mb-3">
-            <strong>Description</strong>
-            <p><?= nl2br(escape_html($dsar['description'] ?? '')) ?></p>
-          </div>
-          <div class="col-md-12 mb-3">
-            <strong>Internal notes</strong>
-            <p><?= nl2br(escape_html($dsar['internal_notes'] ?? '')) ?></p>
-          </div>
-          <div class="col-md-12 mb-3">
-            <strong>Response notes</strong>
-            <p><?= nl2br(escape_html($dsar['response_notes'] ?? '')) ?></p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<?php if ($overdue): ?><div class="alert alert-danger">⚠️ This DSAR is overdue (due <?= escape_html(format_date($d['due_date'])) ?>).</div><?php endif; ?>
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card shadow-sm"><div class="card-body">
+    <h5 class="card-title">Request details</h5>
+    <dl class="row mb-0">
+      <dt class="col-sm-4">Type</dt><dd class="col-sm-8"><?= escape_html(ucfirst($d['request_type'])) ?> (<?= escape_html($d['compliance_framework']) ?>)</dd>
+      <dt class="col-sm-4">Data subject</dt><dd class="col-sm-8"><?= escape_html($d['data_subject_name']) ?></dd>
+      <dt class="col-sm-4">Email / phone</dt><dd class="col-sm-8"><?= escape_html($d['data_subject_email'] ?? '—') ?> / <?= escape_html($d['data_subject_phone'] ?? '—') ?></dd>
+      <dt class="col-sm-4">Received</dt><dd class="col-sm-8"><?= escape_html(format_date($d['received_date'])) ?></dd>
+      <dt class="col-sm-4">Due (30 days)</dt><dd class="col-sm-8"><?= escape_html(format_date($d['due_date'])) ?></dd>
+      <dt class="col-sm-4">Identity verified</dt><dd class="col-sm-8"><?= (int)$d['identity_verified'] ? '✅ Yes' : '❌ No' ?></dd>
+      <dt class="col-sm-4">Description</dt><dd class="col-sm-8"><?= nl2br(escape_html($d['description'] ?? '—')) ?></dd>
+      <dt class="col-sm-4">Response notes</dt><dd class="col-sm-8"><?= nl2br(escape_html($d['response_notes'] ?? '—')) ?></dd>
+    </dl>
+  </div></div></div>
   <div class="col-lg-5">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title">Update DSAR</h5>
-        <form method="post">
-          <input type="hidden" name="csrf_token" value="<?= escape_html(csrf_token()) ?>">
-          <div class="mb-3">
-            <label class="form-label">Status</label>
-            <select name="status" class="form-select">
-              <?php foreach ($statusOptions as $statusOption): ?>
-              <option value="<?= escape_html($statusOption) ?>" <?= ($dsar['status'] === $statusOption) ? 'selected' : '' ?>><?= escape_html(str_replace('_', ' ', ucfirst($statusOption))) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Assigned user</label>
-            <select name="assigned_to" class="form-select">
-              <option value="">Unassigned</option>
-              <?php foreach ($users as $user): ?>
-              <option value="<?= escape_html($user['id']) ?>" <?= ($dsar['assigned_to'] == $user['id']) ? 'selected' : '' ?>><?= escape_html($user['name']) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Internal notes</label>
-            <textarea name="internal_notes" class="form-control" rows="4"><?= escape_html($_POST['internal_notes'] ?? $dsar['internal_notes']) ?></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Response notes</label>
-            <textarea name="response_notes" class="form-control" rows="4"><?= escape_html($_POST['response_notes'] ?? $dsar['response_notes']) ?></textarea>
-          </div>
-          <button class="btn btn-primary">Update DSAR</button>
-        </form>
-      </div>
-    </div>
+    <?php if (!(int)$d['identity_verified']): ?>
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <h6>Identity verification</h6>
+      <form method="post"><?= csrf_field() ?><input type="hidden" name="do" value="verify">
+        <button class="btn btn-outline-primary btn-sm">Mark identity verified</button></form>
+    </div></div>
+    <?php endif; ?>
+    <div class="card shadow-sm"><div class="card-body">
+      <h6>Update status</h6>
+      <form method="post"><?= csrf_field() ?><input type="hidden" name="do" value="status">
+        <select name="status" class="form-select form-select-sm mb-2">
+          <?php foreach (['open','identity_check','in_progress','extended','completed','rejected'] as $s): ?>
+            <option value="<?= $s ?>" <?= $d['status']===$s?'selected':'' ?>><?= ucfirst(str_replace('_',' ',$s)) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <textarea name="response_notes" class="form-control form-control-sm mb-2" rows="3" placeholder="Response notes"><?= escape_html($d['response_notes'] ?? '') ?></textarea>
+        <button class="btn btn-primary btn-sm">Save</button>
+      </form>
+    </div></div>
   </div>
 </div>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>

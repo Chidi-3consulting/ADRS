@@ -17,6 +17,16 @@ if ($trimmed === '/logout' || $trimmed === '/logout.php') {
     exit;
 }
 
+if ($trimmed === '/forgot_password' || $trimmed === '/forgot_password.php') {
+    require __DIR__ . '/src/pages/forgot_password.php';
+    exit;
+}
+
+if ($trimmed === '/reset_password' || $trimmed === '/reset_password.php') {
+    require __DIR__ . '/src/pages/reset_password.php';
+    exit;
+}
+
 if ($trimmed === '/help' || $trimmed === '/help.php') {
     require_login();
     require __DIR__ . '/src/pages/help.php';
@@ -214,6 +224,30 @@ if ($trimmed === '/users' || $trimmed === '/users/index.php') {
 if ($trimmed === '/users/create' || $trimmed === '/users/create.php') {
     require_login();
     require __DIR__ . '/src/pages/users/create.php';
+    exit;
+}
+
+if ($trimmed === '/users/edit' || $trimmed === '/users/edit.php') {
+    require_login();
+    require __DIR__ . '/src/pages/users/edit.php';
+    exit;
+}
+
+if ($trimmed === '/recalculations' || $trimmed === '/recalculations/index.php') {
+    require_login();
+    require __DIR__ . '/src/pages/recalculations/index.php';
+    exit;
+}
+
+if ($trimmed === '/import' || $trimmed === '/import/index.php') {
+    require_login();
+    require __DIR__ . '/src/pages/import/index.php';
+    exit;
+}
+
+if ($trimmed === '/notifications/mark_read' || $trimmed === '/notifications/mark_read.php') {
+    require_login();
+    require __DIR__ . '/src/pages/notifications/mark_read.php';
     exit;
 }
 

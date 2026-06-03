@@ -135,6 +135,32 @@ function update_category(PDO $pdo, int $id, array $in, int $actor_id): array {
     return ['recalc_queued' => $queued];
 }
 
+/**
+ * B2: apply a DPO's decision to a queued recalculation.
+ *  - 'recalculate'   → set the record's retention_end_date to the queued new date
+ *  - 'keep_original' → leave the record date unchanged
+ *  - 'ignored'       → dismiss
+ * Marks the queue row reviewed and audits the decision.
+ */
+function apply_recalculation(PDO $pdo, int $recalc_id, string $decision, int $actor_id): void {
+    if (!in_array($decision, ['recalculate', 'keep_original', 'ignored'], true)) {
+        throw new InvalidArgumentException('Invalid recalculation decision.');
+    }
+    $stmt = $pdo->prepare("SELECT * FROM pending_recalculations WHERE id=:id AND status='pending' LIMIT 1");
+    $stmt->execute(['id' => $recalc_id]);
+    $row = $stmt->fetch();
+    if (!$row) { throw new RuntimeException('Recalculation not found or already reviewed.'); }
+
+    if ($decision === 'recalculate') {
+        $pdo->prepare("UPDATE data_records SET retention_end_date=:d WHERE id=:r")
+            ->execute(['d' => $row['new_retention_end_date'], 'r' => $row['record_id']]);
+    }
+    $pdo->prepare("UPDATE pending_recalculations SET status=:s, reviewed_by=:by, reviewed_at=NOW() WHERE id=:id")
+        ->execute(['s' => $decision, 'by' => $actor_id, 'id' => $recalc_id]);
+    log_audit($pdo, 'recalculation_reviewed', 'data_record', (int) $row['record_id'], $actor_id,
+        ['decision' => $decision, 'new_date' => $row['new_retention_end_date']], get_client_ip());
+}
+
 /** Soft-delete a category. Blocked (returns false) if it still has active records. */
 function soft_delete_category(PDO $pdo, int $id, int $actor_id): bool {
     if (count_active_records_for_category($pdo, $id) > 0) { return false; }
