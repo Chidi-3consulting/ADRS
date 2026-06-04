@@ -150,20 +150,54 @@ function render_flash(): string {
 
 /* ---------------- Audit logging (append-only; never breaks main flow) ---------------- */
 
-/** Insert an audit_log row. Silently swallows any error so logging never breaks a request. */
+/** Recursively key-sort an array (in place) so JSON is order-invariant. */
+function _audit_rksort(&$a): void { if (is_array($a)) { ksort($a); foreach ($a as &$v) { _audit_rksort($v); } } }
+
+/**
+ * Normalise a details JSON string to a storage-invariant canonical form: MySQL's JSON
+ * column may reorder object keys, so we decode + recursively key-sort + re-encode in both
+ * the writer and verifier to keep the hash stable across the DB round-trip.
+ */
+function audit_norm_details(?string $json): string {
+    if ($json === null || $json === '') { return ''; }
+    $v = json_decode($json, true);
+    if ($v === null) { return (string) $json; }
+    _audit_rksort($v);
+    return json_encode($v, JSON_UNESCAPED_UNICODE);
+}
+
+/** Canonical string hashed for an audit row (must match in writer and verifier). */
+function audit_canonical(string $prev_hash, string $action, string $entity_type, ?int $entity_id, ?int $performed_by, ?string $details_json, ?string $ip, string $created_at): string {
+    return implode('|', [$prev_hash, $action, $entity_type, (string) $entity_id, (string) $performed_by, audit_norm_details($details_json), (string) $ip, $created_at]);
+}
+
+/**
+ * Insert an audit_log row, extending the tamper-evident hash chain (Phase 3).
+ * Each row stores prev_hash (previous row's row_hash) and row_hash (SHA-256 over its
+ * canonical content + prev_hash), set atomically at INSERT so the table stays append-only.
+ * Silently swallows any error so logging never breaks a request.
+ */
 function log_audit(PDO $pdo, string $action, string $entity_type, ?int $entity_id, ?int $performed_by, ?array $details, ?string $ip): void {
     try {
+        $detailsJson = $details === null ? null : json_encode($details, JSON_UNESCAPED_UNICODE);
+        $createdAt = date('Y-m-d H:i:s');
+        $prev = $pdo->query("SELECT row_hash FROM audit_log ORDER BY id DESC LIMIT 1")->fetchColumn();
+        $prevHash = ($prev !== false && $prev !== null) ? $prev : str_repeat('0', 64);
+        $rowHash = hash('sha256', audit_canonical($prevHash, $action, $entity_type, $entity_id, $performed_by, $detailsJson, $ip, $createdAt));
         $stmt = $pdo->prepare(
-            'INSERT INTO audit_log (action, entity_type, entity_id, performed_by, details, ip_address)
-             VALUES (:a, :et, :eid, :pb, :d, :ip)'
+            'INSERT INTO audit_log (action, entity_type, entity_id, performed_by, details, ip_address, created_at, prev_hash, row_hash)
+             VALUES (:a, :et, :eid, :pb, :d, :ip, :ca, :ph, :rh)'
         );
         $stmt->execute([
             'a'   => $action,
             'et'  => $entity_type,
             'eid' => $entity_id,
             'pb'  => $performed_by,
-            'd'   => $details === null ? null : json_encode($details, JSON_UNESCAPED_UNICODE),
+            'd'   => $detailsJson,
             'ip'  => $ip,
+            'ca'  => $createdAt,
+            'ph'  => $prevHash,
+            'rh'  => $rowHash,
         ]);
     } catch (Throwable $e) {
         if (defined('LOG_PATH')) {
@@ -171,6 +205,34 @@ function log_audit(PDO $pdo, string $action, string $entity_type, ?int $entity_i
             @file_put_contents(LOG_PATH . 'audit_error.log', '[' . date('c') . '] ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
         }
     }
+}
+
+/**
+ * Verify the audit-log hash chain. Walks rows in id order, recomputing each row_hash and
+ * checking prev_hash links to the prior row. Returns
+ * ['ok'=>bool, 'checked'=>int, 'broken_at'=>?int(id)].
+ */
+function verify_audit_chain(PDO $pdo): array {
+    $rows = $pdo->query(
+        "SELECT id, action, entity_type, entity_id, performed_by, details, ip_address, created_at, prev_hash, row_hash
+         FROM audit_log ORDER BY id ASC"
+    )->fetchAll();
+    $expectedPrev = str_repeat('0', 64);
+    $checked = 0;
+    foreach ($rows as $r) {
+        if ((string) $r['prev_hash'] !== $expectedPrev) {
+            return ['ok' => false, 'checked' => $checked, 'broken_at' => (int) $r['id']];
+        }
+        $eid = $r['entity_id'] !== null ? (int) $r['entity_id'] : null;
+        $pb  = $r['performed_by'] !== null ? (int) $r['performed_by'] : null;
+        $calc = hash('sha256', audit_canonical((string) $r['prev_hash'], $r['action'], $r['entity_type'], $eid, $pb, $r['details'], $r['ip_address'], $r['created_at']));
+        if (!hash_equals((string) $r['row_hash'], $calc)) {
+            return ['ok' => false, 'checked' => $checked, 'broken_at' => (int) $r['id']];
+        }
+        $expectedPrev = $r['row_hash'];
+        $checked++;
+    }
+    return ['ok' => true, 'checked' => $checked, 'broken_at' => null];
 }
 
 /* ---------------- DSAR (C1) ---------------- */
