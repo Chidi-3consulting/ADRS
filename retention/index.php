@@ -288,6 +288,24 @@ if (isset($integrationRoutes[$trimmed])) {
     exit;
 }
 
+// --- Phase 3 compliance modules ---
+$complianceRoutes = [
+    '/ropa'                    => 'ropa/index.php',
+    '/ropa/create'             => 'ropa/create.php',
+    '/dpia'                    => 'dpia/index.php',
+    '/dpia/create'             => 'dpia/create.php',
+    '/breaches'                => 'breaches/index.php',
+    '/breaches/create'         => 'breaches/create.php',
+    '/consent-receipts'        => 'consent_receipts/index.php',
+    '/consent-receipts/create' => 'consent_receipts/create.php',
+    '/reports'                 => 'reports/index.php',
+];
+if (isset($complianceRoutes[$trimmed])) {
+    require_login();
+    require __DIR__ . '/src/pages/' . $complianceRoutes[$trimmed];
+    exit;
+}
+
 if ($trimmed === '/dashboard' || $trimmed === '/dashboard.php' || $trimmed === '/') {
     require_login();
     require __DIR__ . '/src/pages/dashboard.php';

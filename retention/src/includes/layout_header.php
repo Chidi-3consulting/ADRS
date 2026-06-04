@@ -28,6 +28,11 @@ function navlink(string $key, string $active, string $route, string $icon, strin
     <?php if (has_role('admin','dpo')): ?>
       <?= navlink('audit', $active_nav, '/audit', 'bi-shield-check', 'Audit Log') ?>
       <?= navlink('dsar', $active_nav, '/dsar', 'bi-envelope-paper', 'DSAR Requests') ?>
+      <?= navlink('reports', $active_nav, '/reports', 'bi-graph-up', 'Analytics & Reports') ?>
+      <?= navlink('ropa', $active_nav, '/ropa', 'bi-journal-text', 'RoPA (Art. 30)') ?>
+      <?= navlink('dpia', $active_nav, '/dpia', 'bi-clipboard-data', 'DPIA') ?>
+      <?= navlink('breaches', $active_nav, '/breaches', 'bi-exclamation-octagon', 'Breach Register') ?>
+      <?= navlink('consent_receipts', $active_nav, '/consent-receipts', 'bi-file-earmark-check', 'Consent Receipts') ?>
     <?php endif; ?>
     <?= navlink('notifications', $active_nav, '/notifications', 'bi-bell', 'Notifications') ?>
     <?php if (has_role('admin') && get_setting($__pdo, 'adrs_tier', 'core') === 'enterprise'): ?>
