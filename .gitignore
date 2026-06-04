@@ -1,0 +1,8 @@
+# Ignore local configuration and environment-specific files
+retention/src/config/config.local.php
+retention/src/config/config.test.php
+retention/.htaccess.local
+
+# Runtime storage (attachments, logs, backups) and log files
+retention/storage/
+*.log
