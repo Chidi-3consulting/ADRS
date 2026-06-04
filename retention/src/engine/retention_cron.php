@@ -39,6 +39,14 @@ try {
         $log("Flagged: {$s['flagged']} | Consent-disposed: {$s['consent_disposed']} | Auto-disposed: {$s['auto_disposed']} | Dual-approval SKIPPED: {$s['dual_skipped']} | Escalated: {$s['escalated']} | DSAR alerts: {$s['dsar_alerts']} | Review notifications: {$s['review_notifications']}");
         $mail = dispatch_pending_notifications($pdo);
         $log("Emails sent: {$mail['sent']} | failed: {$mail['failed']}");
+
+        // Enterprise additions (steps A/B/C) — only when on the Enterprise tier.
+        if (get_setting($pdo, 'adrs_tier', 'core') === 'enterprise') {
+            require_once __DIR__ . '/../includes/enterprise_lib.php';
+            $e = run_enterprise_engine_steps($pdo);
+            $log("Enterprise: intake-created {$e['intake_created']} | consent-retried {$e['consent_retried']} | logs-purged {$e['logs_purged']}");
+        }
+
         $log('=== Engine COMPLETE in ' . round(microtime(true) - $start, 2) . 's ===');
     }
     exit(0);

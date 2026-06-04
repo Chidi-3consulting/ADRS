@@ -38,14 +38,27 @@ function format_datetime(?string $dt): string {
 
 /* ---------------- Settings (system_settings: setting_key / setting_value) ---------------- */
 
-/** Read a system setting with in-request static cache. Returns $default if absent. */
+/** Read a system setting with in-request cache. Returns $default if absent. */
 function get_setting(PDO $pdo, string $key, $default = null) {
-    static $cache = [];
+    if (!isset($GLOBALS['__setting_cache'])) { $GLOBALS['__setting_cache'] = []; }
+    $cache = &$GLOBALS['__setting_cache'];
     if (array_key_exists($key, $cache)) { return $cache[$key]; }
     $stmt = $pdo->prepare('SELECT setting_value FROM system_settings WHERE setting_key = :k LIMIT 1');
     $stmt->execute(['k' => $key]);
     $row = $stmt->fetch();
     return $cache[$key] = ($row === false ? $default : $row['setting_value']);
+}
+
+/** Clear the in-request settings cache (after updating settings, or between test scenarios). */
+function clear_setting_cache(): void { $GLOBALS['__setting_cache'] = []; }
+
+/** Update (upsert) a system setting and clear the cache. */
+function set_setting(PDO $pdo, string $key, string $value): void {
+    $pdo->prepare(
+        "INSERT INTO system_settings (setting_key, setting_value) VALUES (:k,:v)
+         ON DUPLICATE KEY UPDATE setting_value = :v2"
+    )->execute(['k' => $key, 'v' => $value, 'v2' => $value]);
+    clear_setting_cache();
 }
 
 /* ---------------- Output / input ---------------- */

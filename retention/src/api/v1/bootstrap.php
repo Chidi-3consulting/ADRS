@@ -1,98 +1,42 @@
 <?php
-require_once __DIR__ . '/../../../../src/includes/db.php';
-require_once __DIR__ . '/../../../../src/includes/helpers.php';
+// Shared bootstrap for the Enterprise REST API. Key-based auth, never sessions.
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/helpers.php';
+require_once __DIR__ . '/../../includes/enterprise_lib.php';
+require_once __DIR__ . '/../../includes/records_lib.php';
 
-function api_raw_key(): ?string
-{
-    $header = $_SERVER['HTTP_X_API_KEY'] ?? '';
-    return $header !== '' ? trim($header) : null;
+date_default_timezone_set(TIMEZONE);
+header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('Cache-Control: no-store, no-cache');
+header('X-API-Version: 1.0');
+
+/** Send a JSON response and stop. */
+function api_response(int $status, array $data): never {
+    http_response_code($status);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
-function get_api_request_body(): array
-{
+/** Decode the JSON request body (object). Returns [] when empty/invalid. */
+function api_body(): array {
     $raw = file_get_contents('php://input');
     $decoded = json_decode($raw, true);
-    return is_array($decoded) ? $decoded : ['raw_payload' => $raw];
+    return is_array($decoded) ? $decoded : [];
 }
 
-function require_api_key(PDO $pdo): array
-{
-    $rawKey = api_raw_key();
-    if ($rawKey === null) {
-        send_json(['error' => 'Missing API key'], 401);
-    }
-
-    $hash = hash('sha256', $rawKey);
-    $stmt = $pdo->prepare('SELECT * FROM api_keys WHERE key_hash = :hash AND is_active = 1 LIMIT 1');
-    $stmt->execute(['hash' => $hash]);
-    $apiKey = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($apiKey === false) {
-        send_json(['error' => 'Invalid API key'], 403);
-    }
-
-    $stmt = $pdo->prepare('UPDATE api_keys SET last_used_at = NOW() WHERE id = :id');
-    $stmt->execute(['id' => $apiKey['id']]);
-
-    $apiKey['permissions'] = json_decode($apiKey['permissions'] ?? '[]', true) ?: [];
-    return $apiKey;
-}
-
-function require_permission(array $apiKey, string $permission): void
-{
-    if (!in_array($permission, $apiKey['permissions'], true)) {
-        send_json(['error' => 'Permission denied'], 403);
-    }
-}
-
-function require_enterprise_api_enabled(PDO $pdo): void
-{
-    if (get_setting($pdo, 'enterprise_api_enabled', '0') !== '1') {
-        send_json(['error' => 'Enterprise API is disabled'], 403);
-    }
-}
-
-function verify_enterprise_tier(PDO $pdo): void
-{
+/** 403 unless the deployment is on the Enterprise tier. */
+function require_enterprise_tier(PDO $pdo): void {
     $tier = get_setting($pdo, 'adrs_tier', 'core');
     if ($tier !== 'enterprise') {
-        send_json(['error' => 'Enterprise tier required'], 403);
+        api_response(403, ['error' => 'enterprise_tier_required', 'message' => 'This endpoint requires ADRS Enterprise. Current tier: ' . $tier]);
     }
 }
 
-function current_api_endpoint(): string
-{
-    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    return '/' . trim(basename($path), '/');
-}
-
-function log_integration(PDO $pdo, string $direction, string $endpoint, int $statusCode, array $requestBody, $responseBody, ?array $apiKey = null, int $durationMs = 0): void
-{
-    $requestJson = json_encode($requestBody, JSON_UNESCAPED_UNICODE);
-    $responseJson = is_array($responseBody) ? json_encode($responseBody, JSON_UNESCAPED_UNICODE) : (string)$responseBody;
-    $stmt = $pdo->prepare(
-        'INSERT INTO integration_logs (system_id, api_key_id, direction, endpoint, method, status_code, request_body, response_body, records_affected, duration_ms, ip_address)
-         VALUES (:system_id, :api_key_id, :direction, :endpoint, :method, :status_code, :request_body, :response_body, :records_affected, :duration_ms, :ip_address)'
-    );
-    $stmt->execute([
-        'system_id' => $apiKey['system_id'] ?? null,
-        'api_key_id' => $apiKey['id'] ?? null,
-        'direction' => $direction,
-        'endpoint' => $endpoint,
-        'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
-        'status_code' => $statusCode,
-        'request_body' => $requestJson,
-        'response_body' => $responseJson,
-        'records_affected' => 0,
-        'duration_ms' => $durationMs,
-        'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
-    ]);
-}
-
-function send_json_logged(PDO $pdo, array $data, int $statusCode = 200, ?array $apiKey = null): void
-{
-    $start = microtime(true);
-    $requestBody = get_api_request_body();
-    log_integration($pdo, 'inbound', current_api_endpoint(), $statusCode, $requestBody, $data, $apiKey, 0);
-    send_json($data, $statusCode);
+/** 403 unless the Enterprise REST API is switched on in settings. */
+function require_api_enabled(PDO $pdo): void {
+    if (get_setting($pdo, 'enterprise_api_enabled', '0') !== '1') {
+        api_response(403, ['error' => 'api_disabled', 'message' => 'The Enterprise REST API is disabled.']);
+    }
 }

@@ -55,6 +55,13 @@ function execute_disposal(PDO $pdo, array $record, ?int $actor_id = null): bool 
         }
 
         log_audit($pdo, 'record_disposed_' . $method, 'data_record', $id, $actor_id, ['method' => $method], get_client_ip());
+
+        // Enterprise (E3): queue outbound disposal instructions to connected systems that synced this record.
+        if (get_setting($pdo, 'adrs_tier', 'core') === 'enterprise') {
+            require_once __DIR__ . '/../includes/enterprise_lib.php';
+            queue_disposal_dispatch($pdo, $id, $method);
+        }
+
         $pdo->commit();
         return true;
     } catch (Throwable $e) {

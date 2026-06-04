@@ -1,33 +1,36 @@
 <?php
-$pdo = get_pdo();
-verify_enterprise_tier($pdo);
-require_enterprise_api_enabled($pdo);
-$apiKey = require_api_key($pdo);
-require_permission($apiKey, 'ingest');
+/** GET /api/v1/records/{external_ref}/status — check a record's lifecycle status. */
+api_require_permission($apiKey, 'ingest');
 
-$payload = json_decode(file_get_contents('php://input'), true);
-if (!is_array($payload) || empty($payload['record_id']) || empty($payload['status'])) {
-    send_json_logged($pdo, ['error' => 'record_id and status are required'], 400, $apiKey);
+$parts = explode('/', $route);            // records/{ref}/status  OR  records/{ref}
+$idOrRef = $parts[1] ?? '';
+if ($idOrRef === '') {
+    api_response(422, ['error' => 'validation_error', 'message' => 'A record id or external_ref is required.']);
 }
 
-$allowed = ['active', 'due_review', 'disposal_requested', 'legal_hold', 'disposed'];
-if (!in_array($payload['status'], $allowed, true)) {
-    send_json_logged($pdo, ['error' => 'Invalid status value'], 400, $apiKey);
+if (ctype_digit($idOrRef)) {
+    $stmt = $pdo->prepare(
+        "SELECT dr.*, dc.name AS category_name FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id
+         WHERE dr.id = :v AND dr.deleted_at IS NULL LIMIT 1"
+    );
+} else {
+    $stmt = $pdo->prepare(
+        "SELECT dr.*, dc.name AS category_name FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id
+         WHERE dr.record_reference = :v AND dr.deleted_at IS NULL ORDER BY dr.id DESC LIMIT 1"
+    );
+}
+$stmt->execute(['v' => $idOrRef]);
+$rec = $stmt->fetch();
+if (!$rec) {
+    api_response(404, ['error' => 'not_found', 'message' => 'No record matches that identifier.']);
 }
 
-$stmt = $pdo->prepare('SELECT status FROM data_records WHERE id = :id AND deleted_at IS NULL LIMIT 1');
-$stmt->execute(['id' => $payload['record_id']]);
-$existing = $stmt->fetch(PDO::FETCH_ASSOC);
-if ($existing === false) {
-    send_json_logged($pdo, ['error' => 'Record not found'], 404, $apiKey);
-}
-
-$update = $pdo->prepare('UPDATE data_records SET status = :status' . ($payload['status'] === 'disposed' ? ', disposed_at = NOW(), disposed_by = NULL' : '') . ' WHERE id = :id');
-$update->execute(['status' => $payload['status'], 'id' => $payload['record_id']]);
-
-if ($payload['status'] === 'disposed' && get_setting($pdo, 'adrs_tier', 'core') === 'enterprise') {
-    require_once __DIR__ . '/../../../../src/includes/enterprise_dispatch.php';
-    queue_disposal_dispatch($pdo, (int)$payload['record_id'], 'delete');
-}
-
-send_json_logged($pdo, ['status' => 'ok'], 200, $apiKey);
+api_response(200, [
+    'record_id'          => (int) $rec['id'],
+    'external_ref'       => $rec['record_reference'],
+    'category'           => $rec['category_name'],
+    'status'             => $rec['status'],
+    'retention_end_date' => $rec['retention_end_date'],
+    'legal_hold'         => (bool) $rec['legal_hold'],
+    'consent_withdrawn'  => $rec['consent_withdrawn_at'] !== null,
+]);
