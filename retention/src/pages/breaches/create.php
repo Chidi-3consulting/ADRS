@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'severity' => in_array($_POST['severity'] ?? '', ['low','medium','high','critical'], true) ? $_POST['severity'] : 'medium',
             'affected_records' => $_POST['affected_records'] ?? '',
         ], (int) current_user()['id']);
+        require_once __DIR__ . '/../../includes/webhooks_lib.php';
+        fire_ops_event($pdo, 'breach.created', ['reference' => $r['reference'], 'title' => trim($_POST['title']), 'severity' => $_POST['severity'] ?? 'medium', 'deadline' => $r['notify_deadline']]);
         flash('success', "Breach {$r['reference']} logged. 72-hour deadline: " . format_datetime($r['notify_deadline']) . '.');
         redirect(APP_URL . '/breaches');
     }

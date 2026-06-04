@@ -26,6 +26,7 @@ require __DIR__ . '/../../includes/layout_header.php';
   <a href="<?= APP_URL ?>/settings/2fa" class="btn btn-outline-secondary btn-sm">🔐 Two-Factor Auth</a>
   <a href="<?= APP_URL ?>/integrations/tier" class="btn btn-outline-secondary btn-sm">Tier &amp; Licence</a>
   <a href="<?= APP_URL ?>/audit?verify=1" class="btn btn-outline-secondary btn-sm">Verify Audit Integrity</a>
+  <a href="<?= APP_URL ?>/webhooks" class="btn btn-outline-secondary btn-sm">Ops Webhooks</a>
 </div>
 <form method="post" class="card shadow-sm"><div class="card-body">
   <?= csrf_field() ?>

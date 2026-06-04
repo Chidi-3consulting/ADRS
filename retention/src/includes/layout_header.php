@@ -6,6 +6,11 @@ $__user = current_user();
 $page_title = $page_title ?? 'Dashboard';
 $active_nav = $active_nav ?? '';
 $__unread = get_unread_notification_count($__pdo, (int) $__user['id']);
+// White-label theming (Phase 3)
+$__wlName    = get_setting($__pdo, 'white_label_name', APP_NAME) ?: APP_NAME;
+$__wlPrimary = get_setting($__pdo, 'white_label_primary', '#C85C1A');
+if (!preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $__wlPrimary)) { $__wlPrimary = '#C85C1A'; }
+$__wlLogo    = get_setting($__pdo, 'white_label_logo_url', '');
 function navlink(string $key, string $active, string $route, string $icon, string $label): string {
     $cls = $key === $active ? 'active' : '';
     return '<a class="' . $cls . '" href="' . APP_URL . $route . '"><i class="bi ' . $icon . '"></i> ' . escape_html($label) . '</a>';
@@ -14,14 +19,15 @@ function navlink(string $key, string $active, string $route, string $icon, strin
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= escape_html($page_title) ?> — <?= escape_html(APP_NAME) ?></title>
+<title><?= escape_html($page_title) ?> — <?= escape_html($__wlName) ?></title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
+<style>:root{ --3c-orange: <?= $__wlPrimary ?>; } .sidebar .brand{ color: <?= $__wlPrimary ?>; }</style>
 </head><body>
 <div class="wrapper">
   <nav class="sidebar">
-    <div class="brand">ADRS</div>
+    <div class="brand"><?php if ($__wlLogo): ?><img src="<?= escape_html($__wlLogo) ?>" alt="logo" style="max-height:32px;max-width:200px"><?php else: ?><?= escape_html($__wlName) ?><?php endif; ?></div>
     <?= navlink('dashboard', $active_nav, '/dashboard', 'bi-house', 'Dashboard') ?>
     <?= navlink('categories', $active_nav, '/categories', 'bi-collection', 'Data Categories') ?>
     <?= navlink('records', $active_nav, '/records', 'bi-card-list', 'Retention Schedule') ?>

@@ -226,6 +226,12 @@ if ($trimmed === '/settings' || $trimmed === '/settings/index.php') {
     exit;
 }
 
+if ($trimmed === '/webhooks' || $trimmed === '/webhooks/index.php') {
+    require_login();
+    require __DIR__ . '/src/pages/webhooks/index.php';
+    exit;
+}
+
 if ($trimmed === '/users' || $trimmed === '/users/index.php') {
     require_login();
     require __DIR__ . '/src/pages/users/index.php';
