@@ -154,59 +154,6 @@ if ($trimmed === '/attachments' || $trimmed === '/attachments/index.php') {
     exit;
 }
 
-if ($trimmed === '/integration-logs' || $trimmed === '/integration-logs/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/integration_logs/index.php';
-    exit;
-}
-
-if ($trimmed === '/connected-systems' || $trimmed === '/connected-systems/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/connected_systems/index.php';
-    exit;
-}
-
-if ($trimmed === '/connected-systems/create' || $trimmed === '/connected-systems/create.php') {
-    require_login();
-    require __DIR__ . '/src/pages/connected_systems/create.php';
-    exit;
-}
-
-if ($trimmed === '/connected-systems/edit' || $trimmed === '/connected-systems/edit.php') {
-    require_login();
-    require __DIR__ . '/src/pages/connected_systems/edit.php';
-    exit;
-}
-
-if ($trimmed === '/api-keys' || $trimmed === '/api-keys/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/api_keys/index.php';
-    exit;
-}
-
-if ($trimmed === '/api-keys/create' || $trimmed === '/api-keys/create.php') {
-    require_login();
-    require __DIR__ . '/src/pages/api_keys/create.php';
-    exit;
-}
-
-if ($trimmed === '/api-keys/edit' || $trimmed === '/api-keys/edit.php') {
-    require_login();
-    require __DIR__ . '/src/pages/api_keys/edit.php';
-    exit;
-}
-
-if ($trimmed === '/intake-queue' || $trimmed === '/intake-queue/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/intake_queue/index.php';
-    exit;
-}
-
-if ($trimmed === '/disposal-dispatch' || $trimmed === '/disposal-dispatch/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/disposal_dispatch/index.php';
-    exit;
-}
 
 if ($trimmed === '/audit' || $trimmed === '/audit/index.php') {
     require_login();
