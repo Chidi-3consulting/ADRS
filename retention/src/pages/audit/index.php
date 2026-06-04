@@ -22,15 +22,26 @@ $stmt->execute($params);
 $rows = $stmt->fetchAll();
 
 $actions = $pdo->query("SELECT DISTINCT action FROM audit_log ORDER BY action")->fetchAll(PDO::FETCH_COLUMN);
+$integrity = isset($_GET['verify']) ? verify_audit_chain($pdo) : null;
 
 $page_title = 'Audit Log';
 $active_nav = 'audit';
 require __DIR__ . '/../../includes/layout_header.php';
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <div><h1 class="h4 mb-0">Audit Log</h1><p class="text-muted mb-0 small">Immutable, append-only compliance evidence.</p></div>
-  <a href="<?= APP_URL ?>/audit/export" class="btn btn-outline-primary"><i class="bi bi-download"></i> NDPR Annual Report</a>
+  <div><h1 class="h4 mb-0">Audit Log</h1><p class="text-muted mb-0 small">Immutable, append-only compliance evidence — tamper-evident hash chain.</p></div>
+  <div>
+    <a href="<?= APP_URL ?>/audit?verify=1" class="btn btn-outline-secondary"><i class="bi bi-shield-check"></i> Verify integrity</a>
+    <a href="<?= APP_URL ?>/audit/export" class="btn btn-outline-primary"><i class="bi bi-download"></i> NDPR Annual Report</a>
+  </div>
 </div>
+<?php if ($integrity !== null): ?>
+  <?php if ($integrity['ok']): ?>
+    <div class="alert alert-success">✅ <strong>Integrity verified.</strong> All <?= (int) $integrity['checked'] ?> audit entries form an unbroken hash chain — no record has been altered or deleted.</div>
+  <?php else: ?>
+    <div class="alert alert-danger">🔴 <strong>Integrity check FAILED.</strong> The hash chain breaks at audit entry #<?= (int) $integrity['broken_at'] ?> — a record may have been altered or deleted. Investigate immediately.</div>
+  <?php endif; ?>
+<?php endif; ?>
 <form class="card shadow-sm mb-3" method="get"><div class="card-body row g-2 align-items-end">
   <div class="col-md-3"><label class="form-label small">Action</label>
     <select name="action" class="form-select form-select-sm"><option value="">All</option>

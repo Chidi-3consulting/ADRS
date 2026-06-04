@@ -17,6 +17,17 @@ if ($trimmed === '/logout' || $trimmed === '/logout.php') {
     exit;
 }
 
+if ($trimmed === '/login/2fa') {
+    require __DIR__ . '/src/pages/twofa_challenge.php';
+    exit;
+}
+
+if ($trimmed === '/settings/2fa') {
+    require_login();
+    require __DIR__ . '/src/pages/settings/twofa.php';
+    exit;
+}
+
 if ($trimmed === '/forgot_password' || $trimmed === '/forgot_password.php') {
     require __DIR__ . '/src/pages/forgot_password.php';
     exit;
@@ -143,59 +154,6 @@ if ($trimmed === '/attachments' || $trimmed === '/attachments/index.php') {
     exit;
 }
 
-if ($trimmed === '/integration-logs' || $trimmed === '/integration-logs/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/integration_logs/index.php';
-    exit;
-}
-
-if ($trimmed === '/connected-systems' || $trimmed === '/connected-systems/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/connected_systems/index.php';
-    exit;
-}
-
-if ($trimmed === '/connected-systems/create' || $trimmed === '/connected-systems/create.php') {
-    require_login();
-    require __DIR__ . '/src/pages/connected_systems/create.php';
-    exit;
-}
-
-if ($trimmed === '/connected-systems/edit' || $trimmed === '/connected-systems/edit.php') {
-    require_login();
-    require __DIR__ . '/src/pages/connected_systems/edit.php';
-    exit;
-}
-
-if ($trimmed === '/api-keys' || $trimmed === '/api-keys/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/api_keys/index.php';
-    exit;
-}
-
-if ($trimmed === '/api-keys/create' || $trimmed === '/api-keys/create.php') {
-    require_login();
-    require __DIR__ . '/src/pages/api_keys/create.php';
-    exit;
-}
-
-if ($trimmed === '/api-keys/edit' || $trimmed === '/api-keys/edit.php') {
-    require_login();
-    require __DIR__ . '/src/pages/api_keys/edit.php';
-    exit;
-}
-
-if ($trimmed === '/intake-queue' || $trimmed === '/intake-queue/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/intake_queue/index.php';
-    exit;
-}
-
-if ($trimmed === '/disposal-dispatch' || $trimmed === '/disposal-dispatch/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/disposal_dispatch/index.php';
-    exit;
-}
 
 if ($trimmed === '/audit' || $trimmed === '/audit/index.php') {
     require_login();
@@ -212,6 +170,12 @@ if ($trimmed === '/audit/export' || $trimmed === '/audit/export.php') {
 if ($trimmed === '/settings' || $trimmed === '/settings/index.php') {
     require_login();
     require __DIR__ . '/src/pages/settings/index.php';
+    exit;
+}
+
+if ($trimmed === '/webhooks' || $trimmed === '/webhooks/index.php') {
+    require_login();
+    require __DIR__ . '/src/pages/webhooks/index.php';
     exit;
 }
 
@@ -274,6 +238,24 @@ $integrationRoutes = [
 if (isset($integrationRoutes[$trimmed])) {
     require_login();
     require __DIR__ . '/src/pages/' . $integrationRoutes[$trimmed];
+    exit;
+}
+
+// --- Phase 3 compliance modules ---
+$complianceRoutes = [
+    '/ropa'                    => 'ropa/index.php',
+    '/ropa/create'             => 'ropa/create.php',
+    '/dpia'                    => 'dpia/index.php',
+    '/dpia/create'             => 'dpia/create.php',
+    '/breaches'                => 'breaches/index.php',
+    '/breaches/create'         => 'breaches/create.php',
+    '/consent-receipts'        => 'consent_receipts/index.php',
+    '/consent-receipts/create' => 'consent_receipts/create.php',
+    '/reports'                 => 'reports/index.php',
+];
+if (isset($complianceRoutes[$trimmed])) {
+    require_login();
+    require __DIR__ . '/src/pages/' . $complianceRoutes[$trimmed];
     exit;
 }
 

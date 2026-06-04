@@ -22,6 +22,12 @@ $active_nav = 'settings';
 require __DIR__ . '/../../includes/layout_header.php';
 ?>
 <h1 class="h4 mb-3">System Settings</h1>
+<div class="mb-3">
+  <a href="<?= APP_URL ?>/settings/2fa" class="btn btn-outline-secondary btn-sm">🔐 Two-Factor Auth</a>
+  <a href="<?= APP_URL ?>/integrations/tier" class="btn btn-outline-secondary btn-sm">Tier &amp; Licence</a>
+  <a href="<?= APP_URL ?>/audit?verify=1" class="btn btn-outline-secondary btn-sm">Verify Audit Integrity</a>
+  <a href="<?= APP_URL ?>/webhooks" class="btn btn-outline-secondary btn-sm">Ops Webhooks</a>
+</div>
 <form method="post" class="card shadow-sm"><div class="card-body">
   <?= csrf_field() ?>
   <p class="text-muted small">SMTP and tier settings live here (single source of truth). Sensitive values are stored in the database, not in code.</p>
