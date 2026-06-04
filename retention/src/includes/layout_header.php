@@ -30,6 +30,9 @@ function navlink(string $key, string $active, string $route, string $icon, strin
       <?= navlink('dsar', $active_nav, '/dsar', 'bi-envelope-paper', 'DSAR Requests') ?>
     <?php endif; ?>
     <?= navlink('notifications', $active_nav, '/notifications', 'bi-bell', 'Notifications') ?>
+    <?php if (has_role('admin') && get_setting($__pdo, 'adrs_tier', 'core') === 'enterprise'): ?>
+      <?= navlink('integrations', $active_nav, '/integrations', 'bi-hdd-network', 'Integrations') ?>
+    <?php endif; ?>
     <?php if (has_role('admin')): ?>
       <?= navlink('users', $active_nav, '/users', 'bi-people', 'Users') ?>
       <?= navlink('settings', $active_nav, '/settings', 'bi-gear', 'Settings') ?>

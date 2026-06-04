@@ -251,6 +251,32 @@ if ($trimmed === '/notifications/mark_read' || $trimmed === '/notifications/mark
     exit;
 }
 
+// --- Enterprise integration management (Phase 2) ---
+$integrationRoutes = [
+    '/integrations'                 => 'integrations/index.php',
+    '/integrations/systems'         => 'integrations/systems/index.php',
+    '/integrations/systems/create'  => 'integrations/systems/create.php',
+    '/integrations/systems/edit'    => 'integrations/systems/edit.php',
+    '/integrations/keys'            => 'integrations/keys/index.php',
+    '/integrations/keys/create'     => 'integrations/keys/create.php',
+    '/integrations/keys/revoke'     => 'integrations/keys/revoke.php',
+    '/integrations/rules'           => 'integrations/rules/index.php',
+    '/integrations/rules/create'    => 'integrations/rules/create.php',
+    '/integrations/rules/delete'    => 'integrations/rules/delete.php',
+    '/integrations/mappings'        => 'integrations/mappings/index.php',
+    '/integrations/mappings/create' => 'integrations/mappings/create.php',
+    '/integrations/mappings/delete' => 'integrations/mappings/delete.php',
+    '/integrations/logs'            => 'integrations/logs/index.php',
+    '/integrations/queue'           => 'integrations/queue/index.php',
+    '/integrations/dispatch'        => 'integrations/dispatch/index.php',
+    '/integrations/tier'            => 'integrations/tier.php',
+];
+if (isset($integrationRoutes[$trimmed])) {
+    require_login();
+    require __DIR__ . '/src/pages/' . $integrationRoutes[$trimmed];
+    exit;
+}
+
 if ($trimmed === '/dashboard' || $trimmed === '/dashboard.php' || $trimmed === '/') {
     require_login();
     require __DIR__ . '/src/pages/dashboard.php';

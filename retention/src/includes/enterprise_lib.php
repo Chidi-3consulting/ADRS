@@ -12,6 +12,14 @@ require_once __DIR__ . '/records_lib.php';
  * Tier gating: callers must verify get_setting($pdo,'adrs_tier')==='enterprise' first.
  */
 
+/** UI gate: redirect to the dashboard unless the deployment is on the Enterprise tier. */
+function require_enterprise(PDO $pdo): void {
+    if (get_setting($pdo, 'adrs_tier', 'core') !== 'enterprise') {
+        if (function_exists('flash')) { flash('warning', 'That feature requires the ADRS Enterprise tier.'); }
+        redirect(APP_URL . '/dashboard');
+    }
+}
+
 /* ----------------------------- API keys (E1) ----------------------------- */
 
 /** Generate a raw key + its SHA-256 hash + display prefix. Raw is shown to the user once only. */
