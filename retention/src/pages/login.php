@@ -11,10 +11,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     if ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
-    } elseif (login_user($pdo, $email, $password)) {
-        redirect(APP_URL . '/dashboard');
     } else {
-        $error = 'Invalid email or password.';
+        $user = verify_credentials($pdo, $email, $password);
+        if (!$user) {
+            $error = 'Invalid email or password.';
+        } elseif ((int) ($user['twofa_enabled'] ?? 0) === 1) {
+            // Credentials OK but 2FA required — hold a pending state, do NOT log in yet.
+            _auth_session();
+            $_SESSION['2fa_pending_user'] = (int) $user['id'];
+            redirect(APP_URL . '/login/2fa');
+        } else {
+            establish_session($pdo, $user);
+            redirect(APP_URL . '/dashboard');
+        }
     }
 }
 ?>

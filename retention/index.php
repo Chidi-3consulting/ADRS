@@ -17,6 +17,17 @@ if ($trimmed === '/logout' || $trimmed === '/logout.php') {
     exit;
 }
 
+if ($trimmed === '/login/2fa') {
+    require __DIR__ . '/src/pages/twofa_challenge.php';
+    exit;
+}
+
+if ($trimmed === '/settings/2fa') {
+    require_login();
+    require __DIR__ . '/src/pages/settings/twofa.php';
+    exit;
+}
+
 if ($trimmed === '/forgot_password' || $trimmed === '/forgot_password.php') {
     require __DIR__ . '/src/pages/forgot_password.php';
     exit;

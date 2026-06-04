@@ -32,20 +32,42 @@ function require_role(string ...$roles): void {
  * Verify credentials and start an authenticated session.
  * Returns false (never revealing which field was wrong) on any failure.
  */
-function login_user(PDO $pdo, string $email, string $password): bool {
+/** Validate email+password only (no session). Returns the full user row (incl. 2FA fields) or null. */
+function verify_credentials(PDO $pdo, string $email, string $password): ?array {
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :e AND is_active = 1 AND deleted_at IS NULL LIMIT 1");
     $stmt->execute(['e' => $email]);
     $user = $stmt->fetch();
-    if (!$user || !password_verify($password, $user['password_hash'])) {
-        return false;
-    }
+    if (!$user || !password_verify($password, $user['password_hash'])) { return null; }
+    return $user;
+}
+
+/** Start an authenticated session for a verified user (secrets stripped before storing). */
+function establish_session(PDO $pdo, array $user): void {
     _auth_session();
     if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_ACTIVE) { session_regenerate_id(true); }
-    unset($user['password_hash']);
+    unset($user['password_hash'], $user['twofa_secret'], $user['twofa_recovery']);
     $_SESSION['user'] = $user;
     $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE id = :id")->execute(['id' => $user['id']]);
     log_audit($pdo, 'user_login', 'user', (int) $user['id'], (int) $user['id'], null, get_client_ip());
+}
+
+/** Convenience: verify + establish session in one step (used by non-2FA callers and tests). */
+function login_user(PDO $pdo, string $email, string $password): bool {
+    $user = verify_credentials($pdo, $email, $password);
+    if (!$user) { return false; }
+    establish_session($pdo, $user);
     return true;
+}
+
+/** Enable TOTP 2FA for a user (stores secret + hashed recovery codes). */
+function enable_user_2fa(PDO $pdo, int $user_id, string $secret, array $hashed_recovery): void {
+    $pdo->prepare("UPDATE users SET twofa_enabled = 1, twofa_secret = :s, twofa_recovery = :r WHERE id = :id")
+        ->execute(['s' => $secret, 'r' => json_encode($hashed_recovery), 'id' => $user_id]);
+}
+
+/** Disable 2FA for a user. */
+function disable_user_2fa(PDO $pdo, int $user_id): void {
+    $pdo->prepare("UPDATE users SET twofa_enabled = 0, twofa_secret = NULL, twofa_recovery = NULL WHERE id = :id")->execute(['id' => $user_id]);
 }
 
 function logout_user(PDO $pdo): never {
