@@ -1,7 +1,10 @@
 RewriteEngine On
 RewriteBase /retention/
 
-# Route non-file requests to index.php
+# Enterprise REST API — route /api/v1/* to the API router (own key-auth layer)
+RewriteRule ^api/v1/(.*)$ src/api/v1/router.php?_route=$1 [QSA,L]
+
+# Route remaining non-file requests to the front controller
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L,QSA]

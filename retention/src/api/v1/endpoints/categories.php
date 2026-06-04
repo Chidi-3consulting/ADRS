@@ -1,10 +1,10 @@
 <?php
-$pdo = get_pdo();
-verify_enterprise_tier($pdo);
-require_enterprise_api_enabled($pdo);
-$apiKey = require_api_key($pdo);
-require_permission($apiKey, 'categories');
+/** GET /api/v1/categories — categories available for field-mapping config. */
+api_require_permission($apiKey, 'categories');
 
-$stmt = $pdo->query('SELECT id, name, compliance_framework, disposal_method FROM data_categories WHERE deleted_at IS NULL ORDER BY name');
-$rows = $stmt->fetchAll();
-send_json_logged($pdo, ['categories' => $rows], 200, $apiKey);
+$rows = $pdo->query(
+    "SELECT id, name, compliance_framework AS framework, disposal_trigger, retention_period_label
+     FROM data_categories WHERE deleted_at IS NULL AND is_active = 1 ORDER BY name"
+)->fetchAll();
+
+api_response(200, ['categories' => $rows]);
