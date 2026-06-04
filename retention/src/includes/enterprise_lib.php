@@ -314,6 +314,30 @@ function process_disposal_dispatches(PDO $pdo, int $limit = 50, ?callable $sende
     return ['sent' => $sent, 'failed' => $failed];
 }
 
+/* ----------------------------- Enterprise daily engine steps (A/B/C) ----------------------------- */
+
+/** Step C: purge integration_logs older than api_log_retention_days. Returns rows deleted. */
+function purge_integration_logs(PDO $pdo): int {
+    $days = (int) get_setting($pdo, 'api_log_retention_days', '90');
+    $stmt = $pdo->prepare("DELETE FROM integration_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL :d DAY)");
+    $stmt->execute(['d' => $days]);
+    return $stmt->rowCount();
+}
+
+/**
+ * Run the Enterprise additions to the daily engine:
+ *  A — process any pending intake queue items (fallback if the 5-min cron is not configured)
+ *  B — retry unmatched consent signals from the last 7 days
+ *  C — purge old integration logs
+ * Returns a summary. No-op-safe; caller should only invoke when adrs_tier = 'enterprise'.
+ */
+function run_enterprise_engine_steps(PDO $pdo): array {
+    $intake = (get_setting($pdo, 'intake_queue_enabled', '1') === '1') ? process_intake_queue($pdo, 100) : ['created' => 0];
+    $consentRetried = (get_setting($pdo, 'consent_signal_enabled', '1') === '1') ? retry_unmatched_consent_signals($pdo) : 0;
+    $purged = purge_integration_logs($pdo);
+    return ['intake_created' => $intake['created'] ?? 0, 'consent_retried' => $consentRetried, 'logs_purged' => $purged];
+}
+
 /** Real webhook sender via cURL (used in production; tests inject a stub). Returns [http_code, body]. */
 function enterprise_http_post(string $url, array $payload): array {
     $ch = curl_init($url);
@@ -328,6 +352,6 @@ function enterprise_http_post(string $url, array $payload): array {
     $body = curl_exec($ch);
     $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     if ($body === false) { $body = curl_error($ch); $code = 0; }
-    curl_close($ch);
-    return [$code, $body];
+    return [$code, $body]; // curl_close() is a no-op since PHP 8.0 and deprecated in 8.5
+
 }

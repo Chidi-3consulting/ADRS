@@ -93,4 +93,12 @@ $result = process_disposal_dispatches($pdo, 50, fn($url, $payload) => [200, 'ok'
 assert_equals(1, $result['sent'], 'dispatch sent via stub webhook');
 assert_equals('confirmed', $pdo->query("SELECT status FROM disposal_dispatches WHERE id={$disp[0]['id']}")->fetchColumn(), 'dispatch confirmed');
 
+// Enterprise daily steps (C): purge integration_logs older than retention window.
+$pdo->prepare("INSERT INTO integration_logs (system_id, direction, endpoint, method, status_code, created_at) VALUES (:s,'inbound','/old','GET',200, DATE_SUB(NOW(), INTERVAL 200 DAY))")->execute(['s'=>$sys]);
+$pdo->prepare("INSERT INTO integration_logs (system_id, direction, endpoint, method, status_code) VALUES (:s,'inbound','/new','GET',200)")->execute(['s'=>$sys]);
+assert_true(purge_integration_logs($pdo) >= 1, 'old integration logs purged (step C)');
+assert_equals(1, (int) $pdo->query("SELECT COUNT(*) FROM integration_logs WHERE endpoint='/new'")->fetchColumn(), 'recent log retained');
+$steps = run_enterprise_engine_steps($pdo);
+assert_true(array_key_exists('logs_purged', $steps) && array_key_exists('consent_retried', $steps), 'enterprise engine steps return a summary');
+
 set_setting($pdo, 'adrs_tier', 'core');  // restore for any later tests
