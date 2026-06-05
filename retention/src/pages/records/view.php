@@ -5,8 +5,9 @@ require_once __DIR__ . '/../../includes/records_lib.php';
 require_login();
 $pdo = get_db();
 $id = (int) ($_GET['id'] ?? 0);
-$record = $id > 0 ? fetch_record($pdo, $id) : null;
+$record = $id > 0 ? fetch_record($pdo, $id, true) : null;   // include disposed/deleted for read-only viewing
 if ($record === null) { http_response_code(404); require __DIR__ . '/../../../404.php'; exit; }
+$isDisposed = $record['status'] === 'disposed' || $record['deleted_at'] !== null;
 
 // Data Owners may only view records in their own categories.
 if (has_role('data_owner')) {
@@ -26,7 +27,7 @@ $allCats = $pdo->query("SELECT id, name FROM data_categories WHERE deleted_at IS
 $attStmt = $pdo->prepare("SELECT * FROM attachments WHERE record_id=:id AND deleted_at IS NULL ORDER BY id DESC");
 $attStmt->execute(['id' => $id]);
 $attachments = $attStmt->fetchAll();
-$canAct = has_role('admin', 'dpo');
+$canAct = has_role('admin', 'dpo') && !$isDisposed;   // no lifecycle actions on a disposed record
 
 $page_title = 'Record ' . $record['record_reference'];
 $active_nav = 'records';
@@ -35,10 +36,13 @@ require __DIR__ . '/../../includes/layout_header.php';
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0"><?= escape_html($record['record_reference']) ?> <?= get_status_badge($record['status']) ?></h1>
   <div>
-    <?php if (has_role('admin','dpo')): ?><a href="<?= APP_URL ?>/records/edit?id=<?= $id ?>" class="btn btn-outline-primary">Edit</a><?php endif; ?>
+    <?php if ($canAct): ?><a href="<?= APP_URL ?>/records/edit?id=<?= $id ?>" class="btn btn-outline-primary">Edit</a><?php endif; ?>
     <a href="<?= APP_URL ?>/records" class="btn btn-secondary">Back</a>
   </div>
 </div>
+<?php if ($isDisposed): ?>
+  <div class="alert alert-secondary">This record has been <strong>disposed</strong><?= $record['disposed_at'] ? ' on ' . escape_html(format_datetime($record['disposed_at'])) : '' ?> (method: <?= escape_html(get_disposal_method_label($record['disposal_method'])) ?>). It is shown read-only as compliance evidence; the immutable audit trail below records the full history.</div>
+<?php endif; ?>
 <div class="row g-3">
   <div class="col-lg-7">
     <div class="card shadow-sm mb-3"><div class="card-body">
@@ -57,7 +61,7 @@ require __DIR__ . '/../../includes/layout_header.php';
       </dl>
     </div></div>
 
-    <?php if (has_role('admin','dpo')): ?>
+    <?php if ($canAct): ?>
     <div class="card shadow-sm mb-3"><div class="card-body">
       <h5 class="card-title">Reassign category (B3)</h5>
       <form method="post" action="<?= APP_URL ?>/records/reassign">

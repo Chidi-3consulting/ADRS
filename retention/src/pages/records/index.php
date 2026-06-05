@@ -6,6 +6,7 @@ $pdo = get_db();
 $me = current_user();
 $ownerFilter = has_role('data_owner') ? ' AND dc.owner_id = ' . (int) $me['id'] : '';
 
+// Global KPI summary (unfiltered).
 $kpi = $pdo->query(
     "SELECT
        SUM(status != 'disposed') AS total_active,
@@ -18,12 +19,34 @@ $kpi = $pdo->query(
      WHERE dr.deleted_at IS NULL{$ownerFilter}"
 )->fetch();
 
-$rows = $pdo->query(
+// Filters
+$q        = trim($_GET['q'] ?? '');
+$status   = $_GET['status'] ?? '';
+$catId    = (int) ($_GET['category_id'] ?? 0);
+$statuses = ['active','due_review','disposal_requested','legal_hold','disposed','overdue'];
+$where = []; $params = [];
+// Disposed view includes soft-deleted (delete-method) records; everything else excludes them.
+if ($status !== 'disposed') { $where[] = 'dr.deleted_at IS NULL'; }
+if ($q !== '')    { $where[] = '(dr.record_reference LIKE :q OR dr.data_subject_type LIKE :q)'; $params['q'] = '%' . $q . '%'; }
+if ($catId > 0)   { $where[] = 'dr.category_id = :cat'; $params['cat'] = $catId; }
+if ($status === 'overdue')      { $where[] = "dr.retention_end_date < CURDATE() AND dr.status != 'disposed'"; }
+elseif (in_array($status, $statuses, true)) { $where[] = 'dr.status = :st'; $params['st'] = $status; }
+if (has_role('data_owner'))     { $where[] = 'dc.owner_id = ' . (int) $me['id']; }
+$whereSql = $where ? (' WHERE ' . implode(' AND ', $where)) : '';
+
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id$whereSql");
+$countStmt->execute($params);
+$total = (int) $countStmt->fetchColumn();
+$pg = paginate($total, 25, (int) ($_GET['page'] ?? 1));
+
+$listStmt = $pdo->prepare(
     "SELECT dr.*, dc.name AS category_name, dc.disposal_trigger
-     FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL
-     WHERE dr.deleted_at IS NULL{$ownerFilter}
-     ORDER BY dr.created_at DESC LIMIT 300"
-)->fetchAll();
+     FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id$whereSql
+     ORDER BY dr.created_at DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
+);
+$listStmt->execute($params);
+$rows = $listStmt->fetchAll();
+$catOptions = $pdo->query("SELECT id, name FROM data_categories WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
 
 $page_title = 'Retention Schedule';
 $active_nav = 'records';
@@ -45,9 +68,27 @@ function kpi_card(string $label, $val, string $cls = ''): string {
   <?= kpi_card('Awaiting approval', $kpi['awaiting_approval']) ?>
   <?= kpi_card('Disposed (mo)', $kpi['disposed_month']) ?>
 </div>
+<form class="card shadow-sm mb-3" method="get"><div class="card-body row g-2 align-items-end">
+  <div class="col-md-4"><label class="form-label small mb-1">Search reference / subject</label>
+    <input name="q" class="form-control form-control-sm" value="<?= escape_html($q) ?>" placeholder="e.g. CUST-001"></div>
+  <div class="col-md-3"><label class="form-label small mb-1">Status</label>
+    <select name="status" class="form-select form-select-sm"><option value="">All active</option>
+      <?php foreach ($statuses as $s): ?><option value="<?= $s ?>" <?= $status===$s?'selected':'' ?>><?= escape_html(ucwords(str_replace('_',' ',$s))) ?></option><?php endforeach; ?>
+    </select></div>
+  <div class="col-md-3"><label class="form-label small mb-1">Category</label>
+    <select name="category_id" class="form-select form-select-sm"><option value="0">All categories</option>
+      <?php foreach ($catOptions as $c): ?><option value="<?= (int)$c['id'] ?>" <?= $catId===(int)$c['id']?'selected':'' ?>><?= escape_html($c['name']) ?></option><?php endforeach; ?>
+    </select></div>
+  <div class="col-md-2 d-flex gap-1"><button class="btn btn-primary btn-sm flex-grow-1">Filter</button>
+    <a href="<?= APP_URL ?>/records" class="btn btn-outline-secondary btn-sm">Reset</a></div>
+</div></form>
 <div class="card shadow-sm"><div class="card-body">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small"><?= $total ?> record<?= $total === 1 ? '' : 's' ?></span>
+    <?= pagination_links($pg, APP_URL . '/records', array_filter(['q' => $q, 'status' => $status, 'category_id' => $catId ?: null])) ?>
+  </div>
   <?php if (empty($rows)): ?>
-    <p class="text-muted mb-0">No records yet.</p>
+    <p class="text-muted mb-0">No records match your filters.</p>
   <?php else: ?>
   <div class="table-responsive"><table class="table table-hover align-middle">
     <thead><tr><th>Ref</th><th>Category</th><th>Trigger</th><th>Collection</th><th>Retention end</th><th>Days left</th><th>Status</th><th></th></tr></thead>
@@ -70,6 +111,7 @@ function kpi_card(string $label, $val, string $cls = ''): string {
     <?php endforeach; ?>
     </tbody>
   </table></div>
+  <div class="d-flex justify-content-end mt-2"><?= pagination_links($pg, APP_URL . '/records', array_filter(['q' => $q, 'status' => $status, 'category_id' => $catId ?: null])) ?></div>
   <?php endif; ?>
 </div></div>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>

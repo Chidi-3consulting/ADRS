@@ -14,12 +14,17 @@ if ($action !== '') { $where[] = 'al.action = :action'; $params['action'] = $act
 if ($entity !== '') { $where[] = 'al.entity_type = :entity'; $params['entity'] = $entity; }
 if ($from !== '')   { $where[] = 'al.created_at >= :from'; $params['from'] = $from . ' 00:00:00'; }
 if ($to !== '')     { $where[] = 'al.created_at <= :to'; $params['to'] = $to . ' 23:59:59'; }
-$sql = 'SELECT al.*, u.name AS performed_by_name FROM audit_log al LEFT JOIN users u ON al.performed_by = u.id';
-if ($where) { $sql .= ' WHERE ' . implode(' AND ', $where); }
-$sql .= ' ORDER BY al.id DESC LIMIT 300';
-$stmt = $pdo->prepare($sql);
+$whereSql = $where ? (' WHERE ' . implode(' AND ', $where)) : '';
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM audit_log al$whereSql");
+$countStmt->execute($params);
+$pg = paginate((int) $countStmt->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
+$stmt = $pdo->prepare(
+    "SELECT al.*, u.name AS performed_by_name FROM audit_log al LEFT JOIN users u ON al.performed_by = u.id"
+    . $whereSql . " ORDER BY al.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
+);
 $stmt->execute($params);
 $rows = $stmt->fetchAll();
+$pgParams = array_filter(['action' => $action, 'entity_type' => $entity, 'from' => $from, 'to' => $to]);
 
 $actions = $pdo->query("SELECT DISTINCT action FROM audit_log ORDER BY action")->fetchAll(PDO::FETCH_COLUMN);
 $integrity = isset($_GET['verify']) ? verify_audit_chain($pdo) : null;
@@ -56,6 +61,10 @@ require __DIR__ . '/../../includes/layout_header.php';
   <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Filter</button></div>
 </div></form>
 <div class="card shadow-sm"><div class="card-body">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small"><?= (int) $pg['total'] ?> entr<?= (int) $pg['total'] === 1 ? 'y' : 'ies' ?></span>
+    <?= pagination_links($pg, APP_URL . '/audit', $pgParams) ?>
+  </div>
   <?php if (empty($rows)): ?><p class="text-muted mb-0">No matching audit entries.</p><?php else: ?>
   <div class="table-responsive"><table class="table table-hover align-middle small">
     <thead><tr><th>When</th><th>Action</th><th>Entity</th><th>By</th><th>IP</th><th>Details</th></tr></thead>
