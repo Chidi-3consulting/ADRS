@@ -1,4 +1,11 @@
 <?php
+// Under PHP's built-in server (local dev/testing), serve existing static files directly
+// so CSS/JS/images and src/api/*.php resolve instead of being swallowed by the router.
+if (PHP_SAPI === 'cli-server') {
+    $reqFile = __DIR__ . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    if (is_file($reqFile)) { return false; }
+}
+
 require __DIR__ . '/src/includes/db.php';
 require __DIR__ . '/src/includes/helpers.php';
 require __DIR__ . '/src/includes/auth.php';

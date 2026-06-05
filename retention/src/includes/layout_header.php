@@ -20,6 +20,7 @@ function navlink(string $key, string $active, string $route, string $icon, strin
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= escape_html($page_title) ?> — <?= escape_html($__wlName) ?></title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23C85C1A'/><text x='16' y='23' font-size='18' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial,sans-serif'>A</text></svg>">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
@@ -56,7 +57,7 @@ function navlink(string $key, string $active, string $route, string $icon, strin
   </nav>
   <div class="main-content">
     <div class="topbar d-flex justify-content-between align-items-center">
-      <h1 class="h5 mb-0"><?= escape_html($page_title) ?></h1>
+      <div class="h5 mb-0 fw-semibold"><?= escape_html($page_title) ?></div>
       <a class="position-relative" href="<?= APP_URL ?>/notifications">
         <i class="bi bi-bell fs-5"></i>
         <?php if ($__unread > 0): ?><span class="badge bg-danger position-absolute top-0 start-100 translate-middle"><?= $__unread ?></span><?php endif; ?>

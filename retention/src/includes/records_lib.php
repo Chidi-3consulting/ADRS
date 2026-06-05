@@ -78,14 +78,17 @@ function create_data_record(PDO $pdo, array $in, array $actor): array {
     return ['id' => $id, 'retention_end' => $retention_end];
 }
 
-/** Fetch a non-deleted record by id (joined with its category), or null. */
-function fetch_record(PDO $pdo, int $id): ?array {
-    $stmt = $pdo->prepare(
-        "SELECT dr.*, dc.name AS category_name, dc.disposal_trigger, dc.disposal_method,
+/**
+ * Fetch a record by id (joined with its category), or null. By default excludes
+ * soft-deleted (disposed-by-delete) records; pass $include_deleted=true to retrieve them
+ * for read-only viewing (compliance teams must be able to see a record's final disposition).
+ */
+function fetch_record(PDO $pdo, int $id, bool $include_deleted = false): ?array {
+    $sql = "SELECT dr.*, dc.name AS category_name, dc.disposal_trigger, dc.disposal_method,
                 dc.requires_dual_approval, dc.retention_period_days, dc.legal_basis, dc.compliance_framework
          FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id
-         WHERE dr.id = :id AND dr.deleted_at IS NULL LIMIT 1"
-    );
+         WHERE dr.id = :id" . ($include_deleted ? '' : ' AND dr.deleted_at IS NULL') . " LIMIT 1";
+    $stmt = $pdo->prepare($sql);
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch();
     return $row === false ? null : $row;

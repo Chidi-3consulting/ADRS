@@ -749,7 +749,7 @@ CREATE TABLE IF NOT EXISTS `backup_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
-('white_label_name',     'ADRS — 3Consulting', 'White-label product name shown in the UI'),
+('white_label_name',     'ADRS - 3Consulting', 'White-label product name shown in the UI'),
 ('white_label_primary',  '#C85C1A',            'White-label primary colour (hex)'),
 ('white_label_logo_url', '',                   'White-label logo URL (optional)'),
 ('white_label_footer',   '3Consulting Limited','White-label footer text'),

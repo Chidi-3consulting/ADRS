@@ -235,6 +235,36 @@ function verify_audit_chain(PDO $pdo): array {
     return ['ok' => true, 'checked' => $checked, 'broken_at' => null];
 }
 
+/* ---------------- Pagination ---------------- */
+
+/** Compute pagination state. Returns total/per_page/pages/current/offset/has_prev/has_next. */
+function paginate(int $total, int $per_page, int $current_page): array {
+    $per_page = max(1, $per_page);
+    $pages = max(1, (int) ceil($total / $per_page));
+    $current = min(max(1, $current_page), $pages);
+    return [
+        'total' => $total, 'per_page' => $per_page, 'pages' => $pages, 'current' => $current,
+        'offset' => ($current - 1) * $per_page, 'has_prev' => $current > 1, 'has_next' => $current < $pages,
+    ];
+}
+
+/** Bootstrap pagination nav HTML. $base is the path; $params are preserved query args (page is replaced). */
+function pagination_links(array $pg, string $base, array $params = []): string {
+    if ($pg['pages'] <= 1) { return ''; }
+    $url = function (int $p) use ($base, $params) {
+        $params['page'] = $p;
+        return escape_html($base . '?' . http_build_query($params));
+    };
+    $html = '<nav><ul class="pagination pagination-sm mb-0">';
+    $html .= '<li class="page-item' . ($pg['has_prev'] ? '' : ' disabled') . '"><a class="page-link" href="' . $url(max(1, $pg['current'] - 1)) . '">Prev</a></li>';
+    $start = max(1, $pg['current'] - 2); $end = min($pg['pages'], $pg['current'] + 2);
+    for ($i = $start; $i <= $end; $i++) {
+        $html .= '<li class="page-item' . ($i === $pg['current'] ? ' active' : '') . '"><a class="page-link" href="' . $url($i) . '">' . $i . '</a></li>';
+    }
+    $html .= '<li class="page-item' . ($pg['has_next'] ? '' : ' disabled') . '"><a class="page-link" href="' . $url(min($pg['pages'], $pg['current'] + 1)) . '">Next</a></li>';
+    return $html . '</ul></nav>';
+}
+
 /* ---------------- DSAR (C1) ---------------- */
 
 /** Next DSAR reference: DSAR-{year}-{4-digit sequence within that year}. */
