@@ -139,13 +139,17 @@ The Enterprise crons self-skip when `adrs_tier` is `core`, so they're harmless t
 1. **Back up first**: run `php src/engine/backup_cron.php` (or export via phpMyAdmin).
 2. Replace the application files (keep your `config.local.php`).
 3. Apply any **additive migrations** that post-date your install, in order, from
-   `retention/sql/migrations/`. For the Phase-3 features run once:
+   `retention/sql/migrations/`. Run each once:
    ```
    mysql -u USER_adrsapp -p USER_adrs < retention/sql/migrations/2026-06-04-phase3-advanced.sql
+   mysql -u USER_adrsapp -p USER_adrs < retention/sql/migrations/2026-06-06-hardening.sql
    ```
-   (Adds `audit_log` hash columns, `users` 2FA columns, and the RoPA/DPIA/breach/consent-
-   receipt/webhook/backup tables + settings. Safe/idempotent for tables; run the ALTERs only
-   once.)
+   - `2026-06-04-phase3-advanced.sql` — `audit_log` hash columns, `users` 2FA columns, and the
+     RoPA/DPIA/breach/consent-receipt/webhook/backup tables + settings.
+   - `2026-06-06-hardening.sql` — the `login_attempts` table (brute-force throttle) and a
+     performance index on `data_records.record_reference`.
+
+   Tables use `IF NOT EXISTS`; run the `ALTER`s only once.
 4. Re-apply the `audit_log` REVOKE if you recreated the user.
 5. Smoke test: log in, open the dashboard, run `php tests/run.php` against a **test** DB.
 

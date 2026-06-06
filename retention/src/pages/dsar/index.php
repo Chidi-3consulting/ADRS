@@ -3,7 +3,8 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_role('admin', 'dpo');
 $pdo = get_db();
-$rows = $pdo->query("SELECT * FROM dsar_requests ORDER BY id DESC LIMIT 200")->fetchAll();
+$pg = paginate((int) $pdo->query("SELECT COUNT(*) FROM dsar_requests")->fetchColumn(), 25, (int) ($_GET['page'] ?? 1));
+$rows = $pdo->query("SELECT * FROM dsar_requests ORDER BY id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}")->fetchAll();
 $page_title = 'DSAR Requests';
 $active_nav = 'dsar';
 require __DIR__ . '/../../includes/layout_header.php';
@@ -31,6 +32,7 @@ require __DIR__ . '/../../includes/layout_header.php';
     <?php endforeach; ?>
     </tbody>
   </table></div>
+  <div class="d-flex justify-content-between align-items-center mt-2"><span class="text-muted small"><?= (int) $pg['total'] ?> total</span><?= pagination_links($pg, APP_URL . '/dsar') ?></div>
   <?php endif; ?>
 </div></div>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>

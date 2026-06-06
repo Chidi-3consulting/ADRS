@@ -110,3 +110,33 @@ function validate_reset_token(PDO $pdo, string $email, string $token): bool {
 function consume_reset_token(PDO $pdo, string $email): void {
     $pdo->prepare("UPDATE password_resets SET used = 1 WHERE email = :e AND used = 0")->execute(['e' => $email]);
 }
+
+/* ---------------- Login brute-force throttling ---------------- */
+
+/** Record a login attempt (success/failure). Never throws — throttling must not break login. */
+function record_login_attempt(PDO $pdo, string $email, string $ip, bool $success): void {
+    try {
+        $pdo->prepare("INSERT INTO login_attempts (email, ip_address, success) VALUES (:e,:i,:s)")
+            ->execute(['e' => $email !== '' ? $email : null, 'i' => $ip, 's' => $success ? 1 : 0]);
+    } catch (Throwable $e) { /* ignore */ }
+}
+
+/**
+ * Seconds the caller must wait before retrying, or 0 if not throttled. Locks after 5 failed
+ * attempts for the same email OR IP within a 15-minute rolling window (slows credential
+ * stuffing and password guessing without persistently locking real users out).
+ */
+function login_throttle_seconds(PDO $pdo, string $email, string $ip): int {
+    $max = 5; $windowMin = 15;
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT COUNT(*) c, MIN(created_at) first_at FROM login_attempts
+             WHERE success = 0 AND created_at >= DATE_SUB(NOW(), INTERVAL :w MINUTE)
+               AND (email = :e OR ip_address = :i)"
+        );
+        $stmt->execute(['w' => $windowMin, 'e' => $email, 'i' => $ip]);
+        $row = $stmt->fetch();
+        if ((int) $row['c'] < $max) { return 0; }
+        return max(1, (strtotime($row['first_at']) + $windowMin * 60) - time());
+    } catch (Throwable $e) { return 0; }
+}

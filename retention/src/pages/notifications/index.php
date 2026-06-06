@@ -4,7 +4,9 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_login();
 $pdo = get_db();
 $me = (int) current_user()['id'];
-$rows = $pdo->prepare("SELECT * FROM notifications WHERE recipient_id=:u ORDER BY id DESC LIMIT 100");
+$cnt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE recipient_id=:u"); $cnt->execute(['u' => $me]);
+$pg = paginate((int) $cnt->fetchColumn(), 30, (int) ($_GET['page'] ?? 1));
+$rows = $pdo->prepare("SELECT * FROM notifications WHERE recipient_id=:u ORDER BY id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}");
 $rows->execute(['u' => $me]);
 $notifications = $rows->fetchAll();
 $page_title = 'Notifications';
@@ -29,6 +31,7 @@ require __DIR__ . '/../../includes/layout_header.php';
       </li>
     <?php endforeach; ?>
   </ul>
+  <div class="d-flex justify-content-end mt-2"><?= pagination_links($pg, APP_URL . '/notifications') ?></div>
   <?php endif; ?>
 </div></div>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>
