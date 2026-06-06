@@ -755,3 +755,20 @@ INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`, `descripti
 ('white_label_footer',   '3Consulting Limited','White-label footer text'),
 ('ops_webhooks_enabled', '0',                  'Send ops event notifications to configured webhooks'),
 ('backup_retention_days','30',                 'Days to keep automated DB backups');
+
+-- ----------------------------------------------------------
+-- LOGIN ATTEMPTS (brute-force throttling)
+-- ----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `login_attempts` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `email`      VARCHAR(255) NULL,
+  `ip_address` VARCHAR(45)  NULL,
+  `success`    TINYINT(1)   NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_login_email_time` (`email`, `created_at`),
+  KEY `idx_login_ip_time`    (`ip_address`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Performance: index record_reference (used by API dedup + consent-signal matching).
+ALTER TABLE `data_records` ADD INDEX `idx_records_reference` (`record_reference`);

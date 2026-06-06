@@ -152,7 +152,7 @@ VALUES
  'anonymise','date_based',0,'quarterly','seeded'),
 
 -- 20 — SENSITIVE: dual approval
-('Health Data (Employees — Nigeria)',
+('Health Data (Employees - Nigeria)',
  'HMO records, hospital referral letters, sick leave records, health fund documentation.',
  'NDPR','legal_obligation',3650,'10 years',
  'delete','date_based',1,'annually','seeded'),

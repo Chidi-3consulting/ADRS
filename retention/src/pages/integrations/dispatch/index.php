@@ -14,8 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect(APP_URL . '/integrations/dispatch');
 }
+$pg = paginate((int) $pdo->query("SELECT COUNT(*) FROM disposal_dispatches")->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
 $rows = $pdo->query(
-    "SELECT dd.*, cs.name AS system_name FROM disposal_dispatches dd LEFT JOIN connected_systems cs ON cs.id=dd.system_id ORDER BY dd.id DESC LIMIT 200"
+    "SELECT dd.*, cs.name AS system_name FROM disposal_dispatches dd LEFT JOIN connected_systems cs ON cs.id=dd.system_id ORDER BY dd.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
 )->fetchAll();
 $page_title = 'Disposal Dispatch';
 $active_nav = 'integrations';
@@ -45,6 +46,7 @@ require __DIR__ . '/../../../includes/layout_header.php';
     <?php endforeach; ?>
     </tbody>
   </table></div>
+  <div class="d-flex justify-content-end mt-2"><?= pagination_links($pg, APP_URL . '/integrations/dispatch') ?></div>
   <?php endif; ?>
 </div></div>
 <?php require __DIR__ . '/../../../includes/layout_footer.php'; ?>

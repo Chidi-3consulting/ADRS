@@ -7,8 +7,9 @@ $pdo = get_db();
 require_enterprise($pdo);
 $dir = in_array($_GET['direction'] ?? '', ['inbound','outbound'], true) ? $_GET['direction'] : '';
 $where = $dir ? "WHERE l.direction = " . $pdo->quote($dir) : '';
+$pg = paginate((int) $pdo->query("SELECT COUNT(*) FROM integration_logs l $where")->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
 $logs = $pdo->query(
-    "SELECT l.*, cs.name AS system_name FROM integration_logs l LEFT JOIN connected_systems cs ON cs.id=l.system_id $where ORDER BY l.id DESC LIMIT 200"
+    "SELECT l.*, cs.name AS system_name FROM integration_logs l LEFT JOIN connected_systems cs ON cs.id=l.system_id $where ORDER BY l.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
 )->fetchAll();
 $page_title = 'Integration Logs';
 $active_nav = 'integrations';
@@ -40,6 +41,7 @@ require __DIR__ . '/../../../includes/layout_header.php';
     <?php endforeach; ?>
     </tbody>
   </table></div>
+  <div class="d-flex justify-content-between align-items-center mt-2"><span class="text-muted small"><?= (int) $pg['total'] ?> total</span><?= pagination_links($pg, APP_URL . '/integrations/logs', $dir ? ['direction' => $dir] : []) ?></div>
   <?php endif; ?>
 </div></div>
 <?php require __DIR__ . '/../../../includes/layout_footer.php'; ?>

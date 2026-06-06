@@ -19,8 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(APP_URL . '/integrations/queue');
 }
 
+$pg = paginate((int) $pdo->query("SELECT COUNT(*) FROM intake_queue")->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
 $rows = $pdo->query(
-    "SELECT iq.*, cs.name AS system_name FROM intake_queue iq LEFT JOIN connected_systems cs ON cs.id=iq.system_id ORDER BY iq.id DESC LIMIT 200"
+    "SELECT iq.*, cs.name AS system_name FROM intake_queue iq LEFT JOIN connected_systems cs ON cs.id=iq.system_id ORDER BY iq.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
 )->fetchAll();
 $counts = $pdo->query("SELECT status, COUNT(*) c FROM intake_queue GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
 $page_title = 'Intake Queue';
@@ -57,6 +58,7 @@ require __DIR__ . '/../../../includes/layout_header.php';
     <?php endforeach; ?>
     </tbody>
   </table></div>
+  <div class="d-flex justify-content-end mt-2"><?= pagination_links($pg, APP_URL . '/integrations/queue') ?></div>
   <?php endif; ?>
 </div></div>
 <?php require __DIR__ . '/../../../includes/layout_footer.php'; ?>

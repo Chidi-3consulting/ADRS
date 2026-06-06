@@ -9,18 +9,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = get_db();
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
+    $ip = get_client_ip();
+    $wait = ($email !== '') ? login_throttle_seconds($pdo, $email, $ip) : 0;
     if ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
+    } elseif ($wait > 0) {
+        $error = 'Too many failed attempts. Please try again in ' . (int) ceil($wait / 60) . ' minute(s).';
     } else {
         $user = verify_credentials($pdo, $email, $password);
         if (!$user) {
+            record_login_attempt($pdo, $email, $ip, false);
             $error = 'Invalid email or password.';
         } elseif ((int) ($user['twofa_enabled'] ?? 0) === 1) {
+            record_login_attempt($pdo, $email, $ip, true);
             // Credentials OK but 2FA required — hold a pending state, do NOT log in yet.
             _auth_session();
             $_SESSION['2fa_pending_user'] = (int) $user['id'];
             redirect(APP_URL . '/login/2fa');
         } else {
+            record_login_attempt($pdo, $email, $ip, true);
             establish_session($pdo, $user);
             redirect(APP_URL . '/dashboard');
         }
