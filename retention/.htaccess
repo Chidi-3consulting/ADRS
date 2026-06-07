@@ -1,6 +1,19 @@
 RewriteEngine On
 RewriteBase /retention/
 
+# --- Security response headers (defense in depth; PHP also sets these) ---
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "DENY"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set X-Permitted-Cross-Domain-Policies "none"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
+  Header unset X-Powered-By
+</IfModule>
+
 # Enterprise REST API — route /api/v1/* to the API router (own key-auth layer)
 RewriteRule ^api/v1/(.*)$ src/api/v1/router.php?_route=$1 [QSA,L]
 
@@ -9,7 +22,15 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L,QSA]
 
-# Protect config and source files
-<FilesMatch "^(config|includes|engine|sql|\.htaccess|composer\.json)$">
+# Block direct access to secrets, SQL, docs, logs, dotfiles, and version control.
+<FilesMatch "(?i)(config\.local\.php|config\.test\.php|\.htaccess|\.htaccess\.local)$">
   Require all denied
 </FilesMatch>
+<FilesMatch "(?i)\.(sql|md|log|ini|sh|bak|env|yml|yaml|lock)$">
+  Require all denied
+</FilesMatch>
+# Block whole sensitive directories (defence in depth). src/api + src/assets stay reachable.
+RedirectMatch 404 (?i)/(\.git|sql|storage|tests)(/|$)
+RedirectMatch 404 (?i)/src/(config|includes|engine)(/|$)
+# Disable directory listing.
+Options -Indexes

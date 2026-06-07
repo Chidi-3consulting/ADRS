@@ -11,8 +11,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $role = $_POST['role'] ?? 'data_owner';
-    if ($name === '' || $email === '' || strlen($password) < 10) {
-        $error = 'Name, email, and a password of at least 10 characters are required.';
+    if ($name === '' || $email === '') {
+        $error = 'Name and email are required.';
+    } elseif (($pwErr = password_policy_error($password)) !== null) {
+        $error = $pwErr;
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'A valid email address is required.';
     } elseif (!in_array($role, ['admin','dpo','data_owner'], true)) {

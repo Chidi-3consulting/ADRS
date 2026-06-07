@@ -10,6 +10,8 @@ require __DIR__ . '/src/includes/db.php';
 require __DIR__ . '/src/includes/helpers.php';
 require __DIR__ . '/src/includes/auth.php';
 
+send_security_headers();
+
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base = dirname($_SERVER['SCRIPT_NAME']);
 $trimmed = '/' . trim(substr($path, strlen($base)), '/');

@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $p1 = $_POST['password'] ?? '';
         $p2 = $_POST['password_confirm'] ?? '';
-        if (strlen($p1) < 10) { $error = 'Password must be at least 10 characters.'; }
+        if (($pwErr = password_policy_error($p1)) !== null) { $error = $pwErr; }
         elseif ($p1 !== $p2) { $error = 'Passwords do not match.'; }
         else {
             $pdo->prepare("UPDATE users SET password_hash=:p WHERE email=:e")
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <form method="post"><?= csrf_field() ?>
         <input type="hidden" name="email" value="<?= escape_html($email) ?>">
         <input type="hidden" name="token" value="<?= escape_html($token) ?>">
-        <div class="mb-3"><label class="form-label">New password (min 10)</label><input type="password" name="password" class="form-control" required minlength="10"></div>
+        <div class="mb-3"><label class="form-label">New password</label><input type="password" name="password" class="form-control" required minlength="10"><div class="form-text">At least 10 characters, including letters and numbers.</div></div>
         <div class="mb-3"><label class="form-label">Confirm password</label><input type="password" name="password_confirm" class="form-control" required></div>
         <button class="btn btn-primary w-100">Set password</button>
       </form>

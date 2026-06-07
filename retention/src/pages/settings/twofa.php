@@ -71,7 +71,7 @@ require __DIR__ . '/../../includes/layout_header.php';
       <div class="mb-3" style="max-width:240px"><label class="form-label">Authentication code</label><input name="code" class="form-control" placeholder="123456" autocomplete="one-time-code" required></div>
       <button class="btn btn-primary">Enable 2FA</button>
     </form>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js" integrity="sha384-HGmnkDZJy7mRkoARekrrj0VjEFSh9a0Z8qxGri/kTTAJkgR8hqD1lHsYSh3JdzRi" crossorigin="anonymous"></script>
     <script>QRCode && QRCode.toCanvas(document.getElementById('qr'), <?= json_encode($uri) ?>, {width:200});</script>
   <?php endif; ?>
 </div></div>

@@ -33,6 +33,10 @@ function dash_card(string $label, int $val, string $cls, string $href = ''): str
 <h1 class="h4 mb-1">Compliance Dashboard</h1>
 <p class="text-muted">Welcome, <?= escape_html($__user['name']) ?> · <?= get_role_badge($__user['role']) ?></p>
 
+<?php if (has_role('admin') && !smtp_is_configured($pdo)): ?>
+  <div class="alert alert-warning">⚠️ <strong>Email is not configured.</strong> Retention alerts, escalations, and DSAR notifications won't be delivered until SMTP is set in <a href="<?= APP_URL ?>/settings" class="alert-link">Settings</a>.</div>
+<?php endif; ?>
+
 <div class="row">
   <?= dash_card('Active records', (int)$k['active'], 'text-dark', APP_URL.'/records') ?>
   <?= dash_card('Due for review', (int)$k['due_review'], 'text-warning', APP_URL.'/records') ?>
