@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("UPDATE users SET name=:n, role=:r, is_active=:a WHERE id=:id")
             ->execute(['n' => $name, 'r' => $role, 'a' => $active, 'id' => $id]);
         if ($newPass !== '') {
-            if (strlen($newPass) < 10) { $error = 'New password must be at least 10 characters.'; }
+            if (($pwErr = password_policy_error($newPass)) !== null) { $error = $pwErr; }
             else { $pdo->prepare("UPDATE users SET password_hash=:p WHERE id=:id")->execute(['p' => password_hash($newPass, PASSWORD_BCRYPT), 'id' => $id]); }
         }
         if (!$error) {

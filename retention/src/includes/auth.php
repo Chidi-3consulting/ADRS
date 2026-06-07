@@ -16,8 +16,20 @@ function has_role(string ...$roles): bool {
     return isset($u['role']) && in_array($u['role'], $roles, true);
 }
 
+const SESSION_IDLE_TIMEOUT = 1800;       // auto-logout after 30 min of inactivity
+const SESSION_ABSOLUTE_TIMEOUT = 28800;  // hard cap of 8 h per session
+
 function require_login(): void {
     if (!is_logged_in()) { redirect(APP_URL . '/login'); }
+    $now = time();
+    $idle = $now - ($_SESSION['last_activity'] ?? $now);
+    $age  = $now - ($_SESSION['login_time'] ?? $now);
+    if ($idle > SESSION_IDLE_TIMEOUT || $age > SESSION_ABSOLUTE_TIMEOUT) {
+        session_unset();
+        session_destroy();
+        redirect(APP_URL . '/login?expired=1');
+    }
+    $_SESSION['last_activity'] = $now;
 }
 
 function require_role(string ...$roles): void {
@@ -47,6 +59,8 @@ function establish_session(PDO $pdo, array $user): void {
     if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_ACTIVE) { session_regenerate_id(true); }
     unset($user['password_hash'], $user['twofa_secret'], $user['twofa_recovery']);
     $_SESSION['user'] = $user;
+    $_SESSION['login_time'] = time();
+    $_SESSION['last_activity'] = time();
     $pdo->prepare("UPDATE users SET last_login_at = NOW() WHERE id = :id")->execute(['id' => $user['id']]);
     log_audit($pdo, 'user_login', 'user', (int) $user['id'], (int) $user['id'], null, get_client_ip());
 }

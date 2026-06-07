@@ -223,6 +223,18 @@ function run_retention_engine(PDO $pdo): array {
     ];
 }
 
+/** Daily housekeeping: prune rows that would otherwise grow unbounded. Returns counts. */
+function run_housekeeping(PDO $pdo): array {
+    $del = function (string $sql) use ($pdo): int {
+        try { $s = $pdo->prepare($sql); $s->execute(); return $s->rowCount(); } catch (Throwable $e) { return 0; }
+    };
+    return [
+        'login_attempts' => $del("DELETE FROM login_attempts WHERE created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)"),
+        'password_resets' => $del("DELETE FROM password_resets WHERE expires_at < DATE_SUB(NOW(), INTERVAL 7 DAY)"),
+        'read_notifications' => $del("DELETE FROM notifications WHERE read_at IS NOT NULL AND created_at < DATE_SUB(NOW(), INTERVAL 180 DAY)"),
+    ];
+}
+
 /**
  * Quarterly review task: summarise compliance posture and notify Admins + DPOs.
  * Returns the summary array. Records a schedule_reviews-style audit entry.

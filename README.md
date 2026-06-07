@@ -54,7 +54,7 @@ retention/
 
 ```bash
 cd retention
-php tests/run.php          # 227 assertions across 22 test files (needs a MySQL test DB)
+php tests/run.php          # 254 assertions (needs a MySQL test DB)
 ```
 
 Tests run against a disposable `adrs_test` database (auto-imported from `schema.sql` each run).
@@ -69,6 +69,14 @@ the `audit_log` append-only REVOKE, Enterprise activation, security hardening, a
 (including the additive `sql/migrations/` files).
 
 Default seeded login (**change immediately**): `admin@3consult-ng.com` / `password`.
+
+## Security
+
+See **[retention/SECURITY.md](retention/SECURITY.md)** — the controls the software implements
+(OWASP Top 10, RBAC, 2FA, login throttle, CSP/headers, SRI, hash-chained audit, session
+timeouts), what the operating organisation must run (TLS, patching, SIEM, IR, pen-test, backups
+off-site, certifications), and what is genuinely N/A (no AI/LLM, no card data). Report issues to
+`security@3consult-ng.com` (`/.well-known/security.txt`).
 
 ## Design docs
 

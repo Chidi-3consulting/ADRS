@@ -47,7 +47,7 @@ function rcard($label, $val, $cls = '') { echo '<div class="col-md-3 col-6"><div
   <div class="col-lg-7"><div class="card shadow-sm"><div class="card-body"><h5 class="card-title">Disposals — last 12 months</h5><canvas id="disposalsChart" height="120"></canvas></div></div></div>
   <div class="col-lg-5"><div class="card shadow-sm"><div class="card-body"><h5 class="card-title">Records by category</h5><canvas id="catChart" height="160"></canvas></div></div></div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
 <script>
 const dm = <?= json_encode($byMonth) ?>, bc = <?= json_encode($byCat) ?>;
 new Chart(document.getElementById('disposalsChart'), {type:'line', data:{labels:Object.keys(dm), datasets:[{label:'Disposals', data:Object.values(dm), borderColor:'#C85C1A', backgroundColor:'rgba(200,92,26,.15)', fill:true, tension:.3}]}, options:{plugins:{legend:{display:false}}}});

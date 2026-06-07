@@ -47,6 +47,8 @@ try {
             $log("Enterprise: intake-created {$e['intake_created']} | consent-retried {$e['consent_retried']} | logs-purged {$e['logs_purged']}");
         }
 
+        $hk = run_housekeeping($pdo);
+        $log("Housekeeping: pruned login_attempts {$hk['login_attempts']}, password_resets {$hk['password_resets']}, old read notifications {$hk['read_notifications']}");
         $log('=== Engine COMPLETE in ' . round(microtime(true) - $start, 2) . 's ===');
     }
     exit(0);

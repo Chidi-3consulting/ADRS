@@ -52,6 +52,12 @@ function get_setting(PDO $pdo, string $key, $default = null) {
 /** Clear the in-request settings cache (after updating settings, or between test scenarios). */
 function clear_setting_cache(): void { $GLOBALS['__setting_cache'] = []; }
 
+/** True only if SMTP looks genuinely configured (non-empty host that isn't the seed placeholder). */
+function smtp_is_configured(PDO $pdo): bool {
+    $host = trim((string) get_setting($pdo, 'smtp_host', ''));
+    return $host !== '' && stripos($host, 'yourdomain') === false;
+}
+
 /** Update (upsert) a system setting and clear the cache. */
 function set_setting(PDO $pdo, string $key, string $value): void {
     $pdo->prepare(
@@ -77,6 +83,41 @@ function escape_html(string $value): string {
 function redirect(string $url): never {
     header('Location: ' . $url);
     exit;
+}
+
+/**
+ * Emit security response headers (call before any output). Defends against clickjacking,
+ * MIME sniffing, referrer leakage, and constrains resource origins via CSP. The single CDN
+ * (jsDelivr) is allow-listed; 'unsafe-inline' is permitted because the UI uses inline
+ * styles/handlers (a future nonce-based refactor could remove it).
+ */
+function send_security_headers(): void {
+    if (headers_sent()) { return; }
+    header('X-Frame-Options: DENY');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()');
+    header('Cross-Origin-Opener-Policy: same-origin');
+    header('X-Permitted-Cross-Domain-Policies: none');
+    if (defined('APP_ENV') && APP_ENV === 'production') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+    header(
+        "Content-Security-Policy: default-src 'self'; "
+        . "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        . "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        . "img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; "
+        . "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    );
+}
+
+/** Returns an error message if a password fails the policy (min 10 chars, letters + numbers), else null. */
+function password_policy_error(string $password): ?string {
+    if (strlen($password) < 10) { return 'Password must be at least 10 characters long.'; }
+    if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/\d/', $password)) {
+        return 'Password must include both letters and numbers.';
+    }
+    return null;
 }
 
 /** Best-effort real client IP. */
