@@ -32,7 +32,7 @@ require __DIR__ . '/../../../includes/layout_header.php';
   <h1 class="h4 mb-0">Intake Queue</h1>
   <div class="d-flex gap-2">
     <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="process"><button class="btn btn-primary btn-sm">Process now</button></form>
-    <form method="post" onsubmit="return confirm('Re-queue all failed items?')"><?= csrf_field() ?><input type="hidden" name="action" value="retry_failed"><button class="btn btn-outline-warning btn-sm">Retry failed</button></form>
+    <form method="post" data-confirm="Re-queue all failed items?"><?= csrf_field() ?><input type="hidden" name="action" value="retry_failed"><button class="btn btn-outline-warning btn-sm">Retry failed</button></form>
   </div>
 </div>
 <p class="text-muted">

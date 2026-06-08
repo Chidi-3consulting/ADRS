@@ -102,13 +102,23 @@ function send_security_headers(): void {
     if (defined('APP_ENV') && APP_ENV === 'production') {
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }
+    $nonce = csp_nonce();
+    // script-src is nonce-based (no 'unsafe-inline'): inline scripts must carry the nonce,
+    // and there are NO inline on* handlers (moved to app.js). style-src keeps 'unsafe-inline'
+    // because inline style attributes are pervasive and low-risk.
     header(
         "Content-Security-Policy: default-src 'self'; "
-        . "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        . "script-src 'self' 'nonce-$nonce' https://cdn.jsdelivr.net; "
         . "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
         . "img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; "
         . "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     );
+}
+
+/** Per-request CSP nonce for inline <script> tags. Generated once per request. */
+function csp_nonce(): string {
+    if (empty($GLOBALS['__csp_nonce'])) { $GLOBALS['__csp_nonce'] = base64_encode(random_bytes(16)); }
+    return $GLOBALS['__csp_nonce'];
 }
 
 /** Returns an error message if a password fails the policy (min 10 chars, letters + numbers), else null. */

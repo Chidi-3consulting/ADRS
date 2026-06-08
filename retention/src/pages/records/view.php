@@ -89,7 +89,7 @@ require __DIR__ . '/../../includes/layout_header.php';
         <div class="alert alert-warning py-2 small">⏳ Awaiting second approval (requested by user #<?= (int)$record['disposal_requested_by'] ?>). A <strong>different</strong> authorised user must confirm.</div>
         <form method="post" action="<?= APP_URL ?>/records/approve" class="d-inline">
           <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>"><input type="hidden" name="decision" value="approve">
-          <button class="btn btn-danger btn-sm" onclick="return confirm('Confirm disposal of this record?')">Approve disposal</button>
+          <button class="btn btn-danger btn-sm" data-confirm="Confirm disposal of this record?">Approve disposal</button>
         </form>
         <form method="post" action="<?= APP_URL ?>/records/approve" class="d-inline">
           <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>"><input type="hidden" name="decision" value="reject">
@@ -98,7 +98,7 @@ require __DIR__ . '/../../includes/layout_header.php';
       <?php elseif ((int)$record['legal_hold'] !== 1): ?>
         <form method="post" action="<?= APP_URL ?>/records/dispose" class="mb-2">
           <?= csrf_field() ?><input type="hidden" name="record_id" value="<?= $id ?>">
-          <button class="btn btn-outline-danger btn-sm" onclick="return confirm('<?= (int)$record['requires_dual_approval'] ? 'This sensitive record needs two-person approval. Submit a disposal request?' : 'Dispose this record now?' ?>')">
+          <button class="btn btn-outline-danger btn-sm" data-confirm="<?= (int)$record['requires_dual_approval'] ? 'This sensitive record needs two-person approval. Submit a disposal request?' : 'Dispose this record now?' ?>">
             <?= (int)$record['requires_dual_approval'] ? 'Request disposal (dual approval)' : 'Dispose record' ?>
           </button>
         </form>

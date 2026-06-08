@@ -30,6 +30,24 @@ function require_login(): void {
         redirect(APP_URL . '/login?expired=1');
     }
     $_SESSION['last_activity'] = $now;
+    enforce_2fa_policy();
+}
+
+/**
+ * If the deployment requires 2FA for the current user's role (setting `require_2fa_roles`)
+ * and they have not enabled it, force them to the 2FA setup page (exempting that page and
+ * logout to avoid a redirect loop). No-op when the setting is empty (the default).
+ */
+function enforce_2fa_policy(): void {
+    if (PHP_SAPI === 'cli') { return; }
+    $u = $_SESSION['user'] ?? [];
+    if ((int) ($u['twofa_enabled'] ?? 0) === 1) { return; }
+    $roles = array_filter(array_map('trim', explode(',', (string) get_setting(get_db(), 'require_2fa_roles', ''))));
+    if (!$roles || !in_array($u['role'] ?? '', $roles, true)) { return; }
+    $path = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '');
+    if (str_contains($path, '/settings/2fa') || str_contains($path, '/logout')) { return; }
+    if (function_exists('flash')) { flash('warning', 'Your role requires two-factor authentication. Please enable it to continue.'); }
+    redirect(APP_URL . '/settings/2fa');
 }
 
 function require_role(string ...$roles): void {

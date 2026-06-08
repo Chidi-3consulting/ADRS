@@ -56,7 +56,7 @@ require __DIR__ . '/../../includes/layout_header.php';
 
   <?php elseif ($enabled): ?>
     <p>✅ Two-factor authentication is <strong>enabled</strong> on your account.</p>
-    <form method="post" onsubmit="return confirm('Disable 2FA? Your account will be protected by password only.')">
+    <form method="post" data-confirm="Disable 2FA? Your account will be protected by password only.">
       <?= csrf_field() ?><input type="hidden" name="action" value="disable">
       <div class="mb-3" style="max-width:320px"><label class="form-label">Confirm your password to disable</label><input type="password" name="password" class="form-control" required></div>
       <button class="btn btn-outline-danger">Disable 2FA</button>
@@ -72,7 +72,7 @@ require __DIR__ . '/../../includes/layout_header.php';
       <button class="btn btn-primary">Enable 2FA</button>
     </form>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js" integrity="sha384-HGmnkDZJy7mRkoARekrrj0VjEFSh9a0Z8qxGri/kTTAJkgR8hqD1lHsYSh3JdzRi" crossorigin="anonymous"></script>
-    <script>QRCode && QRCode.toCanvas(document.getElementById('qr'), <?= json_encode($uri) ?>, {width:200});</script>
+    <script nonce="<?= escape_html(csp_nonce()) ?>">QRCode && QRCode.toCanvas(document.getElementById('qr'), <?= json_encode($uri) ?>, {width:200});</script>
   <?php endif; ?>
 </div></div>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>

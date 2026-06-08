@@ -31,7 +31,7 @@ require __DIR__ . '/../../../includes/layout_header.php';
         <td class="small"><?= escape_html(format_datetime($k['last_used_at'])) ?></td>
         <td><?= $active ? '<span class="badge bg-success">active</span>' : '<span class="badge bg-secondary">revoked</span>' ?></td>
         <td><?php if ($active): ?>
-          <form method="post" action="<?= APP_URL ?>/integrations/keys/revoke" onsubmit="return confirm('Revoke this key? External systems using it will stop working.')">
+          <form method="post" action="<?= APP_URL ?>/integrations/keys/revoke" data-confirm="Revoke this key? External systems using it will stop working.">
             <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$k['id'] ?>">
             <button class="btn btn-sm btn-outline-danger">Revoke</button>
           </form>

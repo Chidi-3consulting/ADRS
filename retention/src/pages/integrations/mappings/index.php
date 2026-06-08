@@ -32,7 +32,7 @@ require __DIR__ . '/../../../includes/layout_header.php';
         <td><code><?= escape_html($m['adrs_field']) ?></code></td>
         <td><?= escape_html($m['category_name']) ?></td>
         <td><?= (int)$m['is_required'] ? '✅' : '—' ?></td>
-        <td><form method="post" action="<?= APP_URL ?>/integrations/mappings/delete" onsubmit="return confirm('Delete mapping?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$m['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
+        <td><form method="post" action="<?= APP_URL ?>/integrations/mappings/delete" data-confirm="Delete mapping?"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$m['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

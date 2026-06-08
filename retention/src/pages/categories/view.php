@@ -51,7 +51,7 @@ require __DIR__ . '/../../includes/layout_header.php';
   </dl>
 </div></div>
 <?php if (has_role('admin')): ?>
-<form method="post" action="<?= APP_URL ?>/categories/delete" class="mt-3" onsubmit="return confirm('Soft-delete this category? Blocked if active records exist.');">
+<form method="post" action="<?= APP_URL ?>/categories/delete" class="mt-3" data-confirm="Soft-delete this category? Blocked if active records exist.">
   <?= csrf_field() ?>
   <input type="hidden" name="id" value="<?= $id ?>">
   <button class="btn btn-outline-danger btn-sm">Delete category</button>

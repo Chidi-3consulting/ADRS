@@ -18,3 +18,7 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
 -- Performance index for high-volume reference lookups (API dedup + consent matching).
 -- Safe to skip if it already exists.
 ALTER TABLE `data_records` ADD INDEX `idx_records_reference` (`record_reference`);
+
+-- Optional 2FA enforcement by role (empty = optional for everyone).
+INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
+('require_2fa_roles', '', 'Comma-separated roles that MUST enable 2FA (e.g. admin,dpo). Empty = optional for all');

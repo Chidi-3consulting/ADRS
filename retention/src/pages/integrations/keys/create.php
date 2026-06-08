@@ -31,7 +31,7 @@ require __DIR__ . '/../../../includes/layout_header.php';
   <?php if ($rawKey): ?>
     <div class="alert alert-success">
       <strong>Key created.</strong> Copy it now — it will <strong>never be shown again</strong>:
-      <div class="input-group mt-2"><input class="form-control font-monospace" value="<?= escape_html($rawKey) ?>" readonly onclick="this.select()"></div>
+      <div class="input-group mt-2"><input class="form-control font-monospace" value="<?= escape_html($rawKey) ?>" readonly data-select></div>
     </div>
     <a href="<?= APP_URL ?>/integrations/keys" class="btn btn-primary">Done</a>
   <?php else: ?>

@@ -754,7 +754,8 @@ INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`, `descripti
 ('white_label_logo_url', '',                   'White-label logo URL (optional)'),
 ('white_label_footer',   '3Consulting Limited','White-label footer text'),
 ('ops_webhooks_enabled', '0',                  'Send ops event notifications to configured webhooks'),
-('backup_retention_days','30',                 'Days to keep automated DB backups');
+('backup_retention_days','30',                 'Days to keep automated DB backups'),
+('require_2fa_roles',    '',                    'Comma-separated roles that MUST enable 2FA (e.g. admin,dpo). Empty = optional for all');
 
 -- ----------------------------------------------------------
 -- LOGIN ATTEMPTS (brute-force throttling)

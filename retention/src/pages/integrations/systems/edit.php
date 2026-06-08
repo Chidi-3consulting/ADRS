@@ -47,7 +47,7 @@ $cur = fn($k) => escape_html($_POST[$k] ?? (string)($system[$k] ?? ''));
     <a href="<?= APP_URL ?>/integrations/systems" class="btn btn-secondary ms-2">Cancel</a>
   </form>
   <hr>
-  <form method="post" onsubmit="return confirm('Toggle active status?')">
+  <form method="post" data-confirm="Toggle active status?">
     <?= csrf_field() ?><input type="hidden" name="action" value="toggle">
     <button class="btn btn-sm btn-outline-<?= (int)$system['is_active'] ? 'warning">Deactivate' : 'success">Activate' ?> system</button>
   </form>

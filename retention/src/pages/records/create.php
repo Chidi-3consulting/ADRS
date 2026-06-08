@@ -73,7 +73,7 @@ require __DIR__ . '/../../includes/layout_header.php';
   </form>
   <?php endif; ?>
 </div></div>
-<script>
+<script nonce="<?= csp_nonce() ?>">
 const APP_URL = '<?= APP_URL ?>';
 async function updatePreview(){
   const sel = document.getElementById('category_id');

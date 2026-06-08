@@ -52,7 +52,7 @@ require __DIR__ . '/../../includes/layout_header.php';
         <td class="small"><?= escape_html(mb_strimwidth($w['url'], 0, 50, '…')) ?></td>
         <td><code><?= escape_html($w['event_types']) ?></code></td>
         <td class="small"><?= escape_html(format_datetime($w['last_fired_at'])) ?></td>
-        <td><form method="post" onsubmit="return confirm('Remove webhook?')"><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int)$w['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
+        <td><form method="post" data-confirm="Remove webhook?"><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int)$w['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

@@ -34,7 +34,7 @@ require __DIR__ . '/../../../includes/layout_header.php';
         <td class="small"><?= $r['condition_field'] ? escape_html($r['condition_field'].' = '.$r['condition_value']) : '<span class="text-muted">any</span>' ?></td>
         <td><?= escape_html($r['category_name']) ?></td>
         <td><?= (int)$r['is_active'] ? '✅' : '—' ?></td>
-        <td><form method="post" action="<?= APP_URL ?>/integrations/rules/delete" onsubmit="return confirm('Delete this rule?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
+        <td><form method="post" action="<?= APP_URL ?>/integrations/rules/delete" data-confirm="Delete this rule?"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
       </tr>
     <?php endforeach; ?>
     </tbody>

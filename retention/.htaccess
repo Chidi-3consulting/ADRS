@@ -1,6 +1,12 @@
 RewriteEngine On
 RewriteBase /retention/
 
+# --- Force HTTPS (skip localhost for local dev) ---
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1) [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
 # --- Security response headers (defense in depth; PHP also sets these) ---
 <IfModule mod_headers.c>
   Header always set X-Frame-Options "DENY"

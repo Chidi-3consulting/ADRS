@@ -65,7 +65,7 @@ $cur = fn($k) => escape_html($_POST[$k] ?? (string) $category[$k]);
         </select></div>
     </div>
     <div class="mb-3"><label class="form-label">Disposal trigger *</label>
-      <select name="disposal_trigger" id="trigger" class="form-select" onchange="toggleRetention()">
+      <select name="disposal_trigger" id="trigger" class="form-select">
         <option value="date_based" <?= ($_POST['disposal_trigger'] ?? $category['disposal_trigger'])==='date_based'?'selected':'' ?>>📅 Date-based</option>
         <option value="consent_withdrawal" <?= ($_POST['disposal_trigger'] ?? $category['disposal_trigger'])==='consent_withdrawal'?'selected':'' ?>>👤 Consent withdrawal</option>
       </select></div>
@@ -95,8 +95,9 @@ $cur = fn($k) => escape_html($_POST[$k] ?? (string) $category[$k]);
     <a href="<?= APP_URL ?>/categories" class="btn btn-secondary ms-2">Cancel</a>
   </form>
 </div></div>
-<script>
+<script nonce="<?= csp_nonce() ?>">
 function toggleRetention(){ document.getElementById('retentionBlock').style.display = (document.getElementById('trigger').value==='consent_withdrawal')?'none':'flex'; }
+document.getElementById('trigger').addEventListener('change', toggleRetention);
 toggleRetention();
 </script>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>

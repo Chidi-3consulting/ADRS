@@ -16,6 +16,11 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base = dirname($_SERVER['SCRIPT_NAME']);
 $trimmed = '/' . trim(substr($path, strlen($base)), '/');
 
+if ($trimmed === '/healthz' || $trimmed === '/health') {
+    require __DIR__ . '/src/pages/healthz.php';
+    exit;
+}
+
 if ($trimmed === '/login' || $trimmed === '/login.php') {
     require __DIR__ . '/src/pages/login.php';
     exit;

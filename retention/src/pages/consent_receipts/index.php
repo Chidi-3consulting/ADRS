@@ -36,7 +36,7 @@ require __DIR__ . '/../../includes/layout_header.php';
         <td class="small"><?= escape_html($r['channel'] ?? '—') ?></td>
         <td class="small"><?= escape_html(format_datetime($r['given_at'])) ?></td>
         <td><?= $r['withdrawn_at'] ? '<span class="badge bg-secondary">withdrawn</span>' : '<span class="badge bg-success">active</span>' ?></td>
-        <td><?php if (!$r['withdrawn_at']): ?><form method="post" onsubmit="return confirm('Mark consent withdrawn?')"><?= csrf_field() ?><input type="hidden" name="action" value="withdraw"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><button class="btn btn-sm btn-outline-warning">Withdraw</button></form><?php endif; ?></td>
+        <td><?php if (!$r['withdrawn_at']): ?><form method="post" data-confirm="Mark consent withdrawn?"><?= csrf_field() ?><input type="hidden" name="action" value="withdraw"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>"><button class="btn btn-sm btn-outline-warning">Withdraw</button></form><?php endif; ?></td>
       </tr>
     <?php endforeach; ?>
     </tbody>
