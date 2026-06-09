@@ -9,11 +9,23 @@ SET NAMES utf8mb4;
 
 -- Default users (password: 'password' — CHANGE ON FIRST LOGIN)
 -- BCrypt hash of 'password'
-INSERT INTO `users` (`name`, `email`, `password_hash`, `role`) VALUES
-('System Administrator', 'admin@3consult-ng.com',
- '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin'),
-('Data Protection Officer', 'dpo@3consult-ng.com',
- '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'dpo');
+INSERT IGNORE INTO `organizations` (`id`, `name`, `slug`, `tier`, `status`) VALUES
+(1, '3Consulting Demo', '3consulting-demo', 'core', 'active');
+
+INSERT INTO `users` (`organization_id`, `name`, `email`, `password_hash`, `role`, `must_change_password`, `is_platform_admin`, `email_verified_at`) VALUES
+(1, 'System Administrator', 'admin@3consult-ng.com',
+ '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 1, 1, NOW()),
+(1, 'Data Protection Officer', 'dpo@3consult-ng.com',
+ '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'dpo', 1, 0, NOW());
+
+INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
+('deployment_mode', 'single', 'Dev/demo install uses single-tenant mode'),
+('setup_complete', '1', 'Set to 1 after initial setup wizard completes')
+ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
+
+INSERT IGNORE INTO `organization_settings` (`organization_id`, `setting_key`, `setting_value`, `description`)
+SELECT 1, `setting_key`, `setting_value`, `description` FROM `system_settings`
+WHERE `setting_key` NOT IN ('deployment_mode', 'setup_complete', 'allow_public_signup');
 
 -- ============================================================
 -- Column order for INSERT:

@@ -47,13 +47,15 @@ function create_data_record(PDO $pdo, array $in, array $actor): array {
     $retention_end    = compute_retention_end($category, $collection_date);
     $created_by_owner = $is_owner ? 1 : 0;
 
+    $orgId = function_exists('require_org_id') ? require_org_id() : (int) ($category['organization_id'] ?? 1);
     $stmt = $pdo->prepare(
         "INSERT INTO data_records
-           (category_id, record_reference, data_subject_type, collection_date, retention_end_date,
+           (organization_id, category_id, record_reference, data_subject_type, collection_date, retention_end_date,
             status, created_by_owner, created_by, notes)
-         VALUES (:cid,:ref,:subj,:cdate,:rend,'active',:cbo,:cby,:notes)"
+         VALUES (:oid,:cid,:ref,:subj,:cdate,:rend,'active',:cbo,:cby,:notes)"
     );
     $stmt->execute([
+        'oid'   => $orgId,
         'cid'   => $category_id,
         'ref'   => $reference,
         'subj'  => ($in['data_subject_type'] ?? '') !== '' ? $in['data_subject_type'] : null,
@@ -84,12 +86,16 @@ function create_data_record(PDO $pdo, array $in, array $actor): array {
  * for read-only viewing (compliance teams must be able to see a record's final disposition).
  */
 function fetch_record(PDO $pdo, int $id, bool $include_deleted = false): ?array {
+    $orgId = function_exists('current_org_id') ? current_org_id() : null;
     $sql = "SELECT dr.*, dc.name AS category_name, dc.disposal_trigger, dc.disposal_method,
                 dc.requires_dual_approval, dc.retention_period_days, dc.legal_basis, dc.compliance_framework
          FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id
-         WHERE dr.id = :id" . ($include_deleted ? '' : ' AND dr.deleted_at IS NULL') . " LIMIT 1";
+         WHERE dr.id = :id" . ($orgId !== null ? ' AND dr.organization_id = :org' : '')
+         . ($include_deleted ? '' : ' AND dr.deleted_at IS NULL') . " LIMIT 1";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute(['id' => $id]);
+    $params = ['id' => $id];
+    if ($orgId !== null) { $params['org'] = $orgId; }
+    $stmt->execute($params);
     $row = $stmt->fetch();
     return $row === false ? null : $row;
 }

@@ -8,6 +8,7 @@ if (PHP_SAPI === 'cli-server') {
 
 require __DIR__ . '/src/includes/db.php';
 require __DIR__ . '/src/includes/helpers.php';
+require __DIR__ . '/src/includes/tenant_lib.php';
 require __DIR__ . '/src/includes/auth.php';
 
 send_security_headers();
@@ -21,8 +22,79 @@ if ($trimmed === '/healthz' || $trimmed === '/health') {
     exit;
 }
 
+if ($trimmed === '/setup' || $trimmed === '/setup.php') {
+    require __DIR__ . '/src/pages/setup.php';
+    exit;
+}
+
+/** Single-tenant installs only: block until setup wizard completes. SaaS uses /register instead. */
+$preSetupRoutes = ['/setup', '/setup.php', '/healthz', '/health', '/', '/index.php', '/register', '/register.php', '/login', '/login.php', '/forgot_password', '/forgot_password.php', '/reset_password', '/reset_password.php'];
+$pdoBoot = get_db();
+if (!is_saas_deployment($pdoBoot) && !in_array($trimmed, $preSetupRoutes, true) && !setup_is_complete($pdoBoot)) {
+    redirect(APP_URL . '/setup');
+}
+
+if ($trimmed === '/' || $trimmed === '/index.php') {
+    if (is_logged_in()) {
+        require_login();
+        require __DIR__ . '/src/pages/dashboard.php';
+    } else {
+        require __DIR__ . '/src/pages/landing.php';
+    }
+    exit;
+}
+
 if ($trimmed === '/login' || $trimmed === '/login.php') {
     require __DIR__ . '/src/pages/login.php';
+    exit;
+}
+
+if ($trimmed === '/register' || $trimmed === '/register.php') {
+    require __DIR__ . '/src/pages/register.php';
+    exit;
+}
+
+if ($trimmed === '/legal' || $trimmed === '/legal.php') {
+    require __DIR__ . '/src/pages/legal.php';
+    exit;
+}
+
+if ($trimmed === '/verify_email' || $trimmed === '/verify_email.php') {
+    require __DIR__ . '/src/pages/verify_email.php';
+    exit;
+}
+
+if ($trimmed === '/billing' || $trimmed === '/billing.php') {
+    require_login();
+    require __DIR__ . '/src/pages/billing.php';
+    exit;
+}
+
+if ($trimmed === '/billing/callback') {
+    require_login();
+    require __DIR__ . '/src/pages/billing_callback.php';
+    exit;
+}
+
+if ($trimmed === '/webhooks/paystack') {
+    require __DIR__ . '/src/pages/webhooks/paystack.php';
+    exit;
+}
+
+if ($trimmed === '/platform' || $trimmed === '/platform/index.php') {
+    require_login();
+    require __DIR__ . '/src/pages/platform/index.php';
+    exit;
+}
+
+if ($trimmed === '/platform/organizations') {
+    require_login();
+    require __DIR__ . '/src/pages/platform/organizations.php';
+    exit;
+}
+
+if ($trimmed === '/signup' || $trimmed === '/signup.php') {
+    require __DIR__ . '/src/pages/signup.php';
     exit;
 }
 
@@ -273,7 +345,13 @@ if (isset($complianceRoutes[$trimmed])) {
     exit;
 }
 
-if ($trimmed === '/dashboard' || $trimmed === '/dashboard.php' || $trimmed === '/') {
+if ($trimmed === '/profile' || $trimmed === '/profile.php') {
+    require_login();
+    require __DIR__ . '/src/pages/profile.php';
+    exit;
+}
+
+if ($trimmed === '/dashboard' || $trimmed === '/dashboard.php') {
     require_login();
     require __DIR__ . '/src/pages/dashboard.php';
     exit;

@@ -31,6 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($ok) {
         unset($_SESSION['2fa_pending_user']);
         establish_session($pdo, $user);
+        if ((int) ($user['must_change_password'] ?? 0) === 1) {
+            redirect(APP_URL . '/profile?required=1');
+        }
         redirect(APP_URL . '/dashboard');
     }
     $error = 'Invalid authentication code.';

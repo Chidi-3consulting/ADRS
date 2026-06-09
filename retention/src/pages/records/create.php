@@ -26,10 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$catSql = "SELECT id, name, compliance_framework FROM data_categories WHERE deleted_at IS NULL AND is_active = 1";
+$orgId = require_org_id();
+$catSql = "SELECT id, name, compliance_framework FROM data_categories WHERE organization_id = :org AND deleted_at IS NULL AND is_active = 1";
 if ($isOwner) { $catSql .= ' AND owner_id = ' . (int) $me['id']; }
 $catSql .= ' ORDER BY name';
-$categories = $pdo->query($catSql)->fetchAll();
+$catStmt = $pdo->prepare($catSql);
+$catStmt->execute(['org' => $orgId]);
+$categories = $catStmt->fetchAll();
 
 $page_title = 'Register Record';
 $active_nav = 'records';

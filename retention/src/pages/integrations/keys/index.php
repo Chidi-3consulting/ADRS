@@ -5,9 +5,14 @@ require_once __DIR__ . '/../../../includes/enterprise_lib.php';
 require_role('admin');
 $pdo = get_db();
 require_enterprise($pdo);
-$keys = $pdo->query(
-    "SELECT ak.*, cs.name AS system_name FROM api_keys ak JOIN connected_systems cs ON cs.id = ak.system_id ORDER BY ak.id DESC"
-)->fetchAll();
+$orgId = require_org_id();
+$keyStmt = $pdo->prepare(
+    "SELECT ak.*, cs.name AS system_name FROM api_keys ak
+     JOIN connected_systems cs ON cs.id = ak.system_id AND cs.organization_id = :o
+     WHERE ak.organization_id = :o2 ORDER BY ak.id DESC"
+);
+$keyStmt->execute(['o' => $orgId, 'o2' => $orgId]);
+$keys = $keyStmt->fetchAll();
 $page_title = 'API Keys';
 $active_nav = 'integrations';
 require __DIR__ . '/../../../includes/layout_header.php';

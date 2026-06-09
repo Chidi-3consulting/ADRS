@@ -13,7 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect(APP_URL . '/consent-receipts');
 }
-$rows = $pdo->query("SELECT * FROM consent_receipts ORDER BY id DESC LIMIT 300")->fetchAll();
+$orgId = require_org_id();
+$stmt = $pdo->prepare('SELECT * FROM consent_receipts WHERE organization_id = :o ORDER BY id DESC LIMIT 300');
+$stmt->execute(['o' => $orgId]);
+$rows = $stmt->fetchAll();
 $page_title = 'Consent Receipts';
 $active_nav = 'consent_receipts';
 require __DIR__ . '/../../includes/layout_header.php';

@@ -7,7 +7,7 @@ $pdo = get_db();
 require_enterprise($pdo);
 $error = null; $rawKey = null;
 $allPerms = ['ingest','batch','consent','health','categories'];
-$systems = $pdo->query("SELECT id, name FROM connected_systems WHERE is_active=1 ORDER BY name")->fetchAll();
+$systems = list_org_systems($pdo, true);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();

@@ -1,7 +1,11 @@
 <?php
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/helpers.php';
+require_once __DIR__ . '/../includes/tenant_lib.php';
 require_once __DIR__ . '/../includes/notifications_lib.php';
+
+/** Organisation scope for engine queries (cron sets $__cron_org_id). */
+function engine_org_id(): int { return current_org_id() ?? 1; }
 
 /**
  * Retention engine business logic (callable + testable). The CLI cron (retention_cron.php)
@@ -80,11 +84,11 @@ function engine_flag_due_reviews(PDO $pdo, int $review_days): int {
         "UPDATE data_records dr
             JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL AND dc.disposal_trigger='date_based'
             SET dr.status='due_review', dr.review_flagged_at=NOW()
-          WHERE dr.status='active' AND dr.legal_hold=0 AND dr.deleted_at IS NULL
+          WHERE dr.organization_id = :org AND dr.status='active' AND dr.legal_hold=0 AND dr.deleted_at IS NULL
             AND dr.retention_end_date IS NOT NULL
             AND dr.retention_end_date <= DATE_ADD(CURDATE(), INTERVAL :days DAY)"
     );
-    $stmt->execute(['days' => $review_days]);
+    $stmt->execute(['org' => engine_org_id(), 'days' => $review_days]);
     $n = $stmt->rowCount();
     if ($n > 0) { log_audit($pdo, 'record_flagged_review', 'data_record', null, null, ['count' => $n], null); }
     return $n;
@@ -95,11 +99,11 @@ function engine_process_consent_disposals(PDO $pdo, int $consent_days): int {
     $stmt = $pdo->prepare(
         "SELECT dr.id FROM data_records dr
             JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL AND dc.disposal_trigger='consent_withdrawal'
-          WHERE dr.consent_withdrawn_at IS NOT NULL AND dr.status != 'disposed'
+          WHERE dr.organization_id = :org AND dr.consent_withdrawn_at IS NOT NULL AND dr.status != 'disposed'
             AND dr.legal_hold=0 AND dr.deleted_at IS NULL
             AND dr.consent_withdrawn_at <= DATE_SUB(NOW(), INTERVAL :days DAY)"
     );
-    $stmt->execute(['days' => $consent_days]);
+    $stmt->execute(['org' => engine_org_id(), 'days' => $consent_days]);
     $n = 0;
     foreach ($stmt->fetchAll() as $r) { if (execute_disposal($pdo, $r)) { $n++; } }
     return $n;
@@ -110,13 +114,14 @@ function engine_process_consent_disposals(PDO $pdo, int $consent_days): int {
  * requires_dual_approval (B5 safeguard). Returns ['disposed'=>int, 'skipped_dual'=>int].
  */
 function engine_auto_dispose_overdue(PDO $pdo): array {
-    $stmt = $pdo->query(
+    $stmt = $pdo->prepare(
         "SELECT dr.id, dc.requires_dual_approval
          FROM data_records dr
          JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL AND dc.disposal_trigger='date_based'
-         WHERE dr.status='due_review' AND dr.legal_hold=0 AND dr.deleted_at IS NULL
+         WHERE dr.organization_id = :org AND dr.status='due_review' AND dr.legal_hold=0 AND dr.deleted_at IS NULL
            AND dr.retention_end_date IS NOT NULL AND dr.retention_end_date < CURDATE()"
     );
+    $stmt->execute(['org' => engine_org_id()]);
     $disposed = 0; $skipped = 0;
     foreach ($stmt->fetchAll() as $r) {
         if ((int) $r['requires_dual_approval'] === 1) {
@@ -133,11 +138,11 @@ function engine_auto_dispose_overdue(PDO $pdo): array {
 function engine_escalate(PDO $pdo, int $escalation_days): int {
     $stmt = $pdo->prepare(
         "SELECT id FROM data_records
-          WHERE status='due_review' AND legal_hold=0 AND deleted_at IS NULL
+          WHERE organization_id = :org AND status='due_review' AND legal_hold=0 AND deleted_at IS NULL
             AND escalation_sent_at IS NULL AND review_flagged_at IS NOT NULL
             AND review_flagged_at <= DATE_SUB(NOW(), INTERVAL :days DAY)"
     );
-    $stmt->execute(['days' => $escalation_days]);
+    $stmt->execute(['org' => engine_org_id(), 'days' => $escalation_days]);
     $ids = array_column($stmt->fetchAll(), 'id');
     if (!$ids) { return 0; }
 
@@ -152,14 +157,15 @@ function engine_escalate(PDO $pdo, int $escalation_days): int {
 
 /** Step 6 (C1): DSAR alerts for requests due in 5 days or overdue. Returns count alerted. */
 function engine_dsar_alerts(PDO $pdo): int {
-    $stmt = $pdo->query(
+    $stmt = $pdo->prepare(
         "SELECT id, reference, assigned_to, due_date,
                 (due_date < CURDATE()) AS overdue
          FROM dsar_requests
-         WHERE status NOT IN ('completed','rejected')
+         WHERE organization_id = :org AND status NOT IN ('completed','rejected')
            AND ( due_date = DATE_ADD(CURDATE(), INTERVAL 5 DAY)
               OR (due_date < CURDATE() AND (extended_due_date IS NULL OR extended_due_date < CURDATE())) )"
     );
+    $stmt->execute(['org' => engine_org_id()]);
     $dpos = users_with_role($pdo, 'dpo');
     $n = 0;
     foreach ($stmt->fetchAll() as $d) {
@@ -179,11 +185,13 @@ function engine_dsar_alerts(PDO $pdo): int {
 
 /** Step 7: notify category owners (N1: DPO fallback) about their flagged records. Returns notifications sent. */
 function engine_notify_review_owners(PDO $pdo): int {
-    $rows = $pdo->query(
+    $stmt = $pdo->prepare(
         "SELECT dr.id, dr.record_reference, dc.owner_id
          FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id
-         WHERE dr.status='due_review' AND dr.deleted_at IS NULL"
-    )->fetchAll();
+         WHERE dr.organization_id = :org AND dr.status='due_review' AND dr.deleted_at IS NULL"
+    );
+    $stmt->execute(['org' => engine_org_id()]);
+    $rows = $stmt->fetchAll();
     if (!$rows) { return 0; }
 
     $byOwner = [];

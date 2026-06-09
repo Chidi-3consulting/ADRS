@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_login();
 $pdo = get_db();
 $me = current_user();
+$orgId = require_org_id();
 $ownerFilter = has_role('data_owner') ? ' AND dc.owner_id = ' . (int) $me['id'] : '';
 
 // Global KPI summary (unfiltered).
@@ -16,7 +17,7 @@ $kpi = $pdo->query(
        SUM(status = 'disposal_requested') AS awaiting_approval,
        SUM(status = 'disposed' AND MONTH(disposed_at)=MONTH(CURDATE()) AND YEAR(disposed_at)=YEAR(CURDATE())) AS disposed_month
      FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL
-     WHERE dr.deleted_at IS NULL{$ownerFilter}"
+     WHERE dr.organization_id = {$orgId} AND dr.deleted_at IS NULL{$ownerFilter}"
 )->fetch();
 
 // Filters
@@ -24,7 +25,7 @@ $q        = trim($_GET['q'] ?? '');
 $status   = $_GET['status'] ?? '';
 $catId    = (int) ($_GET['category_id'] ?? 0);
 $statuses = ['active','due_review','disposal_requested','legal_hold','disposed','overdue'];
-$where = []; $params = [];
+$where = ['dr.organization_id = :org']; $params = ['org' => $orgId];
 // Disposed view includes soft-deleted (delete-method) records; everything else excludes them.
 if ($status !== 'disposed') { $where[] = 'dr.deleted_at IS NULL'; }
 if ($q !== '')    { $where[] = '(dr.record_reference LIKE :q OR dr.data_subject_type LIKE :q)'; $params['q'] = '%' . $q . '%'; }
@@ -46,7 +47,7 @@ $listStmt = $pdo->prepare(
 );
 $listStmt->execute($params);
 $rows = $listStmt->fetchAll();
-$catOptions = $pdo->query("SELECT id, name FROM data_categories WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
+$catOptions = list_org_categories($pdo, false);
 
 $page_title = 'Retention Schedule';
 $active_nav = 'records';

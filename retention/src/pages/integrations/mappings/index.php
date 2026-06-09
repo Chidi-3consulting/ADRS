@@ -5,11 +5,17 @@ require_once __DIR__ . '/../../../includes/enterprise_lib.php';
 require_role('admin');
 $pdo = get_db();
 require_enterprise($pdo);
-$maps = $pdo->query(
+$orgId = require_org_id();
+$mapStmt = $pdo->prepare(
     "SELECT fm.*, cs.name AS system_name, dc.name AS category_name
-     FROM field_mappings fm JOIN connected_systems cs ON cs.id=fm.system_id JOIN data_categories dc ON dc.id=fm.category_id
+     FROM field_mappings fm
+     JOIN connected_systems cs ON cs.id = fm.system_id AND cs.organization_id = :o
+     JOIN data_categories dc ON dc.id = fm.category_id AND dc.organization_id = :o2
+     WHERE fm.organization_id = :o3
      ORDER BY cs.name, fm.external_object_type"
-)->fetchAll();
+);
+$mapStmt->execute(['o' => $orgId, 'o2' => $orgId, 'o3' => $orgId]);
+$maps = $mapStmt->fetchAll();
 $page_title = 'Field Mappings';
 $active_nav = 'integrations';
 require __DIR__ . '/../../../includes/layout_header.php';

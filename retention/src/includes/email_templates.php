@@ -38,3 +38,13 @@ function email_password_reset(string $name, string $reset_link): array {
         . '<p>If you did not request this, you can safely ignore this email.</p>';
     return ['Reset your ADRS password', email_layout('Password reset', $body)];
 }
+
+/** Email verification for new registrations. Returns [subject, html]. */
+function email_verification(string $name, string $verify_link): array {
+    $body = '<p>Hello ' . escape_html($name) . ',</p>'
+        . '<p>Welcome to ADRS. Please verify your email address to activate your account:</p>'
+        . '<p><a href="' . escape_html($verify_link) . '" style="background:#C85C1A;color:#fff;padding:10px 18px;'
+        . 'text-decoration:none;border-radius:4px;display:inline-block;">Verify my email</a></p>'
+        . '<p>If you did not create an account, ignore this message.</p>';
+    return ['Verify your ADRS account', email_layout('Email verification', $body)];
+}

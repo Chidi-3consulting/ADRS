@@ -7,7 +7,9 @@ $pdo = get_db();
 $id = (int) ($_GET['id'] ?? 0);
 $record = $id > 0 ? fetch_record($pdo, $id, true) : null;   // include disposed/deleted for read-only viewing
 if ($record === null) { http_response_code(404); require __DIR__ . '/../../../404.php'; exit; }
+assert_org_row($record);
 $isDisposed = $record['status'] === 'disposed' || $record['deleted_at'] !== null;
+$orgId = require_org_id();
 
 // Data Owners may only view records in their own categories.
 if (has_role('data_owner')) {
@@ -20,10 +22,10 @@ if ($record['created_by']) {
     $cs = $pdo->prepare("SELECT name FROM users WHERE id=:i"); $cs->execute(['i' => $record['created_by']]);
     $creator = $cs->fetch()['name'] ?? null;
 }
-$audit = $pdo->prepare("SELECT * FROM audit_log WHERE entity_type='data_record' AND entity_id=:id ORDER BY id DESC LIMIT 10");
-$audit->execute(['id' => $id]);
+$audit = $pdo->prepare("SELECT * FROM audit_log WHERE organization_id = :o AND entity_type='data_record' AND entity_id=:id ORDER BY id DESC LIMIT 10");
+$audit->execute(['o' => $orgId, 'id' => $id]);
 $auditRows = $audit->fetchAll();
-$allCats = $pdo->query("SELECT id, name FROM data_categories WHERE deleted_at IS NULL AND is_active=1 ORDER BY name")->fetchAll();
+$allCats = list_org_categories($pdo);
 $attStmt = $pdo->prepare("SELECT * FROM attachments WHERE record_id=:id AND deleted_at IS NULL ORDER BY id DESC");
 $attStmt->execute(['id' => $id]);
 $attachments = $attStmt->fetchAll();

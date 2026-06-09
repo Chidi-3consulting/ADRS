@@ -34,10 +34,12 @@ function generate_api_key(): array {
  */
 function create_api_key(PDO $pdo, int $system_id, string $name, array $permissions, int $rate_limit, ?int $actor_id, ?string $expires_at = null): array {
     $k = generate_api_key();
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $pdo->prepare(
-        "INSERT INTO api_keys (system_id, key_name, key_hash, key_prefix, permissions, rate_limit_per_min, created_by, expires_at)
-         VALUES (:sid,:name,:hash,:prefix,:perms,:rl,:by,:exp)"
+        "INSERT INTO api_keys (organization_id, system_id, key_name, key_hash, key_prefix, permissions, rate_limit_per_min, created_by, expires_at)
+         VALUES (:oid,:sid,:name,:hash,:prefix,:perms,:rl,:by,:exp)"
     )->execute([
+        'oid' => $orgId,
         'sid' => $system_id, 'name' => $name, 'hash' => $k['hash'], 'prefix' => $k['prefix'],
         'perms' => json_encode(array_values($permissions)), 'rl' => $rate_limit, 'by' => $actor_id, 'exp' => $expires_at,
     ]);
@@ -50,7 +52,8 @@ function create_api_key(PDO $pdo, int $system_id, string $name, array $permissio
 function verify_api_key(PDO $pdo, string $raw_key): ?array {
     if ($raw_key === '') { return null; }
     $stmt = $pdo->prepare(
-        "SELECT ak.*, cs.name AS system_name, cs.is_active AS system_active, cs.base_url
+        "SELECT ak.*, cs.name AS system_name, cs.is_active AS system_active, cs.base_url,
+                COALESCE(ak.organization_id, cs.organization_id) AS organization_id
          FROM api_keys ak JOIN connected_systems cs ON cs.id = ak.system_id
          WHERE ak.key_hash = :h AND ak.is_active = 1 AND ak.revoked_at IS NULL
            AND (ak.expires_at IS NULL OR ak.expires_at > NOW()) LIMIT 1"
@@ -88,10 +91,12 @@ function within_rate_limit(PDO $pdo, int $api_key_id, int $limit_per_min): bool 
 /** Append an integration_logs row. Never throws. */
 function log_integration(PDO $pdo, ?int $system_id, ?int $api_key_id, string $direction, string $endpoint, string $method, int $status, ?array $req, ?array $res, int $records_affected = 0, int $duration_ms = 0, ?string $error = null): void {
     try {
+        $orgId = function_exists('current_org_id') ? (current_org_id() ?? 1) : 1;
         $pdo->prepare(
-            "INSERT INTO integration_logs (system_id, api_key_id, direction, endpoint, method, status_code, request_body, response_body, records_affected, duration_ms, ip_address, error_message)
-             VALUES (:s,:k,:d,:e,:m,:sc,:rq,:rs,:ra,:du,:ip,:err)"
+            "INSERT INTO integration_logs (organization_id, system_id, api_key_id, direction, endpoint, method, status_code, request_body, response_body, records_affected, duration_ms, ip_address, error_message)
+             VALUES (:oid,:s,:k,:d,:e,:m,:sc,:rq,:rs,:ra,:du,:ip,:err)"
         )->execute([
+            'oid' => $orgId,
             's' => $system_id, 'k' => $api_key_id, 'd' => $direction, 'e' => $endpoint, 'm' => $method, 'sc' => $status,
             'rq' => $req ? json_encode($req) : null, 'rs' => $res ? json_encode($res) : null,
             'ra' => $records_affected, 'du' => $duration_ms, 'ip' => get_client_ip(), 'err' => $error,
@@ -130,9 +135,10 @@ function auto_categorize(PDO $pdo, int $system_id, string $object_type, array $m
 
 /** Insert a record into the intake queue. Returns queue id. */
 function enqueue_intake(PDO $pdo, int $system_id, ?int $api_key_id, ?string $batch_id, array $payload): int {
+    $orgId = function_exists('current_org_id') ? (current_org_id() ?? 1) : 1;
     $pdo->prepare(
-        "INSERT INTO intake_queue (system_id, api_key_id, batch_id, payload, status) VALUES (:s,:k,:b,:p,'pending')"
-    )->execute(['s' => $system_id, 'k' => $api_key_id, 'b' => $batch_id, 'p' => json_encode($payload)]);
+        "INSERT INTO intake_queue (organization_id, system_id, api_key_id, batch_id, payload, status) VALUES (:oid,:s,:k,:b,:p,'pending')"
+    )->execute(['oid' => $orgId, 's' => $system_id, 'k' => $api_key_id, 'b' => $batch_id, 'p' => json_encode($payload)]);
     return (int) $pdo->lastInsertId();
 }
 
@@ -171,10 +177,12 @@ function process_intake_item(PDO $pdo, array $item): array {
         $collectionDate = !empty($payload['collection_date']) ? $payload['collection_date'] : date('Y-m-d');
         $retentionEnd = compute_retention_end($category, $collectionDate);
 
+        $orgId = (int) ($category['organization_id'] ?? (function_exists('current_org_id') ? current_org_id() : 1));
         $pdo->prepare(
-            "INSERT INTO data_records (category_id, record_reference, data_subject_type, collection_date, retention_end_date, status, created_by, notes)
-             VALUES (:c,:r,:st,:cd,:re,'active',NULL,:notes)"
+            "INSERT INTO data_records (organization_id, category_id, record_reference, data_subject_type, collection_date, retention_end_date, status, created_by, notes)
+             VALUES (:oid,:c,:r,:st,:cd,:re,'active',NULL,:notes)"
         )->execute([
+            'oid' => $orgId,
             'c' => $categoryId, 'r' => $externalRef, 'st' => $payload['data_subject_type'] ?? null,
             'cd' => $collectionDate, 're' => $retentionEnd, 'notes' => 'Captured via Enterprise API from system #' . $item['system_id'],
         ]);
@@ -215,9 +223,10 @@ function process_intake_queue(PDO $pdo, int $limit = 100): array {
  * Returns ['signal_id'=>int, 'matched'=>bool, 'record_id'=>?int].
  */
 function record_consent_signal(PDO $pdo, int $system_id, string $external_ref, string $signal_type, array $payload = []): array {
+    $orgId = function_exists('current_org_id') ? (current_org_id() ?? 1) : 1;
     $pdo->prepare(
-        "INSERT INTO consent_signals (system_id, external_ref, signal_type, raw_payload, status) VALUES (:s,:r,:t,:p,'pending')"
-    )->execute(['s' => $system_id, 'r' => $external_ref, 't' => $signal_type, 'p' => json_encode($payload)]);
+        "INSERT INTO consent_signals (organization_id, system_id, external_ref, signal_type, raw_payload, status) VALUES (:oid,:s,:r,:t,:p,'pending')"
+    )->execute(['oid' => $orgId, 's' => $system_id, 'r' => $external_ref, 't' => $signal_type, 'p' => json_encode($payload)]);
     $signalId = (int) $pdo->lastInsertId();
     $matched = match_consent_signal($pdo, $signalId);
     return ['signal_id' => $signalId, 'matched' => $matched['matched'], 'record_id' => $matched['record_id']];
@@ -278,10 +287,12 @@ function queue_disposal_dispatch(PDO $pdo, int $record_id, string $method): int 
     $n = 0;
     foreach ($systems->fetchAll() as $s) {
         $endpoint = $s['base_url'] ? rtrim($s['base_url'], '/') . '/adrs/disposal' : null;
+        $orgId = function_exists('current_org_id') ? (current_org_id() ?? 1) : 1;
         $pdo->prepare(
-            "INSERT INTO disposal_dispatches (record_id, system_id, dispatch_type, external_ref, endpoint_url, payload, status)
-             VALUES (:rec,:sys,:t,:ref,:url,:pl,'pending')"
+            "INSERT INTO disposal_dispatches (organization_id, record_id, system_id, dispatch_type, external_ref, endpoint_url, payload, status)
+             VALUES (:oid,:rec,:sys,:t,:ref,:url,:pl,'pending')"
         )->execute([
+            'oid' => $orgId,
             'rec' => $record_id, 'sys' => $s['system_id'], 't' => $method, 'ref' => $rec['record_reference'],
             'url' => $endpoint, 'pl' => json_encode(['action' => $method, 'external_ref' => $rec['record_reference']]),
         ]);

@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/db.php';
 
+/** Platform-wide settings stored in system_settings (not per-tenant). */
+const PLATFORM_SETTING_KEYS = [
+    'deployment_mode', 'setup_complete', 'allow_public_signup',
+    'paystack_public_key', 'paystack_secret_key', 'core_plan_amount_kobo', 'enterprise_plan_amount_kobo',
+    'trial_days', 'platform_support_email',
+];
+
 /* ---------------- Date & retention (D4: fixed days) ---------------- */
 
 /** Collection date + N days, as Y-m-d. */
@@ -38,15 +45,34 @@ function format_datetime(?string $dt): string {
 
 /* ---------------- Settings (system_settings: setting_key / setting_value) ---------------- */
 
-/** Read a system setting with in-request cache. Returns $default if absent. */
-function get_setting(PDO $pdo, string $key, $default = null) {
+/** Read a setting with in-request cache. Platform keys use system_settings; others use organization_settings. */
+function get_setting(PDO $pdo, string $key, $default = null, ?int $orgId = null) {
     if (!isset($GLOBALS['__setting_cache'])) { $GLOBALS['__setting_cache'] = []; }
     $cache = &$GLOBALS['__setting_cache'];
-    if (array_key_exists($key, $cache)) { return $cache[$key]; }
+    $orgId = $orgId ?? (function_exists('current_org_id') ? current_org_id() : null);
+    $cacheKey = (in_array($key, PLATFORM_SETTING_KEYS, true) ? 'p:' : 'o:' . ($orgId ?? 0) . ':') . $key;
+    if (array_key_exists($cacheKey, $cache)) { return $cache[$cacheKey]; }
+
+    if (in_array($key, PLATFORM_SETTING_KEYS, true)) {
+        $stmt = $pdo->prepare('SELECT setting_value FROM system_settings WHERE setting_key = :k LIMIT 1');
+        $stmt->execute(['k' => $key]);
+        $row = $stmt->fetch();
+        return $cache[$cacheKey] = ($row === false ? $default : $row['setting_value']);
+    }
+
+    if ($orgId === null || $orgId <= 0) { return $default; }
+    $stmt = $pdo->prepare(
+        'SELECT setting_value FROM organization_settings WHERE organization_id = :o AND setting_key = :k LIMIT 1'
+    );
+    $stmt->execute(['o' => $orgId, 'k' => $key]);
+    $row = $stmt->fetch();
+    if ($row !== false) { return $cache[$cacheKey] = $row['setting_value']; }
+
+    // Legacy single-tenant fallback before organization_settings is populated.
     $stmt = $pdo->prepare('SELECT setting_value FROM system_settings WHERE setting_key = :k LIMIT 1');
     $stmt->execute(['k' => $key]);
     $row = $stmt->fetch();
-    return $cache[$key] = ($row === false ? $default : $row['setting_value']);
+    return $cache[$cacheKey] = ($row === false ? $default : $row['setting_value']);
 }
 
 /** Clear the in-request settings cache (after updating settings, or between test scenarios). */
@@ -58,12 +84,20 @@ function smtp_is_configured(PDO $pdo): bool {
     return $host !== '' && stripos($host, 'yourdomain') === false;
 }
 
-/** Update (upsert) a system setting and clear the cache. */
-function set_setting(PDO $pdo, string $key, string $value): void {
-    $pdo->prepare(
-        "INSERT INTO system_settings (setting_key, setting_value) VALUES (:k,:v)
-         ON DUPLICATE KEY UPDATE setting_value = :v2"
-    )->execute(['k' => $key, 'v' => $value, 'v2' => $value]);
+/** Update (upsert) a platform or organisation setting and clear the cache. */
+function set_setting(PDO $pdo, string $key, string $value, ?int $orgId = null): void {
+    if (in_array($key, PLATFORM_SETTING_KEYS, true)) {
+        $pdo->prepare(
+            "INSERT INTO system_settings (setting_key, setting_value) VALUES (:k,:v)
+             ON DUPLICATE KEY UPDATE setting_value = :v2"
+        )->execute(['k' => $key, 'v' => $value, 'v2' => $value]);
+    } else {
+        $orgId = $orgId ?? (function_exists('require_org_id') ? require_org_id() : 1);
+        $pdo->prepare(
+            "INSERT INTO organization_settings (organization_id, setting_key, setting_value) VALUES (:o,:k,:v)
+             ON DUPLICATE KEY UPDATE setting_value = :v2"
+        )->execute(['o' => $orgId, 'k' => $key, 'v' => $value, 'v2' => $value]);
+    }
     clear_setting_cache();
 }
 
@@ -232,14 +266,18 @@ function log_audit(PDO $pdo, string $action, string $entity_type, ?int $entity_i
     try {
         $detailsJson = $details === null ? null : json_encode($details, JSON_UNESCAPED_UNICODE);
         $createdAt = date('Y-m-d H:i:s');
-        $prev = $pdo->query("SELECT row_hash FROM audit_log ORDER BY id DESC LIMIT 1")->fetchColumn();
+        $orgId = function_exists('current_org_id') ? (current_org_id() ?? 1) : 1;
+        $prevStmt = $pdo->prepare('SELECT row_hash FROM audit_log WHERE organization_id = :o ORDER BY id DESC LIMIT 1');
+        $prevStmt->execute(['o' => $orgId]);
+        $prev = $prevStmt->fetchColumn();
         $prevHash = ($prev !== false && $prev !== null) ? $prev : str_repeat('0', 64);
         $rowHash = hash('sha256', audit_canonical($prevHash, $action, $entity_type, $entity_id, $performed_by, $detailsJson, $ip, $createdAt));
         $stmt = $pdo->prepare(
-            'INSERT INTO audit_log (action, entity_type, entity_id, performed_by, details, ip_address, created_at, prev_hash, row_hash)
-             VALUES (:a, :et, :eid, :pb, :d, :ip, :ca, :ph, :rh)'
+            'INSERT INTO audit_log (organization_id, action, entity_type, entity_id, performed_by, details, ip_address, created_at, prev_hash, row_hash)
+             VALUES (:oid, :a, :et, :eid, :pb, :d, :ip, :ca, :ph, :rh)'
         );
         $stmt->execute([
+            'oid' => $orgId,
             'a'   => $action,
             'et'  => $entity_type,
             'eid' => $entity_id,
@@ -263,11 +301,21 @@ function log_audit(PDO $pdo, string $action, string $entity_type, ?int $entity_i
  * checking prev_hash links to the prior row. Returns
  * ['ok'=>bool, 'checked'=>int, 'broken_at'=>?int(id)].
  */
-function verify_audit_chain(PDO $pdo): array {
-    $rows = $pdo->query(
-        "SELECT id, action, entity_type, entity_id, performed_by, details, ip_address, created_at, prev_hash, row_hash
-         FROM audit_log ORDER BY id ASC"
-    )->fetchAll();
+function verify_audit_chain(PDO $pdo, ?int $orgId = null): array {
+    $orgId = $orgId ?? (function_exists('current_org_id') ? current_org_id() : null);
+    if ($orgId !== null && $orgId > 0) {
+        $stmt = $pdo->prepare(
+            "SELECT id, action, entity_type, entity_id, performed_by, details, ip_address, created_at, prev_hash, row_hash
+             FROM audit_log WHERE organization_id = :o ORDER BY id ASC"
+        );
+        $stmt->execute(['o' => $orgId]);
+        $rows = $stmt->fetchAll();
+    } else {
+        $rows = $pdo->query(
+            "SELECT id, action, entity_type, entity_id, performed_by, details, ip_address, created_at, prev_hash, row_hash
+             FROM audit_log ORDER BY id ASC"
+        )->fetchAll();
+    }
     $expectedPrev = str_repeat('0', 64);
     $checked = 0;
     foreach ($rows as $r) {

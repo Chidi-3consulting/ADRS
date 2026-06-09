@@ -6,7 +6,7 @@ require_role('admin', 'dpo');
 $pdo = get_db();
 $error = null;
 
-$owners = $pdo->query("SELECT id, name FROM users WHERE role='data_owner' AND is_active=1 AND deleted_at IS NULL ORDER BY name")->fetchAll();
+$owners = list_org_users($pdo, "role = 'data_owner'");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();

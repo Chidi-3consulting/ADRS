@@ -13,7 +13,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect(APP_URL . '/dpia');
 }
-$rows = $pdo->query("SELECT d.*, c.name AS category_name FROM dpia_assessments d LEFT JOIN data_categories c ON c.id=d.category_id ORDER BY d.id DESC")->fetchAll();
+$orgId = require_org_id();
+$stmt = $pdo->prepare(
+    "SELECT d.*, c.name AS category_name FROM dpia_assessments d
+     LEFT JOIN data_categories c ON c.id = d.category_id AND c.organization_id = :o
+     WHERE d.organization_id = :o2 ORDER BY d.id DESC"
+);
+$stmt->execute(['o' => $orgId, 'o2' => $orgId]);
+$rows = $stmt->fetchAll();
 $page_title = 'DPIA';
 $active_nav = 'dpia';
 require __DIR__ . '/../../includes/layout_header.php';

@@ -30,14 +30,23 @@ Upload the `retention/` directory into the web root, e.g.
 1. Create DB `USER_adrs` and user `USER_adrsapp` with a strong password.
 2. Grant the user **ALL PRIVILEGES** on the DB (you'll tighten `audit_log` in step 5).
 
-### 2.3 Import schema + seed (phpMyAdmin → Import), in order
-1. Import `retention/sql/schema.sql` — creates all 26 tables (incl. the Phase-3 additions)
-   and the default `system_settings` rows.
-2. Import `retention/sql/seed_gdpr_ndpr.sql` — the 30 GDPR/NDPR categories and the seeded
-   `admin@3consult-ng.com` / `dpo@3consult-ng.com` users (password `password`).
+### 2.3 Import schema (phpMyAdmin → Import)
+1. Import `retention/sql/schema.sql` — creates all tables, multi-tenant `organizations`
+   structure, and platform settings (`deployment_mode=saas` by default).
 
-> Because `schema.sql` already contains the Phase-3 tables and the `audit_log`/`users`
-> column additions, a **fresh** install does **not** run the migration file in `sql/migrations/`.
+**SaaS go-live (recommended for selling ADRS):** stop here. Publish the site — visitors see
+the product landing page, choose **Core** or **Enterprise**, and **register** their
+organisation at `/register` (14-day trial, isolated tenant, 30-category library auto-provisioned).
+
+**Private single-tenant install:** set `deployment_mode` to `single` in `system_settings`
+(or import the seed below which does this). Use `/setup` for the one-time admin wizard.
+
+**Dev / demo shortcut:** also import `retention/sql/seed_gdpr_ndpr.sql` — pre-loads categories
+and seeded users `admin@3consult-ng.com` / `dpo@3consult-ng.com` (password `password`, forced
+change on first login; switches to single-tenant mode).
+
+> Because `schema.sql` already contains the Phase-3 tables and column additions, a **fresh**
+> install does **not** need migration files in `sql/migrations/`. Upgrades do — see §6.
 
 ### 2.4 Configuration — create `retention/src/config/config.local.php`
 This file is gitignored. It pre-defines constants the app reads (DB, URLs, paths):
@@ -63,12 +72,24 @@ SMTP is **not** set here — it lives in the database (System Settings page) aft
 already routes `/api/v1/*` to the Enterprise API and everything else to `index.php`. If you
 deploy at a **subdomain root**, change `RewriteBase /retention/` to `RewriteBase /`.
 
-### 2.6 First login & hardening
-1. Visit the site → log in with the seeded admin (`admin@3consult-ng.com` / `password`).
-2. **Change the admin password immediately** (Users, or My Profile).
-3. System Settings → configure **SMTP** (host, port, username, password, from address).
-4. (Optional) Settings → **white-label** (name, primary colour, logo URL, footer).
-5. (Optional, recommended) Settings → **Two-Factor Auth** → enable TOTP for admins.
+### 2.6 First visit & hardening
+
+**Production path (schema only):**
+1. Visit the site → public **landing page** with product overview.
+2. You are redirected to **`/setup`** — enter organisation name, admin name/email, and a strong password.
+3. Optionally tick **Import the 30-category GDPR/NDPR library** (recommended).
+4. You land on the dashboard as the new administrator.
+
+**Dev shortcut (schema + seed):**
+1. Visit the site → **Sign in** with `admin@3consult-ng.com` / `password`.
+2. You are forced to **My profile** to set a new password before continuing.
+
+**Then (all installs):**
+1. System Settings → configure **SMTP** (host, port, username, password, from address).
+2. (Optional) Settings → **white-label** (name, primary colour, logo URL, footer).
+3. (Optional) Settings → set `allow_public_signup` to `1` if you want a public **Create account** page (off by default; new users get the Data Owner role).
+4. (Optional, recommended) Settings → **Two-Factor Auth** → enable TOTP for admins.
+5. Add team members under **Users** (admin-managed; temporary passwords require change on first login).
 
 ---
 

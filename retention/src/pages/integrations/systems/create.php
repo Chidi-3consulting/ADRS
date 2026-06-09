@@ -15,8 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $baseUrl = trim($_POST['base_url'] ?? '');
     if ($name === '') { $error = 'Name is required.'; }
     else {
-        $pdo->prepare("INSERT INTO connected_systems (name, system_type, base_url, description, created_by) VALUES (:n,:t,:u,:d,:b)")
-            ->execute(['n'=>$name,'t'=>$type,'u'=>$baseUrl ?: null,'d'=>trim($_POST['description'] ?? '') ?: null,'b'=>(int)current_user()['id']]);
+        $orgId = require_org_id();
+        $pdo->prepare("INSERT INTO connected_systems (organization_id, name, system_type, base_url, description, created_by) VALUES (:oid,:n,:t,:u,:d,:b)")
+            ->execute(['oid'=>$orgId,'n'=>$name,'t'=>$type,'u'=>$baseUrl ?: null,'d'=>trim($_POST['description'] ?? '') ?: null,'b'=>(int)current_user()['id']]);
         log_audit($pdo, 'user_updated', 'system', (int)$pdo->lastInsertId(), (int)current_user()['id'], ['connected_system_created'=>$name], get_client_ip());
         flash('success', 'Connected system registered.');
         redirect(APP_URL . '/integrations/systems');

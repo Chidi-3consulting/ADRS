@@ -13,17 +13,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $r = process_intake_queue($pdo, 200);
         flash('success', "Processed {$r['processed']}: created {$r['created']}, duplicate {$r['duplicate']}, failed {$r['failed']}.");
     } elseif ($action === 'retry_failed') {
-        $n = $pdo->exec("UPDATE intake_queue SET status='pending', attempts=0, error=NULL WHERE status='failed'");
-        flash('success', "Re-queued {$n} failed item(s).");
+        $orgId = require_org_id();
+        $retry = $pdo->prepare("UPDATE intake_queue SET status='pending', attempts=0, error=NULL WHERE organization_id = :o AND status='failed'");
+        $retry->execute(['o' => $orgId]);
+        flash('success', 'Re-queued ' . $retry->rowCount() . ' failed item(s).');
     }
     redirect(APP_URL . '/integrations/queue');
 }
 
-$pg = paginate((int) $pdo->query("SELECT COUNT(*) FROM intake_queue")->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
-$rows = $pdo->query(
-    "SELECT iq.*, cs.name AS system_name FROM intake_queue iq LEFT JOIN connected_systems cs ON cs.id=iq.system_id ORDER BY iq.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
-)->fetchAll();
-$counts = $pdo->query("SELECT status, COUNT(*) c FROM intake_queue GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
+$orgId = require_org_id();
+$cntStmt = $pdo->prepare('SELECT COUNT(*) FROM intake_queue WHERE organization_id = :o');
+$cntStmt->execute(['o' => $orgId]);
+$pg = paginate((int) $cntStmt->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
+$listStmt = $pdo->prepare(
+    "SELECT iq.*, cs.name AS system_name FROM intake_queue iq
+     LEFT JOIN connected_systems cs ON cs.id = iq.system_id
+     WHERE iq.organization_id = :o ORDER BY iq.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
+);
+$listStmt->execute(['o' => $orgId]);
+$rows = $listStmt->fetchAll();
+$countStmt = $pdo->prepare('SELECT status, COUNT(*) c FROM intake_queue WHERE organization_id = :o GROUP BY status');
+$countStmt->execute(['o' => $orgId]);
+$counts = $countStmt->fetchAll(PDO::FETCH_KEY_PAIR);
 $page_title = 'Intake Queue';
 $active_nav = 'integrations';
 require __DIR__ . '/../../../includes/layout_header.php';

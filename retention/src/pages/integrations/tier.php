@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/enterprise_lib.php';
+require_once __DIR__ . '/../../includes/billing_lib.php';
 require_role('admin');           // NOT enterprise-gated: this is the upgrade entry point.
 $pdo = get_db();
 $error = null;
@@ -14,10 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $licence = trim($_POST['licence_key'] ?? '');
         if ($licence === '') {
             $error = 'A licence key is required to activate Enterprise.';
+        } elseif (!redeem_enterprise_licence($pdo, $licence, require_org_id())) {
+            $error = 'Invalid or already-used licence key.';
         } else {
-            set_setting($pdo, 'adrs_tier', 'enterprise');
-            set_setting($pdo, 'enterprise_licence_key', $licence);
-            set_setting($pdo, 'enterprise_api_enabled', '1');
             log_audit($pdo, 'schedule_reviewed', 'system', null, (int) current_user()['id'], ['tier_upgraded' => 'enterprise'], get_client_ip());
             flash('success', 'ADRS Enterprise activated. Integration features are now available.');
             redirect(APP_URL . '/integrations');

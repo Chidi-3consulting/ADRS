@@ -3,13 +3,14 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_role('admin', 'dpo');
 $pdo = get_db();
+$orgId = require_org_id();
 
 $action = trim($_GET['action'] ?? '');
 $entity = trim($_GET['entity_type'] ?? '');
 $from   = trim($_GET['from'] ?? '');
 $to     = trim($_GET['to'] ?? '');
 
-$where = []; $params = [];
+$where = ['al.organization_id = :org']; $params = ['org' => $orgId];
 if ($action !== '') { $where[] = 'al.action = :action'; $params['action'] = $action; }
 if ($entity !== '') { $where[] = 'al.entity_type = :entity'; $params['entity'] = $entity; }
 if ($from !== '')   { $where[] = 'al.created_at >= :from'; $params['from'] = $from . ' 00:00:00'; }
@@ -26,8 +27,10 @@ $stmt->execute($params);
 $rows = $stmt->fetchAll();
 $pgParams = array_filter(['action' => $action, 'entity_type' => $entity, 'from' => $from, 'to' => $to]);
 
-$actions = $pdo->query("SELECT DISTINCT action FROM audit_log ORDER BY action")->fetchAll(PDO::FETCH_COLUMN);
-$integrity = isset($_GET['verify']) ? verify_audit_chain($pdo) : null;
+$actStmt = $pdo->prepare('SELECT DISTINCT action FROM audit_log WHERE organization_id = :o ORDER BY action');
+$actStmt->execute(['o' => $orgId]);
+$actions = $actStmt->fetchAll(PDO::FETCH_COLUMN);
+$integrity = isset($_GET['verify']) ? verify_audit_chain($pdo, $orgId) : null;
 
 $page_title = 'Audit Log';
 $active_nav = 'audit';

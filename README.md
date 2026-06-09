@@ -68,7 +68,10 @@ See **[retention/DEPLOYMENT.md](retention/DEPLOYMENT.md)** — fresh install, th
 the `audit_log` append-only REVOKE, Enterprise activation, security hardening, and upgrades
 (including the additive `sql/migrations/` files).
 
-Default seeded login (**change immediately**): `admin@3consult-ng.com` / `password`.
+**SaaS (default):** import `schema.sql`, publish the site — customers land on the marketing
+page, pick **Core** or **Enterprise**, and register their organisation (14-day trial).
+**Dev shortcut:** also import `seed_gdpr_ndpr.sql` → `admin@3consult-ng.com` / `password`
+(single-tenant demo mode; forced password change on first login).
 
 ## Security
 

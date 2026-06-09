@@ -12,12 +12,14 @@ function create_notification(
     PDO $pdo, int $recipient_id, string $type, string $subject, string $message,
     ?int $related_record_id = null, ?int $related_dsar_id = null, bool $owner_missing = false
 ): int {
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $stmt = $pdo->prepare(
         "INSERT INTO notifications
-           (recipient_id, type, related_record_id, related_dsar_id, subject, message, owner_missing, status)
-         VALUES (:r, :t, :rr, :rd, :s, :m, :om, 'pending')"
+           (organization_id, recipient_id, type, related_record_id, related_dsar_id, subject, message, owner_missing, status)
+         VALUES (:oid, :r, :t, :rr, :rd, :s, :m, :om, 'pending')"
     );
     $stmt->execute([
+        'oid' => $orgId,
         'r' => $recipient_id, 't' => $type, 'rr' => $related_record_id, 'rd' => $related_dsar_id,
         's' => $subject, 'm' => $message, 'om' => $owner_missing ? 1 : 0,
     ]);
@@ -28,9 +30,12 @@ function create_notification(
 function notify_role(
     PDO $pdo, array $roles, string $type, string $subject, string $message, ?int $related_record_id = null
 ): int {
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $place = implode(',', array_fill(0, count($roles), '?'));
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE is_active = 1 AND deleted_at IS NULL AND role IN ($place)");
-    $stmt->execute(array_values($roles));
+    $stmt = $pdo->prepare(
+        "SELECT id FROM users WHERE organization_id = ? AND is_active = 1 AND deleted_at IS NULL AND role IN ($place)"
+    );
+    $stmt->execute(array_merge([$orgId], array_values($roles)));
     $n = 0;
     foreach ($stmt->fetchAll() as $u) {
         create_notification($pdo, (int) $u['id'], $type, $subject, $message, $related_record_id);
@@ -41,7 +46,10 @@ function notify_role(
 
 /** All active users with a given role. */
 function users_with_role(PDO $pdo, string $role): array {
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE role = :r AND is_active = 1 AND deleted_at IS NULL");
-    $stmt->execute(['r' => $role]);
+    $orgId = function_exists('current_org_id') ? (current_org_id() ?? 1) : 1;
+    $stmt = $pdo->prepare(
+        "SELECT * FROM users WHERE organization_id = :o AND role = :r AND is_active = 1 AND deleted_at IS NULL"
+    );
+    $stmt->execute(['o' => $orgId, 'r' => $role]);
     return $stmt->fetchAll();
 }

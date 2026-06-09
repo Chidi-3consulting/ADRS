@@ -10,6 +10,7 @@ if (PHP_SAPI !== 'cli') { http_response_code(403); exit('CLI only.'); }
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/mailer.php';
+require_once __DIR__ . '/../includes/tenant_lib.php';
 require_once __DIR__ . '/engine_lib.php';
 
 date_default_timezone_set(TIMEZONE);
@@ -35,19 +36,30 @@ try {
         $log("Quarterly review complete: " . json_encode($r));
     } else {
         $log('=== Retention engine START ===');
-        $s = run_retention_engine($pdo);
-        $log("Flagged: {$s['flagged']} | Consent-disposed: {$s['consent_disposed']} | Auto-disposed: {$s['auto_disposed']} | Dual-approval SKIPPED: {$s['dual_skipped']} | Escalated: {$s['escalated']} | DSAR alerts: {$s['dsar_alerts']} | Review notifications: {$s['review_notifications']}");
-        $mail = dispatch_pending_notifications($pdo);
-        $log("Emails sent: {$mail['sent']} | failed: {$mail['failed']}");
+        $orgs = list_active_organizations($pdo);
+        if (!$orgs) { $orgs = [['id' => 1]]; }
+        foreach ($orgs as $org) {
+            $GLOBALS['__cron_org_id'] = (int) $org['id'];
+            clear_setting_cache();
+            $log('--- Organisation ' . $org['id'] . ' ---');
+            $s = run_retention_engine($pdo);
+            $log("Flagged: {$s['flagged']} | Consent-disposed: {$s['consent_disposed']} | Auto-disposed: {$s['auto_disposed']} | Dual-approval SKIPPED: {$s['dual_skipped']} | Escalated: {$s['escalated']} | DSAR alerts: {$s['dsar_alerts']} | Review notifications: {$s['review_notifications']}");
+            $mail = dispatch_pending_notifications($pdo);
+            $log("Emails sent: {$mail['sent']} | failed: {$mail['failed']}");
 
-        // Enterprise additions (steps A/B/C) — only when on the Enterprise tier.
-        if (get_setting($pdo, 'adrs_tier', 'core') === 'enterprise') {
-            require_once __DIR__ . '/../includes/enterprise_lib.php';
-            $e = run_enterprise_engine_steps($pdo);
-            $log("Enterprise: intake-created {$e['intake_created']} | consent-retried {$e['consent_retried']} | logs-purged {$e['logs_purged']}");
+            if (get_setting($pdo, 'adrs_tier', 'core') === 'enterprise') {
+                require_once __DIR__ . '/../includes/enterprise_lib.php';
+                $e = run_enterprise_engine_steps($pdo);
+                $log("Enterprise: intake-created {$e['intake_created']} | consent-retried {$e['consent_retried']} | logs-purged {$e['logs_purged']}");
+            }
+
+            unset($GLOBALS['__cron_org_id']);
         }
 
+        $GLOBALS['__cron_org_id'] = 1;
+        clear_setting_cache();
         $hk = run_housekeeping($pdo);
+        unset($GLOBALS['__cron_org_id']);
         $log("Housekeeping: pruned login_attempts {$hk['login_attempts']}, password_resets {$hk['password_resets']}, old read notifications {$hk['read_notifications']}");
         $log('=== Engine COMPLETE in ' . round(microtime(true) - $start, 2) . 's ===');
     }

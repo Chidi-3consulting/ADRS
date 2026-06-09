@@ -9,11 +9,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
     $action = $_POST['action'] ?? '';
     if ($action === 'create' && trim($_POST['url'] ?? '') !== '') {
-        $pdo->prepare("INSERT INTO webhook_endpoints (name, url, event_types, created_by) VALUES (:n,:u,:e,:by)")
-            ->execute(['n' => trim($_POST['name'] ?? 'Webhook'), 'u' => trim($_POST['url']), 'e' => trim($_POST['event_types'] ?? '*') ?: '*', 'by' => (int) current_user()['id']]);
+        $orgId = require_org_id();
+        $pdo->prepare("INSERT INTO webhook_endpoints (organization_id, name, url, event_types, created_by) VALUES (:oid,:n,:u,:e,:by)")
+            ->execute(['oid' => $orgId, 'n' => trim($_POST['name'] ?? 'Webhook'), 'u' => trim($_POST['url']), 'e' => trim($_POST['event_types'] ?? '*') ?: '*', 'by' => (int) current_user()['id']]);
         flash('success', 'Webhook added.');
     } elseif ($action === 'delete') {
-        $pdo->prepare("DELETE FROM webhook_endpoints WHERE id = :id")->execute(['id' => (int) $_POST['id']]);
+        $orgId = require_org_id();
+        $pdo->prepare('DELETE FROM webhook_endpoints WHERE id = :id AND organization_id = :o')->execute(['id' => (int) $_POST['id'], 'o' => $orgId]);
         flash('success', 'Webhook removed.');
     } elseif ($action === 'test') {
         $n = fire_ops_event($pdo, 'test.ping', ['message' => 'ADRS test event'], fn($u, $p) => [200, 'ok']);
@@ -21,7 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect(APP_URL . '/webhooks');
 }
-$rows = $pdo->query("SELECT * FROM webhook_endpoints ORDER BY id DESC")->fetchAll();
+$orgId = require_org_id();
+$whStmt = $pdo->prepare('SELECT * FROM webhook_endpoints WHERE organization_id = :o ORDER BY id DESC');
+$whStmt->execute(['o' => $orgId]);
+$rows = $whStmt->fetchAll();
 $enabled = get_setting($pdo, 'ops_webhooks_enabled', '0') === '1';
 $page_title = 'Ops Webhooks';
 $active_nav = 'settings';

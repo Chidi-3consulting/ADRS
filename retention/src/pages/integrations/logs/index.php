@@ -5,12 +5,22 @@ require_once __DIR__ . '/../../../includes/enterprise_lib.php';
 require_role('admin', 'dpo');
 $pdo = get_db();
 require_enterprise($pdo);
+$orgId = require_org_id();
 $dir = in_array($_GET['direction'] ?? '', ['inbound','outbound'], true) ? $_GET['direction'] : '';
-$where = $dir ? "WHERE l.direction = " . $pdo->quote($dir) : '';
-$pg = paginate((int) $pdo->query("SELECT COUNT(*) FROM integration_logs l $where")->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
-$logs = $pdo->query(
-    "SELECT l.*, cs.name AS system_name FROM integration_logs l LEFT JOIN connected_systems cs ON cs.id=l.system_id $where ORDER BY l.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
-)->fetchAll();
+$where = ['l.organization_id = :o'];
+$params = ['o' => $orgId];
+if ($dir) { $where[] = 'l.direction = :dir'; $params['dir'] = $dir; }
+$whereSql = ' WHERE ' . implode(' AND ', $where);
+$cntStmt = $pdo->prepare("SELECT COUNT(*) FROM integration_logs l$whereSql");
+$cntStmt->execute($params);
+$pg = paginate((int) $cntStmt->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
+$logStmt = $pdo->prepare(
+    "SELECT l.*, cs.name AS system_name FROM integration_logs l
+     LEFT JOIN connected_systems cs ON cs.id = l.system_id$whereSql
+     ORDER BY l.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
+);
+$logStmt->execute($params);
+$logs = $logStmt->fetchAll();
 $page_title = 'Integration Logs';
 $active_nav = 'integrations';
 require __DIR__ . '/../../../includes/layout_header.php';

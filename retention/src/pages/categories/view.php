@@ -7,15 +7,23 @@ $pdo = get_db();
 $id = (int) ($_GET['id'] ?? 0);
 $category = $id > 0 ? fetch_category($pdo, $id) : null;
 if ($category === null) { http_response_code(404); require __DIR__ . '/../../../404.php'; exit; }
+assert_org_row($category);
 
 // Data Owners may only view their own categories.
 if (has_role('data_owner') && (int) $category['owner_id'] !== (int) current_user()['id']) {
     http_response_code(403); exit('Forbidden');
 }
 
-$active = (int) $pdo->query("SELECT COUNT(*) c FROM data_records WHERE category_id={$id} AND deleted_at IS NULL AND status!='disposed'")->fetch()['c'];
-$dueReview = (int) $pdo->query("SELECT COUNT(*) c FROM data_records WHERE category_id={$id} AND status='due_review'")->fetch()['c'];
-$onHold = (int) $pdo->query("SELECT COUNT(*) c FROM data_records WHERE category_id={$id} AND legal_hold=1")->fetch()['c'];
+$orgId = require_org_id();
+$activeStmt = $pdo->prepare("SELECT COUNT(*) c FROM data_records WHERE organization_id = :o AND category_id = :id AND deleted_at IS NULL AND status != 'disposed'");
+$activeStmt->execute(['o' => $orgId, 'id' => $id]);
+$active = (int) $activeStmt->fetch()['c'];
+$dueStmt = $pdo->prepare("SELECT COUNT(*) c FROM data_records WHERE organization_id = :o AND category_id = :id AND status = 'due_review'");
+$dueStmt->execute(['o' => $orgId, 'id' => $id]);
+$dueReview = (int) $dueStmt->fetch()['c'];
+$holdStmt = $pdo->prepare("SELECT COUNT(*) c FROM data_records WHERE organization_id = :o AND category_id = :id AND legal_hold = 1");
+$holdStmt->execute(['o' => $orgId, 'id' => $id]);
+$onHold = (int) $holdStmt->fetch()['c'];
 $ownerName = null;
 if ($category['owner_id']) {
     $os = $pdo->prepare("SELECT name FROM users WHERE id=:o"); $os->execute(['o'=>$category['owner_id']]);

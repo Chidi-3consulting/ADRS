@@ -9,7 +9,7 @@ $category = $id > 0 ? fetch_category($pdo, $id) : null;
 if ($category === null) { http_response_code(404); require __DIR__ . '/../../../404.php'; exit; }
 $error = null;
 
-$owners = $pdo->query("SELECT id, name FROM users WHERE role='data_owner' AND is_active=1 AND deleted_at IS NULL ORDER BY name")->fetchAll();
+$owners = list_org_users($pdo, "role = 'data_owner'");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();

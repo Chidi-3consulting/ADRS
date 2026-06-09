@@ -7,6 +7,41 @@ require_once __DIR__ . '/phpmailer/PHPMailer.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 
+/** Send using platform-level SMTP keys in system_settings (registration, billing). */
+function send_platform_email(PDO $pdo, string $to_email, string $subject, string $html): bool {
+    $stmt = $pdo->prepare('SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE :p');
+    $stmt->execute(['p' => 'smtp%']);
+    $platform = [];
+    foreach ($stmt->fetchAll() as $row) { $platform[$row['setting_key']] = $row['setting_value']; }
+    $host = $platform['smtp_host'] ?? '';
+    if ($host === '' || stripos($host, 'yourdomain') !== false) { return false; }
+    $from = $platform['smtp_from_email'] ?? $platform['smtp_user'] ?? 'noreply@localhost';
+    $fromName = $platform['smtp_from_name'] ?? (defined('APP_NAME') ? APP_NAME : 'ADRS');
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host = $host;
+        $mail->Port = (int) ($platform['smtp_port'] ?? 587);
+        $user = $platform['smtp_user'] ?? $platform['smtp_username'] ?? '';
+        if ($user) {
+            $mail->SMTPAuth = true;
+            $mail->Username = $user;
+            $mail->Password = (string) ($platform['smtp_pass'] ?? $platform['smtp_password'] ?? '');
+        }
+        $secure = $platform['smtp_encryption'] ?? $platform['smtp_secure'] ?? 'tls';
+        if ($secure === 'ssl') { $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; }
+        elseif ($secure === 'tls') { $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; }
+        $mail->setFrom($from, $fromName);
+        $mail->addAddress($to_email);
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body = $html;
+        return $mail->send();
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
 /**
  * Send one HTML email. SMTP settings come exclusively from system_settings
  * (BUG-08 fix). Falls back to PHP mail() if no SMTP host is configured.

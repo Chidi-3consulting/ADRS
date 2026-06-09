@@ -13,7 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect(APP_URL . '/breaches');
 }
-$rows = $pdo->query("SELECT * FROM breach_incidents ORDER BY id DESC")->fetchAll();
+$orgId = require_org_id();
+$stmt = $pdo->prepare('SELECT * FROM breach_incidents WHERE organization_id = :o ORDER BY id DESC');
+$stmt->execute(['o' => $orgId]);
+$rows = $stmt->fetchAll();
 $page_title = 'Breach Register';
 $active_nav = 'breaches';
 require __DIR__ . '/../../includes/layout_header.php';

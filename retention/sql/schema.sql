@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password_hash` VARCHAR(255) NOT NULL,
   `role`          ENUM('admin','dpo','data_owner') NOT NULL DEFAULT 'data_owner',
   `is_active`     TINYINT(1)   NOT NULL DEFAULT 1,
+  `must_change_password` TINYINT(1) NOT NULL DEFAULT 0
+    COMMENT 'Force password change on next login (seeded/temp passwords)',
   `last_login_at` TIMESTAMP    NULL,
   `created_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -389,7 +391,10 @@ INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VA
 -- Display
 ('rows_per_page',         '25',                                'Default pagination rows'),
 ('app_name',              '3Consulting Data Retention System', 'Application display name'),
-('timezone',              'Africa/Lagos',                      'System timezone for display');
+('timezone',              'Africa/Lagos',                      'System timezone for display'),
+('deployment_mode',       'saas',                              'saas = multi-tenant self-service; single = one org per install'),
+('setup_complete',        '0',                                 'Set to 1 after initial setup wizard completes (single-tenant only)'),
+('allow_public_signup',   '0',                                 'Allow team-member self-registration within an org (single-tenant)');
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -773,3 +778,110 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
 
 -- Performance: index record_reference (used by API dedup + consent-signal matching).
 ALTER TABLE `data_records` ADD INDEX `idx_records_reference` (`record_reference`);
+
+-- ============================================================
+-- SAAS MULTI-TENANT (organisations + per-tenant isolation)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `organizations` (
+  `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`          VARCHAR(255) NOT NULL,
+  `slug`          VARCHAR(100) NOT NULL,
+  `tier`          ENUM('core','enterprise') NOT NULL DEFAULT 'core',
+  `status`        ENUM('active','trial','suspended') NOT NULL DEFAULT 'trial',
+  `trial_ends_at` TIMESTAMP NULL,
+  `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_organizations_slug` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `organization_settings` (
+  `organization_id` INT UNSIGNED NOT NULL,
+  `setting_key`     VARCHAR(100) NOT NULL,
+  `setting_value`   TEXT         NOT NULL,
+  `description`     VARCHAR(255) NULL,
+  `updated_at`      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`organization_id`, `setting_key`),
+  CONSTRAINT `fk_org_settings_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `organizations` (`id`, `name`, `slug`, `tier`, `status`) VALUES
+(1, 'Default Organisation', 'default', 'core', 'active');
+
+ALTER TABLE `users` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `data_categories` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `data_records` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `audit_log` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `notifications` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `schedule_reviews` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `pending_recalculations` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `attachments` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `dsar_requests` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `import_jobs` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `connected_systems` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `api_keys` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `field_mappings` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `auto_categorization_rules` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `integration_logs` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `intake_queue` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `disposal_dispatches` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `consent_signals` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `ropa_entries` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `dpia_assessments` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `breach_incidents` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `consent_receipts` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+ALTER TABLE `webhook_endpoints` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
+
+-- ============================================================
+-- COMMERCIAL LAUNCH (billing, verification, platform admin)
+-- ============================================================
+ALTER TABLE `users`
+  ADD COLUMN `email_verified_at` TIMESTAMP NULL,
+  ADD COLUMN `verification_token_hash` VARCHAR(64) NULL,
+  ADD COLUMN `is_platform_admin` TINYINT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE `organizations`
+  ADD COLUMN `subscription_status` ENUM('trial','active','past_due','cancelled') NOT NULL DEFAULT 'trial' AFTER `status`,
+  ADD COLUMN `billing_email` VARCHAR(255) NULL,
+  ADD COLUMN `last_payment_at` TIMESTAMP NULL,
+  ADD COLUMN `paystack_customer_code` VARCHAR(100) NULL,
+  ADD COLUMN `enterprise_licence_key` VARCHAR(64) NULL;
+
+CREATE TABLE IF NOT EXISTS `enterprise_licence_keys` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `key_hash` CHAR(64) NOT NULL,
+  `key_prefix` VARCHAR(32) NOT NULL,
+  `redeemed_by_organization_id` INT UNSIGNED NULL,
+  `redeemed_at` TIMESTAMP NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_licence_key_hash` (`key_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `payment_transactions` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `organization_id` INT UNSIGNED NOT NULL,
+  `reference` VARCHAR(100) NOT NULL,
+  `amount_kobo` INT UNSIGNED NOT NULL,
+  `currency` CHAR(3) NOT NULL DEFAULT 'NGN',
+  `plan_tier` ENUM('core','enterprise') NOT NULL,
+  `status` ENUM('pending','success','failed') NOT NULL DEFAULT 'pending',
+  `provider` VARCHAR(32) NOT NULL DEFAULT 'paystack',
+  `provider_data` JSON NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` TIMESTAMP NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_payment_reference` (`reference`),
+  CONSTRAINT `fk_payment_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
+('paystack_public_key', '', 'Paystack public key'),
+('paystack_secret_key', '', 'Paystack secret key'),
+('core_plan_amount_kobo', '7500000', 'Core plan annual price in kobo'),
+('enterprise_plan_amount_kobo', '25000000', 'Enterprise plan annual price in kobo'),
+('trial_days', '14', 'Free trial length'),
+('platform_support_email', 'projects@3consult-ng.com', 'Support contact');
+
+INSERT IGNORE INTO `enterprise_licence_keys` (`key_hash`, `key_prefix`) VALUES
+(SHA2('ADRS-ENT-DEMO-2026-3CONSULT', 256), 'ADRS-ENT-DEMO');

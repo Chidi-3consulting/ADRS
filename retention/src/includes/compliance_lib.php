@@ -11,12 +11,14 @@ require_once __DIR__ . '/helpers.php';
 /* ----------------------------- RoPA / Article 30 ----------------------------- */
 
 function create_ropa_entry(PDO $pdo, array $in, ?int $actor_id): int {
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $pdo->prepare(
-        "INSERT INTO ropa_entries (category_id, activity_name, controller_name, controller_contact, dpo_contact,
+        "INSERT INTO ropa_entries (organization_id, category_id, activity_name, controller_name, controller_contact, dpo_contact,
             purpose, lawful_basis, data_subjects, data_categories, recipients, third_country_transfers,
             retention_summary, security_measures, created_by)
-         VALUES (:cat,:an,:cn,:cc,:dpo,:pur,:lb,:ds,:dc,:rec,:tct,:ret,:sec,:by)"
+         VALUES (:oid,:cat,:an,:cn,:cc,:dpo,:pur,:lb,:ds,:dc,:rec,:tct,:ret,:sec,:by)"
     )->execute([
+        'oid' => $orgId,
         'cat' => $in['category_id'] ?: null, 'an' => $in['activity_name'], 'cn' => $in['controller_name'] ?? null,
         'cc' => $in['controller_contact'] ?? null, 'dpo' => $in['dpo_contact'] ?? null, 'pur' => $in['purpose'] ?? null,
         'lb' => $in['lawful_basis'] ?? null, 'ds' => $in['data_subjects'] ?? null, 'dc' => $in['data_categories'] ?? null,
@@ -33,11 +35,14 @@ function create_ropa_entry(PDO $pdo, array $in, ?int $actor_id): int {
  * Returns the number created — turns the data register into an Article 30 starting point.
  */
 function generate_ropa_from_categories(PDO $pdo, ?int $actor_id): int {
-    $cats = $pdo->query(
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
+    $stmt = $pdo->prepare(
         "SELECT c.* FROM data_categories c
-         WHERE c.deleted_at IS NULL AND c.is_active = 1
-           AND NOT EXISTS (SELECT 1 FROM ropa_entries r WHERE r.category_id = c.id)"
-    )->fetchAll();
+         WHERE c.organization_id = :org AND c.deleted_at IS NULL AND c.is_active = 1
+           AND NOT EXISTS (SELECT 1 FROM ropa_entries r WHERE r.category_id = c.id AND r.organization_id = :org2)"
+    );
+    $stmt->execute(['org' => $orgId, 'org2' => $orgId]);
+    $cats = $stmt->fetchAll();
     $n = 0;
     foreach ($cats as $c) {
         create_ropa_entry($pdo, [
@@ -64,11 +69,13 @@ function create_dpia(PDO $pdo, array $in, ?int $actor_id): int {
     $likelihood = max(1, min(5, (int) ($in['likelihood_score'] ?? 1)));
     $severity   = max(1, min(5, (int) ($in['severity_score'] ?? 1)));
     $risk = $likelihood * $severity;
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $pdo->prepare(
-        "INSERT INTO dpia_assessments (title, category_id, description, necessity_score, proportionality_score,
+        "INSERT INTO dpia_assessments (organization_id, title, category_id, description, necessity_score, proportionality_score,
             likelihood_score, severity_score, risk_score, risk_level, mitigation, status, assessed_by)
-         VALUES (:t,:cat,:d,:nec,:prop,:lik,:sev,:rs,:rl,:mit,'draft',:by)"
+         VALUES (:oid,:t,:cat,:d,:nec,:prop,:lik,:sev,:rs,:rl,:mit,'draft',:by)"
     )->execute([
+        'oid' => $orgId,
         't' => $in['title'], 'cat' => $in['category_id'] ?: null, 'd' => $in['description'] ?? null,
         'nec' => max(1, min(5, (int) ($in['necessity_score'] ?? 1))), 'prop' => max(1, min(5, (int) ($in['proportionality_score'] ?? 1))),
         'lik' => $likelihood, 'sev' => $severity, 'rs' => $risk, 'rl' => dpia_risk_level($likelihood, $severity),
@@ -82,8 +89,14 @@ function create_dpia(PDO $pdo, array $in, ?int $actor_id): int {
 function set_dpia_status(PDO $pdo, int $id, string $status, ?int $actor_id): void {
     if (!in_array($status, ['draft','in_review','approved','rejected'], true)) { throw new InvalidArgumentException('Bad status'); }
     $approved = $status === 'approved';
-    $pdo->prepare("UPDATE dpia_assessments SET status=:s, approved_by=:by, approved_at=" . ($approved ? 'NOW()' : 'NULL') . " WHERE id=:id")
-        ->execute(['s' => $status, 'by' => $approved ? $actor_id : null, 'id' => $id]);
+    $orgId = function_exists('require_org_id') ? require_org_id() : null;
+    if ($orgId !== null) {
+        $pdo->prepare("UPDATE dpia_assessments SET status=:s, approved_by=:by, approved_at=" . ($approved ? 'NOW()' : 'NULL') . " WHERE id=:id AND organization_id=:o")
+            ->execute(['s' => $status, 'by' => $approved ? $actor_id : null, 'id' => $id, 'o' => $orgId]);
+    } else {
+        $pdo->prepare("UPDATE dpia_assessments SET status=:s, approved_by=:by, approved_at=" . ($approved ? 'NOW()' : 'NULL') . " WHERE id=:id")
+            ->execute(['s' => $status, 'by' => $approved ? $actor_id : null, 'id' => $id]);
+    }
     log_audit($pdo, 'export_generated', 'system', $id, $actor_id, ['dpia_status' => $status], get_client_ip());
 }
 
@@ -92,7 +105,10 @@ function set_dpia_status(PDO $pdo, int $id, string $status, ?int $actor_id): voi
 /** Next breach reference BR-YYYY-NNNN. */
 function generate_breach_reference(PDO $pdo): string {
     $year = date('Y');
-    $n = ((int) $pdo->query("SELECT COUNT(*) FROM breach_incidents WHERE YEAR(created_at) = $year")->fetchColumn()) + 1;
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM breach_incidents WHERE organization_id = :o AND YEAR(created_at) = :y');
+    $stmt->execute(['o' => $orgId, 'y' => $year]);
+    $n = ((int) $stmt->fetchColumn()) + 1;
     return sprintf('BR-%s-%04d', $year, $n);
 }
 
@@ -110,11 +126,13 @@ function create_breach(PDO $pdo, array $in, ?int $actor_id): array {
     $ref = generate_breach_reference($pdo);
     $discovered = $in['discovered_at'] ?: date('Y-m-d H:i:s');
     $deadline = breach_notify_deadline($discovered);
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $pdo->prepare(
-        "INSERT INTO breach_incidents (reference, title, description, discovered_at, occurred_at, severity,
+        "INSERT INTO breach_incidents (organization_id, reference, title, description, discovered_at, occurred_at, severity,
             affected_records, status, notify_deadline, reported_by)
-         VALUES (:ref,:t,:d,:disc,:occ,:sev,:aff,'open',:dl,:by)"
+         VALUES (:oid,:ref,:t,:d,:disc,:occ,:sev,:aff,'open',:dl,:by)"
     )->execute([
+        'oid' => $orgId,
         'ref' => $ref, 't' => $in['title'], 'd' => $in['description'] ?? null, 'disc' => $discovered,
         'occ' => $in['occurred_at'] ?: null, 'sev' => $in['severity'] ?? 'medium',
         'aff' => isset($in['affected_records']) && $in['affected_records'] !== '' ? (int) $in['affected_records'] : null,
@@ -127,8 +145,14 @@ function create_breach(PDO $pdo, array $in, ?int $actor_id): array {
 
 function update_breach_status(PDO $pdo, int $id, string $status, ?int $actor_id): void {
     if (!in_array($status, ['open','contained','notified','closed'], true)) { throw new InvalidArgumentException('Bad status'); }
+    $orgId = function_exists('require_org_id') ? require_org_id() : null;
     $extra = $status === 'notified' ? ', notified_authority_at = NOW()' : '';
-    $pdo->prepare("UPDATE breach_incidents SET status=:s$extra WHERE id=:id")->execute(['s' => $status, 'id' => $id]);
+    if ($orgId !== null) {
+        $pdo->prepare("UPDATE breach_incidents SET status=:s$extra WHERE id=:id AND organization_id=:o")
+            ->execute(['s' => $status, 'id' => $id, 'o' => $orgId]);
+    } else {
+        $pdo->prepare("UPDATE breach_incidents SET status=:s$extra WHERE id=:id")->execute(['s' => $status, 'id' => $id]);
+    }
     log_audit($pdo, 'export_generated', 'system', $id, $actor_id, ['breach_status' => $status], get_client_ip());
 }
 
@@ -137,10 +161,12 @@ function update_breach_status(PDO $pdo, int $id, string $status, ?int $actor_id)
 function issue_consent_receipt(PDO $pdo, array $in, ?int $actor_id): array {
     $given = $in['given_at'] ?: date('Y-m-d H:i:s');
     $hash = hash('sha256', implode('|', [$in['data_subject_ref'], $in['purpose'], $given, bin2hex(random_bytes(8))]));
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $pdo->prepare(
-        "INSERT INTO consent_receipts (record_id, data_subject_ref, purpose, lawful_basis, channel, given_at, receipt_hash, created_by)
-         VALUES (:rid,:dsr,:pur,:lb,:ch,:ga,:h,:by)"
+        "INSERT INTO consent_receipts (organization_id, record_id, data_subject_ref, purpose, lawful_basis, channel, given_at, receipt_hash, created_by)
+         VALUES (:oid,:rid,:dsr,:pur,:lb,:ch,:ga,:h,:by)"
     )->execute([
+        'oid' => $orgId,
         'rid' => $in['record_id'] ?: null, 'dsr' => $in['data_subject_ref'], 'pur' => $in['purpose'],
         'lb' => $in['lawful_basis'] ?? null, 'ch' => $in['channel'] ?? null, 'ga' => $given, 'h' => $hash, 'by' => $actor_id,
     ]);

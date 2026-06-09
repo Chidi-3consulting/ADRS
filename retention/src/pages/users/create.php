@@ -25,8 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($exists->fetch()) {
             $error = 'A user with that email already exists.';
         } else {
-            $pdo->prepare("INSERT INTO users (name,email,password_hash,role,is_active) VALUES (:n,:e,:p,:r,1)")
-                ->execute(['n' => $name, 'e' => $email, 'p' => password_hash($password, PASSWORD_BCRYPT), 'r' => $role]);
+            $pdo->prepare(
+                "INSERT INTO users (organization_id,name,email,password_hash,role,is_active,must_change_password)
+                 VALUES (:oid,:n,:e,:p,:r,1,1)"
+            )->execute([
+                'oid' => require_org_id(),
+                'n' => $name, 'e' => $email,
+                'p' => password_hash($password, PASSWORD_BCRYPT), 'r' => $role,
+            ]);
             $id = (int) $pdo->lastInsertId();
             log_audit($pdo, 'user_created', 'user', $id, (int) current_user()['id'], ['email' => $email, 'role' => $role], get_client_ip());
             flash('success', 'User created.');
@@ -45,7 +51,7 @@ require __DIR__ . '/../../includes/layout_header.php';
     <?= csrf_field() ?>
     <div class="mb-3"><label class="form-label">Name *</label><input name="name" class="form-control" required value="<?= escape_html($_POST['name'] ?? '') ?>"></div>
     <div class="mb-3"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" required value="<?= escape_html($_POST['email'] ?? '') ?>"></div>
-    <div class="mb-3"><label class="form-label">Password * (min 10 chars)</label><input type="password" name="password" class="form-control" required minlength="10"></div>
+    <div class="mb-3"><label class="form-label">Temporary password * (min 10 chars)</label><input type="password" name="password" class="form-control" required minlength="10"><div class="form-text">The user must change this password on first login.</div></div>
     <div class="mb-3"><label class="form-label">Role *</label>
       <select name="role" class="form-select">
         <option value="data_owner">Data Owner</option>

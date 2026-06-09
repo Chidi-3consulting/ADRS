@@ -6,17 +6,20 @@ $pdo = get_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
-    $upd = $pdo->prepare("UPDATE system_settings SET setting_value = :v WHERE setting_key = :k");
+    $orgId = require_org_id();
     foreach ($_POST as $k => $v) {
-        if ($k === 'csrf_token') { continue; }
-        $upd->execute(['v' => is_array($v) ? json_encode($v) : (string) $v, 'k' => $k]);
+        if ($k === 'csrf_token' || in_array($k, PLATFORM_SETTING_KEYS, true)) { continue; }
+        set_setting($pdo, $k, is_array($v) ? json_encode($v) : (string) $v, $orgId);
     }
     log_audit($pdo, 'schedule_reviewed', 'system', null, (int) current_user()['id'], ['action' => 'settings_updated'], get_client_ip());
     flash('success', 'Settings saved.');
     redirect(APP_URL . '/settings');
 }
 
-$rows = $pdo->query("SELECT * FROM system_settings ORDER BY setting_key")->fetchAll();
+$orgId = require_org_id();
+$rows = $pdo->prepare("SELECT setting_key, setting_value, description FROM organization_settings WHERE organization_id = :o ORDER BY setting_key");
+$rows->execute(['o' => $orgId]);
+$rows = $rows->fetchAll();
 $page_title = 'System Settings';
 $active_nav = 'settings';
 require __DIR__ . '/../../includes/layout_header.php';

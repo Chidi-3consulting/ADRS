@@ -14,13 +14,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect(APP_URL . '/recalculations');
 }
 
-$rows = $pdo->query(
+$orgId = require_org_id();
+$stmt = $pdo->prepare(
     "SELECT pr.*, dr.record_reference, dc.name AS category_name
      FROM pending_recalculations pr
-     JOIN data_records dr ON dr.id = pr.record_id
-     JOIN data_categories dc ON dc.id = pr.category_id
-     WHERE pr.status='pending' ORDER BY pr.id DESC"
-)->fetchAll();
+     JOIN data_records dr ON dr.id = pr.record_id AND dr.organization_id = :o
+     JOIN data_categories dc ON dc.id = pr.category_id AND dc.organization_id = :o2
+     WHERE pr.organization_id = :o3 AND pr.status = 'pending' ORDER BY pr.id DESC"
+);
+$stmt->execute(['o' => $orgId, 'o2' => $orgId, 'o3' => $orgId]);
+$rows = $stmt->fetchAll();
 $page_title = 'Recalculation Queue';
 $active_nav = 'recalculations';
 require __DIR__ . '/../../includes/layout_header.php';

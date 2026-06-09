@@ -6,8 +6,8 @@ require_role('admin');
 $pdo = get_db();
 require_enterprise($pdo);
 $error = null;
-$systems = $pdo->query("SELECT id, name FROM connected_systems WHERE is_active=1 ORDER BY name")->fetchAll();
-$cats = $pdo->query("SELECT id, name FROM data_categories WHERE deleted_at IS NULL AND is_active=1 ORDER BY name")->fetchAll();
+$systems = list_org_systems($pdo, true);
+$cats = list_org_categories($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
@@ -20,10 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $priority = (int) ($_POST['priority'] ?? 10);
     if ($sid <= 0 || $cid <= 0 || $objectType === '' || $name === '') { $error = 'System, category, object type and rule name are required.'; }
     else {
+        $orgId = require_org_id();
         $pdo->prepare(
-            "INSERT INTO auto_categorization_rules (system_id, rule_name, object_type, condition_field, condition_value, category_id, priority, created_by)
-             VALUES (:s,:n,:ot,:cf,:cv,:c,:p,:by)"
-        )->execute(['s'=>$sid,'n'=>$name,'ot'=>$objectType,'cf'=>$condField ?: null,'cv'=>$condField ? $condValue : null,'c'=>$cid,'p'=>$priority,'by'=>(int)current_user()['id']]);
+            "INSERT INTO auto_categorization_rules (organization_id, system_id, rule_name, object_type, condition_field, condition_value, category_id, priority, created_by)
+             VALUES (:oid,:s,:n,:ot,:cf,:cv,:c,:p,:by)"
+        )->execute(['oid'=>$orgId,'s'=>$sid,'n'=>$name,'ot'=>$objectType,'cf'=>$condField ?: null,'cv'=>$condField ? $condValue : null,'c'=>$cid,'p'=>$priority,'by'=>(int)current_user()['id']]);
         flash('success', 'Rule created.');
         redirect(APP_URL . '/integrations/rules');
     }

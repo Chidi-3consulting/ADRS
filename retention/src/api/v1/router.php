@@ -12,6 +12,9 @@ $apiKey = verify_api_key($pdo, $_SERVER['HTTP_X_API_KEY'] ?? '');
 if ($apiKey === null) {
     api_response(401, ['error' => 'invalid_api_key', 'message' => 'A valid X-API-Key header is required.']);
 }
+require_once __DIR__ . '/../../includes/helpers.php';
+$GLOBALS['__cron_org_id'] = (int) ($apiKey['organization_id'] ?? 1);
+clear_setting_cache();
 if (!within_rate_limit($pdo, (int) $apiKey['id'], (int) $apiKey['rate_limit_per_min'])) {
     header('Retry-After: 60');
     api_response(429, ['error' => 'rate_limit_exceeded', 'message' => 'Too many requests; slow down.']);

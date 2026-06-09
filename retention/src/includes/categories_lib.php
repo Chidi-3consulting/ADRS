@@ -10,8 +10,16 @@ require_once __DIR__ . '/notifications_lib.php';
 
 /** Fetch one non-deleted category by id, or null. */
 function fetch_category(PDO $pdo, int $id): ?array {
-    $stmt = $pdo->prepare("SELECT * FROM data_categories WHERE id = :id AND deleted_at IS NULL LIMIT 1");
-    $stmt->execute(['id' => $id]);
+    $orgId = function_exists('current_org_id') ? current_org_id() : null;
+    if ($orgId !== null) {
+        $stmt = $pdo->prepare(
+            "SELECT * FROM data_categories WHERE id = :id AND organization_id = :o AND deleted_at IS NULL LIMIT 1"
+        );
+        $stmt->execute(['id' => $id, 'o' => $orgId]);
+    } else {
+        $stmt = $pdo->prepare("SELECT * FROM data_categories WHERE id = :id AND deleted_at IS NULL LIMIT 1");
+        $stmt->execute(['id' => $id]);
+    }
     $row = $stmt->fetch();
     return $row === false ? null : $row;
 }
@@ -36,14 +44,16 @@ function create_category(PDO $pdo, array $in, int $actor_id): int {
     $trigger = $in['disposal_trigger'] === 'consent_withdrawal' ? 'consent_withdrawal' : 'date_based';
     $days = $trigger === 'consent_withdrawal' ? 0 : max(0, (int) ($in['retention_period_days'] ?? 0));
 
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $stmt = $pdo->prepare(
         "INSERT INTO data_categories
-           (name, description, compliance_framework, legal_basis, retention_period_days,
+           (organization_id, name, description, compliance_framework, legal_basis, retention_period_days,
             retention_period_label, disposal_method, disposal_trigger, requires_dual_approval,
             owner_id, review_frequency, source, is_active)
-         VALUES (:name,:descr,:fw,:lb,:days,:label,:dm,:dt,:dual,:owner,:rf,'custom',1)"
+         VALUES (:oid,:name,:descr,:fw,:lb,:days,:label,:dm,:dt,:dual,:owner,:rf,'custom',1)"
     );
     $stmt->execute([
+        'oid'   => $orgId,
         'name'  => $in['name'],
         'descr' => $in['description'] ?? null,
         'fw'    => $in['compliance_framework'] ?? 'GDPR',
@@ -66,21 +76,23 @@ function create_category(PDO $pdo, array $in, int $actor_id): int {
  * affected date_based record into pending_recalculations for DPO review. Returns rows queued.
  */
 function queue_recalculations(PDO $pdo, int $category_id, int $new_days, int $actor_id): int {
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $stmt = $pdo->prepare(
         "SELECT id, collection_date, retention_end_date FROM data_records
-         WHERE category_id = :cid AND deleted_at IS NULL AND status != 'disposed'
+         WHERE organization_id = :o AND category_id = :cid AND deleted_at IS NULL AND status != 'disposed'
            AND retention_end_date IS NOT NULL"
     );
-    $stmt->execute(['cid' => $category_id]);
+    $stmt->execute(['o' => $orgId, 'cid' => $category_id]);
     $ins = $pdo->prepare(
         "INSERT INTO pending_recalculations
-           (record_id, category_id, old_retention_end_date, new_retention_end_date, triggered_by, status)
-         VALUES (:rid,:cid,:old,:new,:by,'pending')"
+           (organization_id, record_id, category_id, old_retention_end_date, new_retention_end_date, triggered_by, status)
+         VALUES (:oid,:rid,:cid,:old,:new,:by,'pending')"
     );
     $n = 0;
     foreach ($stmt->fetchAll() as $r) {
         $newEnd = retention_end_date($r['collection_date'], $new_days);
         $ins->execute([
+            'oid' => $orgId,
             'rid' => $r['id'], 'cid' => $category_id,
             'old' => $r['retention_end_date'], 'new' => $newEnd, 'by' => $actor_id,
         ]);

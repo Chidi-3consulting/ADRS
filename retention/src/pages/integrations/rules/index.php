@@ -5,13 +5,17 @@ require_once __DIR__ . '/../../../includes/enterprise_lib.php';
 require_role('admin');
 $pdo = get_db();
 require_enterprise($pdo);
-$rules = $pdo->query(
+$orgId = require_org_id();
+$ruleStmt = $pdo->prepare(
     "SELECT r.*, cs.name AS system_name, dc.name AS category_name
      FROM auto_categorization_rules r
-     JOIN connected_systems cs ON cs.id = r.system_id
-     JOIN data_categories dc ON dc.id = r.category_id
+     JOIN connected_systems cs ON cs.id = r.system_id AND cs.organization_id = :o
+     JOIN data_categories dc ON dc.id = r.category_id AND dc.organization_id = :o2
+     WHERE r.organization_id = :o3
      ORDER BY cs.name, r.priority ASC"
-)->fetchAll();
+);
+$ruleStmt->execute(['o' => $orgId, 'o2' => $orgId, 'o3' => $orgId]);
+$rules = $ruleStmt->fetchAll();
 $page_title = 'Auto-categorisation Rules';
 $active_nav = 'integrations';
 require __DIR__ . '/../../../includes/layout_header.php';

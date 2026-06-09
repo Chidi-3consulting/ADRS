@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/compliance_lib.php';
 require_role('admin', 'dpo');
 $pdo = get_db();
+$orgId = require_org_id();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
@@ -15,7 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (($_GET['export'] ?? '') === 'csv') {
-    $rows = $pdo->query("SELECT * FROM ropa_entries ORDER BY activity_name")->fetchAll();
+    $exp = $pdo->prepare('SELECT * FROM ropa_entries WHERE organization_id = :o ORDER BY activity_name');
+    $exp->execute(['o' => $orgId]);
+    $rows = $exp->fetchAll();
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="ropa_article30_' . date('Y-m-d') . '.csv"');
     echo "\xEF\xBB\xBF";
@@ -28,7 +31,9 @@ if (($_GET['export'] ?? '') === 'csv') {
     exit;
 }
 
-$rows = $pdo->query("SELECT * FROM ropa_entries ORDER BY activity_name")->fetchAll();
+$stmt = $pdo->prepare('SELECT * FROM ropa_entries WHERE organization_id = :o ORDER BY activity_name');
+$stmt->execute(['o' => $orgId]);
+$rows = $stmt->fetchAll();
 $page_title = 'Record of Processing (Art. 30)';
 $active_nav = 'ropa';
 require __DIR__ . '/../../includes/layout_header.php';

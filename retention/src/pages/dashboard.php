@@ -4,6 +4,7 @@ $page_title = 'Dashboard';
 $active_nav = 'dashboard';
 require __DIR__ . '/../includes/layout_header.php';
 $pdo = $__pdo;
+$orgId = require_org_id();
 $ownerScope = has_role('data_owner') ? ' AND dc.owner_id = ' . (int) $__user['id'] : '';
 
 $k = $pdo->query(
@@ -15,14 +16,14 @@ $k = $pdo->query(
        SUM(dr.legal_hold = 1) AS on_hold,
        SUM(dr.status = 'disposed' AND MONTH(dr.disposed_at)=MONTH(CURDATE()) AND YEAR(dr.disposed_at)=YEAR(CURDATE())) AS disposed_month
      FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL
-     WHERE dr.deleted_at IS NULL{$ownerScope}"
+     WHERE dr.organization_id = {$orgId} AND dr.deleted_at IS NULL{$ownerScope}"
 )->fetch();
 
 $isStaff = has_role('admin', 'dpo');
-$openDsar = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM dsar_requests WHERE status NOT IN ('completed','rejected')")->fetch()['c'] : 0;
-$overdueDsar = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM dsar_requests WHERE status NOT IN ('completed','rejected') AND due_date < CURDATE()")->fetch()['c'] : 0;
-$pendingRecalc = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM pending_recalculations WHERE status='pending'")->fetch()['c'] : 0;
-$recent = $isStaff ? $pdo->query("SELECT al.*, u.name pbn FROM audit_log al LEFT JOIN users u ON u.id=al.performed_by ORDER BY al.id DESC LIMIT 8")->fetchAll() : [];
+$openDsar = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM dsar_requests WHERE organization_id = {$orgId} AND status NOT IN ('completed','rejected')")->fetch()['c'] : 0;
+$overdueDsar = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM dsar_requests WHERE organization_id = {$orgId} AND status NOT IN ('completed','rejected') AND due_date < CURDATE()")->fetch()['c'] : 0;
+$pendingRecalc = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM pending_recalculations WHERE organization_id = {$orgId} AND status='pending'")->fetch()['c'] : 0;
+$recent = $isStaff ? $pdo->query("SELECT al.*, u.name pbn FROM audit_log al LEFT JOIN users u ON u.id=al.performed_by WHERE al.organization_id = {$orgId} ORDER BY al.id DESC LIMIT 8")->fetchAll() : [];
 
 function dash_card(string $label, int $val, string $cls, string $href = ''): string {
     $inner = '<div class="card shadow-sm h-100"><div class="card-body"><div class="text-muted small">' . escape_html($label)

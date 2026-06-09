@@ -6,8 +6,8 @@ require_role('admin');
 $pdo = get_db();
 require_enterprise($pdo);
 $error = null;
-$systems = $pdo->query("SELECT id, name FROM connected_systems WHERE is_active=1 ORDER BY name")->fetchAll();
-$cats = $pdo->query("SELECT id, name FROM data_categories WHERE deleted_at IS NULL AND is_active=1 ORDER BY name")->fetchAll();
+$systems = list_org_systems($pdo, true);
+$cats = list_org_categories($pdo);
 $adrsFields = ['record_reference','data_subject_type','collection_date','notes'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -17,8 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $adrs = in_array($_POST['adrs_field'] ?? '', $adrsFields, true) ? $_POST['adrs_field'] : '';
     if ($sid<=0||$cid<=0||$obj===''||$ext===''||$adrs==='') { $error = 'All fields except "required" are mandatory.'; }
     else {
-        $pdo->prepare("INSERT INTO field_mappings (system_id, external_object_type, category_id, external_field, adrs_field, is_required) VALUES (:s,:o,:c,:e,:a,:r)")
-            ->execute(['s'=>$sid,'o'=>$obj,'c'=>$cid,'e'=>$ext,'a'=>$adrs,'r'=>isset($_POST['is_required'])?1:0]);
+        $orgId = require_org_id();
+        $pdo->prepare("INSERT INTO field_mappings (organization_id, system_id, external_object_type, category_id, external_field, adrs_field, is_required) VALUES (:oid,:s,:o,:c,:e,:a,:r)")
+            ->execute(['oid'=>$orgId,'s'=>$sid,'o'=>$obj,'c'=>$cid,'e'=>$ext,'a'=>$adrs,'r'=>isset($_POST['is_required'])?1:0]);
         flash('success', 'Field mapping added.');
         redirect(APP_URL . '/integrations/mappings');
     }

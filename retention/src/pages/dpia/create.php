@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../includes/compliance_lib.php';
 require_role('admin', 'dpo');
 $pdo = get_db();
 $error = null;
-$cats = $pdo->query("SELECT id, name FROM data_categories WHERE deleted_at IS NULL ORDER BY name")->fetchAll();
+$cats = list_org_categories($pdo, false);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();

@@ -1,7 +1,10 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/public_layout.php';
 if (is_logged_in()) { redirect(APP_URL . '/dashboard'); }
+if (!setup_is_complete(get_db())) { redirect(APP_URL . '/setup'); }
+$pdo = get_db();
 
 $error = null;
 if (isset($_GET['expired'])) { $error = 'Your session has expired (inactivity or time limit). Please sign in again.'; }
@@ -30,6 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             record_login_attempt($pdo, $email, $ip, true);
             establish_session($pdo, $user);
+            if ((int) ($user['must_change_password'] ?? 0) === 1) {
+                redirect(APP_URL . '/profile?required=1');
+            }
             redirect(APP_URL . '/dashboard');
         }
     }
@@ -55,7 +61,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input type="password" name="password" class="form-control" required></div>
         <button class="btn btn-primary w-100">Sign in</button>
       </form>
+      <p class="mt-3 mb-0 small text-center">
+        <a href="<?= APP_URL ?>/forgot_password">Forgot your password?</a>
+        <?php if (public_signup_enabled($pdo)): ?>
+          · <a href="<?= APP_URL ?>/signup">Create an account</a>
+        <?php endif; ?>
+      </p>
     </div>
   </div>
-  <p class="text-center text-muted small mt-3">3Consulting Limited</p>
+  <p class="text-center text-muted small mt-3">
+    <a href="<?= APP_URL ?>/" class="text-muted text-decoration-none">&larr; Back to home</a>
+  </p>
 </div></body></html>

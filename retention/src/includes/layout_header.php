@@ -48,11 +48,16 @@ function navlink(string $key, string $active, string $route, string $icon, strin
     <?php if (has_role('admin')): ?>
       <?= navlink('users', $active_nav, '/users', 'bi-people', 'Users') ?>
       <?= navlink('settings', $active_nav, '/settings', 'bi-gear', 'Settings') ?>
+      <a href="<?= APP_URL ?>/billing"><i class="bi bi-credit-card"></i> Billing</a>
+    <?php endif; ?>
+    <?php if (!empty($__user['is_platform_admin'])): ?>
+      <a href="<?= APP_URL ?>/platform" class="text-warning"><i class="bi bi-shield-lock"></i> Platform admin</a>
     <?php endif; ?>
     <div class="mt-auto p-3 border-top border-secondary">
       <div class="small text-light"><?= escape_html($__user['name']) ?></div>
       <?= get_role_badge($__user['role']) ?>
-      <a class="d-block mt-2 text-warning" href="<?= APP_URL ?>/logout">Logout</a>
+      <a class="d-block mt-2 small" href="<?= APP_URL ?>/profile">My profile</a>
+      <a class="d-block mt-1 text-warning" href="<?= APP_URL ?>/logout">Logout</a>
     </div>
   </nav>
   <div class="main-content">

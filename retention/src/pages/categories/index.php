@@ -6,11 +6,13 @@ $pdo = get_db();
 $me = current_user();
 
 // Data Owners see only their own categories; Admin/DPO see all.
+$orgId = require_org_id();
 if (has_role('data_owner')) {
-    $stmt = $pdo->prepare("SELECT * FROM data_categories WHERE deleted_at IS NULL AND owner_id = :o ORDER BY name");
-    $stmt->execute(['o' => $me['id']]);
+    $stmt = $pdo->prepare("SELECT * FROM data_categories WHERE organization_id = :org AND deleted_at IS NULL AND owner_id = :o ORDER BY name");
+    $stmt->execute(['org' => $orgId, 'o' => $me['id']]);
 } else {
-    $stmt = $pdo->query("SELECT * FROM data_categories WHERE deleted_at IS NULL ORDER BY name");
+    $stmt = $pdo->prepare("SELECT * FROM data_categories WHERE organization_id = :org AND deleted_at IS NULL ORDER BY name");
+    $stmt->execute(['org' => $orgId]);
 }
 $categories = $stmt->fetchAll();
 

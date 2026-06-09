@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../includes/dsar_lib.php';
 require_role('admin', 'dpo');
 $pdo = get_db();
 $error = null;
-$assignees = $pdo->query("SELECT id, name FROM users WHERE role IN ('admin','dpo') AND is_active=1 AND deleted_at IS NULL ORDER BY name")->fetchAll();
+$assignees = list_org_users($pdo, "role IN ('admin','dpo')");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();

@@ -14,10 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     redirect(APP_URL . '/integrations/dispatch');
 }
-$pg = paginate((int) $pdo->query("SELECT COUNT(*) FROM disposal_dispatches")->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
-$rows = $pdo->query(
-    "SELECT dd.*, cs.name AS system_name FROM disposal_dispatches dd LEFT JOIN connected_systems cs ON cs.id=dd.system_id ORDER BY dd.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
-)->fetchAll();
+$orgId = require_org_id();
+$cntStmt = $pdo->prepare('SELECT COUNT(*) FROM disposal_dispatches WHERE organization_id = :o');
+$cntStmt->execute(['o' => $orgId]);
+$pg = paginate((int) $cntStmt->fetchColumn(), 50, (int) ($_GET['page'] ?? 1));
+$listStmt = $pdo->prepare(
+    "SELECT dd.*, cs.name AS system_name FROM disposal_dispatches dd
+     LEFT JOIN connected_systems cs ON cs.id = dd.system_id
+     WHERE dd.organization_id = :o ORDER BY dd.id DESC LIMIT {$pg['per_page']} OFFSET {$pg['offset']}"
+);
+$listStmt->execute(['o' => $orgId]);
+$rows = $listStmt->fetchAll();
 $page_title = 'Disposal Dispatch';
 $active_nav = 'integrations';
 require __DIR__ . '/../../../includes/layout_header.php';

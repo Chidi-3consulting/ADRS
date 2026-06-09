@@ -1,5 +1,8 @@
 <?php
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/tenant_lib.php';
+require_once __DIR__ . '/billing_lib.php';
+require_once __DIR__ . '/platform_lib.php';
 
 function _auth_session(): void {
     // Under CLI (tests) there is no HTTP session; $_SESSION still works as a plain array.
@@ -30,7 +33,108 @@ function require_login(): void {
         redirect(APP_URL . '/login?expired=1');
     }
     $_SESSION['last_activity'] = $now;
+    enforce_password_change();
+    enforce_email_verified();
+    enforce_org_subscription();
     enforce_2fa_policy();
+}
+
+/** SaaS: require verified email before using the portal (platform admins exempt). */
+function enforce_email_verified(): void {
+    if (PHP_SAPI === 'cli' || is_platform_admin()) { return; }
+    $pdo = get_db();
+    if (!is_saas_deployment($pdo)) { return; }
+    $u = current_user();
+    if (!empty($u['email_verified_at'])) { return; }
+    $path = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '');
+    foreach (['/verify_email', '/logout', '/profile', '/billing'] as $ex) {
+        if (str_contains($path, $ex)) { return; }
+    }
+    flash('warning', 'Please verify your email address to continue.');
+    redirect(APP_URL . '/verify_email');
+}
+
+/** SaaS: redirect expired trials to billing (platform admins exempt). */
+function enforce_org_subscription(): void {
+    if (PHP_SAPI === 'cli' || is_platform_admin()) { return; }
+    $pdo = get_db();
+    if (!is_saas_deployment($pdo)) { return; }
+    $orgId = (int) (current_user()['organization_id'] ?? 0);
+    if ($orgId <= 0) { return; }
+    $org = fetch_organization($pdo, $orgId);
+    if ($org && $org['status'] === 'suspended') {
+        flash('error', 'This organisation has been suspended. Contact support.');
+        redirect(APP_URL . '/billing?suspended=1');
+    }
+    if (organization_has_access($pdo, $orgId)) { return; }
+    $path = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '');
+    if (str_contains($path, '/billing') || str_contains($path, '/logout')) { return; }
+    flash('warning', 'Your trial has ended. Subscribe to continue using ADRS.');
+    redirect(APP_URL . '/billing');
+}
+
+/** Create and store an email verification token; returns the raw token for the link. */
+function issue_email_verification_token(PDO $pdo, int $userId): string {
+    $raw = bin2hex(random_bytes(32));
+    $pdo->prepare('UPDATE users SET verification_token_hash = :h WHERE id = :id')
+        ->execute(['h' => hash('sha256', $raw), 'id' => $userId]);
+    return $raw;
+}
+
+/** Mark a user's email verified when the token matches. */
+function verify_email_token(PDO $pdo, int $userId, string $token): bool {
+    $stmt = $pdo->prepare('SELECT verification_token_hash, email_verified_at FROM users WHERE id = :id LIMIT 1');
+    $stmt->execute(['id' => $userId]);
+    $row = $stmt->fetch();
+    if (!$row || !empty($row['email_verified_at'])) { return !empty($row['email_verified_at']); }
+    if (!hash_equals((string) $row['verification_token_hash'], hash('sha256', $token))) { return false; }
+    $pdo->prepare('UPDATE users SET email_verified_at = NOW(), verification_token_hash = NULL WHERE id = :id')
+        ->execute(['id' => $userId]);
+    if (isset($_SESSION['user']['id']) && (int) $_SESSION['user']['id'] === $userId) {
+        $_SESSION['user']['email_verified_at'] = date('Y-m-d H:i:s');
+    }
+    return true;
+}
+
+/** True when the initial setup wizard has been completed (or legacy install detected). SaaS mode skips the wizard. */
+function setup_is_complete(PDO $pdo): bool {
+    if (is_saas_deployment($pdo)) { return true; }
+    if (get_setting($pdo, 'setup_complete', '0') === '1') { return true; }
+    $stmt = $pdo->query(
+        "SELECT 1 FROM users WHERE role = 'admin' AND is_active = 1 AND deleted_at IS NULL LIMIT 1"
+    );
+    if ($stmt->fetch()) {
+        set_setting($pdo, 'setup_complete', '1');
+        return true;
+    }
+    return false;
+}
+
+/** Redirect to /setup when the deployment has not been initialised yet. */
+function require_setup_complete(): void {
+    if (setup_is_complete(get_db())) { return; }
+    redirect(APP_URL . '/setup');
+}
+
+/** True when public self-registration is enabled in system settings. */
+function public_signup_enabled(PDO $pdo): bool {
+    return get_setting($pdo, 'allow_public_signup', '0') === '1';
+}
+
+/**
+ * Force users with must_change_password to update credentials before using the app.
+ * Exempts profile and logout to avoid redirect loops.
+ */
+function enforce_password_change(): void {
+    if (PHP_SAPI === 'cli') { return; }
+    $u = current_user();
+    if ((int) ($u['must_change_password'] ?? 0) !== 1) { return; }
+    $path = (string) (parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '');
+    if (str_contains($path, '/profile') || str_contains($path, '/logout')) { return; }
+    if (function_exists('flash')) {
+        flash('warning', 'You must change your password before continuing.');
+    }
+    redirect(APP_URL . '/profile?required=1');
 }
 
 /**

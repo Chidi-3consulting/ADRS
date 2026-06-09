@@ -15,13 +15,15 @@ function create_dsar(PDO $pdo, array $in, int $actor_id): array {
     $reference = generate_dsar_reference($pdo);
     $due = calculate_dsar_due_date($received);
 
+    $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $stmt = $pdo->prepare(
         "INSERT INTO dsar_requests
-           (reference, request_type, compliance_framework, data_subject_name, data_subject_email,
+           (organization_id, reference, request_type, compliance_framework, data_subject_name, data_subject_email,
             data_subject_phone, data_subject_type, received_date, due_date, status, assigned_to, description, created_by)
-         VALUES (:ref,:rt,:fw,:name,:email,:phone,:dst,:recv,:due,'open',:assigned,:descr,:by)"
+         VALUES (:oid,:ref,:rt,:fw,:name,:email,:phone,:dst,:recv,:due,'open',:assigned,:descr,:by)"
     );
     $stmt->execute([
+        'oid' => $orgId,
         'ref' => $reference, 'rt' => $in['request_type'] ?? 'access', 'fw' => $in['compliance_framework'] ?? 'GDPR',
         'name' => $in['data_subject_name'] ?? '', 'email' => ($in['data_subject_email'] ?? '') ?: null,
         'phone' => ($in['data_subject_phone'] ?? '') ?: null, 'dst' => ($in['data_subject_type'] ?? '') ?: null,
@@ -35,8 +37,14 @@ function create_dsar(PDO $pdo, array $in, int $actor_id): array {
 }
 
 function fetch_dsar(PDO $pdo, int $id): ?array {
-    $stmt = $pdo->prepare("SELECT * FROM dsar_requests WHERE id=:id LIMIT 1");
-    $stmt->execute(['id' => $id]);
+    $orgId = function_exists('current_org_id') ? current_org_id() : null;
+    if ($orgId !== null) {
+        $stmt = $pdo->prepare('SELECT * FROM dsar_requests WHERE id = :id AND organization_id = :org LIMIT 1');
+        $stmt->execute(['id' => $id, 'org' => $orgId]);
+    } else {
+        $stmt = $pdo->prepare('SELECT * FROM dsar_requests WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+    }
     $row = $stmt->fetch();
     return $row === false ? null : $row;
 }

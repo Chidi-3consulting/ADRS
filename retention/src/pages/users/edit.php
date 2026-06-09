@@ -8,6 +8,7 @@ $stmt = $pdo->prepare("SELECT * FROM users WHERE id=:id AND deleted_at IS NULL")
 $stmt->execute(['id' => $id]);
 $user = $stmt->fetch();
 if (!$user) { http_response_code(404); require __DIR__ . '/../../../404.php'; exit; }
+assert_org_row($user);
 $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
