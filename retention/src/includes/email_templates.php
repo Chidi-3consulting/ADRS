@@ -48,3 +48,16 @@ function email_verification(string $name, string $verify_link): array {
         . '<p>If you did not create an account, ignore this message.</p>';
     return ['Verify your ADRS account', email_layout('Email verification', $body)];
 }
+
+/** Team invitation email. Returns [subject, html]. */
+function email_team_invite(string $name, string $orgName, string $role, string $invite_link): array {
+    $roleLabel = ['admin' => 'Administrator', 'dpo' => 'Data Protection Officer', 'data_owner' => 'Data Owner'][$role] ?? $role;
+    $body = '<p>Hello ' . escape_html($name) . ',</p>'
+        . '<p>You have been invited to join <strong>' . escape_html($orgName) . '</strong> on ADRS'
+        . ' as <strong>' . escape_html($roleLabel) . '</strong>.</p>'
+        . '<p>ADRS is your organisation\'s automated data retention and compliance portal.</p>'
+        . '<p><a href="' . escape_html($invite_link) . '" style="background:#C85C1A;color:#fff;padding:10px 18px;'
+        . 'text-decoration:none;border-radius:4px;display:inline-block;">Accept invitation</a></p>'
+        . '<p>This link expires in 7 days. If you were not expecting this, you can ignore this email.</p>';
+    return ['You\'re invited to ADRS — ' . $orgName, email_layout('Team invitation', $body)];
+}

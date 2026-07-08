@@ -15,7 +15,7 @@ $cat = create_category($pdo, ['name'=>'Ops Cat','legal_basis'=>'contract','reten
 create_data_record($pdo, ['category_id'=>$cat,'record_reference'=>'OPS-1','collection_date'=>date('Y-m-d')], ['id'=>$admin,'role'=>'admin']);
 $m = compliance_metrics($pdo);
 assert_true($m['records_total'] >= 1, 'metrics count records');
-assert_true(array_key_exists('overdue', $m) && array_key_exists('breaches_open', $m), 'metrics include key fields');
+assert_true(array_key_exists('overdue', $m) && array_key_exists('audit_events', $m), 'metrics include key fields');
 $dm = disposals_by_month($pdo, 12);
 assert_equals(12, count($dm), 'disposals_by_month returns 12 buckets');
 

@@ -1,11 +1,21 @@
 <?php
 require_once __DIR__ . '/auth.php';
 require_login();
+require_once __DIR__ . '/onboarding_lib.php';
 $__pdo = get_db();
 $__user = current_user();
+sync_onboarding_notifications($__pdo, $__user);
 $page_title = $page_title ?? 'Dashboard';
 $active_nav = $active_nav ?? '';
 $__unread = get_unread_notification_count($__pdo, (int) $__user['id']);
+$__setupUnread = 0;
+if (has_role('admin')) {
+    $obCnt = $__pdo->prepare("SELECT COUNT(*) FROM notifications WHERE recipient_id = :u AND type = 'onboarding_setup' AND read_at IS NULL");
+    $obCnt->execute(['u' => (int) $__user['id']]);
+    $__setupUnread = (int) $obCnt->fetchColumn();
+}
+$__org = fetch_current_organization($__pdo);
+$__trialDays = $__org ? organization_trial_days_left($__pdo, (int) $__org['id']) : null;
 // White-label theming (Phase 3)
 $__wlName    = get_setting($__pdo, 'white_label_name', APP_NAME) ?: APP_NAME;
 $__wlPrimary = get_setting($__pdo, 'white_label_primary', '#C85C1A');
@@ -28,18 +38,26 @@ function navlink(string $key, string $active, string $route, string $icon, strin
 </head><body>
 <div class="wrapper">
   <nav class="sidebar">
-    <div class="brand"><?php if ($__wlLogo): ?><img src="<?= escape_html($__wlLogo) ?>" alt="logo" style="max-height:32px;max-width:200px"><?php else: ?><?= escape_html($__wlName) ?><?php endif; ?></div>
+    <?php if ($__org): ?>
+    <div class="org-context px-3 pt-3 pb-2 border-bottom border-secondary">
+      <div class="org-context-name"><?= escape_html($__org['name']) ?></div>
+      <div class="org-context-meta">
+        <span class="badge bg-<?= ($__org['tier'] ?? '') === 'enterprise' ? 'success' : 'secondary' ?> badge-sm"><?= escape_html(org_tier_label($__org['tier'] ?? 'core')) ?></span>
+        <?= org_status_badge($__org) ?>
+        <?php if ($__trialDays !== null): ?>
+          <span class="badge bg-warning text-dark badge-sm"><?= (int) $__trialDays ?>d trial</span>
+        <?php endif; ?>
+      </div>
+      <div class="org-context-domain small text-muted mt-1">@<?= escape_html($__org['primary_domain'] ?? '') ?></div>
+    </div>
+    <?php endif; ?>
+    <div class="brand pt-2"><?php if ($__wlLogo): ?><img src="<?= escape_html($__wlLogo) ?>" alt="logo" style="max-height:32px;max-width:200px"><?php else: ?><?= escape_html($__wlName) ?><?php endif; ?></div>
     <?= navlink('dashboard', $active_nav, '/dashboard', 'bi-house', 'Dashboard') ?>
     <?= navlink('categories', $active_nav, '/categories', 'bi-collection', 'Data Categories') ?>
     <?= navlink('records', $active_nav, '/records', 'bi-card-list', 'Retention Schedule') ?>
     <?php if (has_role('admin','dpo')): ?>
       <?= navlink('audit', $active_nav, '/audit', 'bi-shield-check', 'Audit Log') ?>
-      <?= navlink('dsar', $active_nav, '/dsar', 'bi-envelope-paper', 'DSAR Requests') ?>
       <?= navlink('reports', $active_nav, '/reports', 'bi-graph-up', 'Analytics & Reports') ?>
-      <?= navlink('ropa', $active_nav, '/ropa', 'bi-journal-text', 'RoPA (Art. 30)') ?>
-      <?= navlink('dpia', $active_nav, '/dpia', 'bi-clipboard-data', 'DPIA') ?>
-      <?= navlink('breaches', $active_nav, '/breaches', 'bi-exclamation-octagon', 'Breach Register') ?>
-      <?= navlink('consent_receipts', $active_nav, '/consent-receipts', 'bi-file-earmark-check', 'Consent Receipts') ?>
     <?php endif; ?>
     <?= navlink('notifications', $active_nav, '/notifications', 'bi-bell', 'Notifications') ?>
     <?php if (has_role('admin') && get_setting($__pdo, 'adrs_tier', 'core') === 'enterprise'): ?>
@@ -62,11 +80,23 @@ function navlink(string $key, string $active, string $route, string $icon, strin
   </nav>
   <div class="main-content">
     <div class="topbar d-flex justify-content-between align-items-center">
-      <div class="h5 mb-0 fw-semibold"><?= escape_html($page_title) ?></div>
-      <a class="position-relative" href="<?= APP_URL ?>/notifications">
-        <i class="bi bi-bell fs-5"></i>
-        <?php if ($__unread > 0): ?><span class="badge bg-danger position-absolute top-0 start-100 translate-middle"><?= $__unread ?></span><?php endif; ?>
-      </a>
+      <div>
+        <div class="h5 mb-0 fw-semibold"><?= escape_html($page_title) ?></div>
+        <?php if ($__org): ?>
+          <div class="small text-muted"><?= escape_html($__org['name']) ?> · <?= escape_html($__user['name']) ?> · <?= strip_tags(get_role_badge($__user['role'])) ?></div>
+        <?php endif; ?>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <?php if ($__setupUnread > 0 && has_role('admin')): ?>
+          <a href="<?= APP_URL ?>/notifications" class="btn btn-sm btn-outline-warning">
+            Setup <?= (int) $__setupUnread ?>
+          </a>
+        <?php endif; ?>
+        <a class="position-relative" href="<?= APP_URL ?>/notifications">
+          <i class="bi bi-bell fs-5"></i>
+          <?php if ($__unread > 0): ?><span class="badge bg-danger position-absolute top-0 start-100 translate-middle"><?= $__unread ?></span><?php endif; ?>
+        </a>
+      </div>
     </div>
     <div class="content-area p-4">
       <?= render_flash() ?>

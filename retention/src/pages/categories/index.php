@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/categories_lib.php';
+require_once __DIR__ . '/../../includes/retention_rules_lib.php';
 require_login();
 $pdo = get_db();
 $me = current_user();
@@ -15,6 +17,7 @@ if (has_role('data_owner')) {
     $stmt->execute(['org' => $orgId]);
 }
 $categories = $stmt->fetchAll();
+$ruleCounts = count_rules_by_category($pdo, array_column($categories, 'id'));
 
 $stats = ['total' => 0, 'gdpr' => 0, 'ndpr' => 0, 'dual' => 0];
 foreach ($categories as $c) {
@@ -48,7 +51,7 @@ require __DIR__ . '/../../includes/layout_header.php';
   <?php else: ?>
   <div class="table-responsive"><table class="table table-hover align-middle">
     <thead><tr>
-      <th>Name</th><th>Framework</th><th>Legal Basis</th><th>Retention</th><th>Trigger</th>
+      <th>Name</th><th>Framework</th><th>Retention rules</th><th>Default retention</th><th>Trigger</th>
       <th>Disposal</th><th>Dual</th><th>Source</th><th></th>
     </tr></thead>
     <tbody>
@@ -56,7 +59,7 @@ require __DIR__ . '/../../includes/layout_header.php';
       <tr>
         <td><?= escape_html($c['name']) ?></td>
         <td><?= get_framework_badge($c['compliance_framework']) ?></td>
-        <td><?= escape_html(get_legal_basis_label($c['legal_basis'])) ?></td>
+        <td><span class="badge bg-secondary"><?= (int) ($ruleCounts[(int)$c['id']] ?? 1) ?> rule<?= ($ruleCounts[(int)$c['id']] ?? 1) !== 1 ? 's' : '' ?></span></td>
         <td>
           <?php if ($c['disposal_trigger'] === 'consent_withdrawal'): ?>
             <span class="text-muted">Until consent withdrawn</span>

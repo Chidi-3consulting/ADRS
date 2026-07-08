@@ -63,7 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </form>
       <p class="mt-3 mb-0 small text-center">
         <a href="<?= APP_URL ?>/forgot_password">Forgot your password?</a>
-        <?php if (public_signup_enabled($pdo)): ?>
+        <?php if (is_saas_deployment($pdo)): ?>
+          · <a href="<?= APP_URL ?>/register?tier=core">Start free trial</a>
+        <?php elseif (public_signup_enabled($pdo)): ?>
           · <a href="<?= APP_URL ?>/signup">Create an account</a>
         <?php endif; ?>
       </p>

@@ -20,7 +20,4 @@ assert_true(str_contains($row['details'], 'test'), 'details JSON stored');
 log_audit($pdo, 'not_a_real_action_value', 'system', null, null, null, null);
 assert_true(true, 'log_audit swallowed invalid enum without throwing');
 
-// DSAR reference format DSAR-YYYY-0001
-$ref = generate_dsar_reference($pdo);
-assert_true((bool) preg_match('/^DSAR-\d{4}-\d{4}$/', $ref), "dsar ref format: $ref");
-assert_equals(date('Y-m-d', strtotime('+30 days', strtotime('2025-01-01'))), calculate_dsar_due_date('2025-01-01'), 'dsar due +30');
+

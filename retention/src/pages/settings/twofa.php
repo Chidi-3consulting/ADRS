@@ -42,6 +42,8 @@ $uri = $setupSecret ? totp_uri($setupSecret, $me['email'] ?? ('user' . $me['id']
 $page_title = 'Two-Factor Authentication';
 $active_nav = 'settings';
 require __DIR__ . '/../../includes/layout_header.php';
+require __DIR__ . '/_nav.php';
+echo settings_nav('twofa');
 ?>
 <div class="card shadow-sm" style="max-width:640px"><div class="card-body">
   <h1 class="h4 mb-3">Two-Factor Authentication (2FA)</h1>

@@ -81,11 +81,45 @@ CREATE TABLE IF NOT EXISTS `data_categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------
+-- 3b. CATEGORY RETENTION RULES (multiple retention periods per category)
+-- ----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `category_retention_rules` (
+  `id`                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `organization_id`        INT UNSIGNED NOT NULL,
+  `category_id`            INT UNSIGNED NOT NULL,
+  `rule_name`              VARCHAR(255) NOT NULL,
+  `legal_basis`            ENUM(
+                             'legal_obligation','contract','consent',
+                             'legitimate_interest','vital_interest','public_task'
+                           ) NOT NULL,
+  `processing_purpose`     VARCHAR(500) NULL,
+  `institution_type`       ENUM(
+                             'all','banking','insurance','healthcare',
+                             'public_sector','telecom','retail','general'
+                           ) NOT NULL DEFAULT 'all',
+  `retention_period_days`  INT UNSIGNED NOT NULL DEFAULT 0,
+  `retention_period_label` VARCHAR(100) NOT NULL,
+  `disposal_method`        ENUM('delete','anonymise','archive') NOT NULL DEFAULT 'delete',
+  `disposal_trigger`       ENUM('date_based','consent_withdrawal') NOT NULL DEFAULT 'date_based',
+  `requires_dual_approval` TINYINT(1)   NOT NULL DEFAULT 0,
+  `is_default`             TINYINT(1)   NOT NULL DEFAULT 0,
+  `sort_order`             INT UNSIGNED NOT NULL DEFAULT 0,
+  `is_active`              TINYINT(1)   NOT NULL DEFAULT 1,
+  `created_at`             TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`             TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_crr_category` (`category_id`),
+  KEY `idx_crr_org` (`organization_id`),
+  CONSTRAINT `fk_crr_category` FOREIGN KEY (`category_id`) REFERENCES `data_categories` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------
 -- 4. DATA RECORDS
 -- ----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `data_records` (
   `id`                      INT UNSIGNED  NOT NULL AUTO_INCREMENT,
   `category_id`             INT UNSIGNED  NOT NULL,
+  `retention_rule_id`       INT UNSIGNED  NULL,
   `original_category_id`    INT UNSIGNED  NULL
                               COMMENT 'B3: set on first reassignment, never overwritten',
   `record_reference`        VARCHAR(255)  NOT NULL,
@@ -123,6 +157,7 @@ CREATE TABLE IF NOT EXISTS `data_records` (
   `deleted_at`              TIMESTAMP     NULL,
   PRIMARY KEY (`id`),
   KEY `idx_records_category`           (`category_id`),
+  KEY `idx_records_retention_rule`     (`retention_rule_id`),
   KEY `idx_records_status`             (`status`),
   KEY `idx_records_retention_end`      (`retention_end_date`),
   KEY `idx_records_legal_hold`         (`legal_hold`),
@@ -130,6 +165,7 @@ CREATE TABLE IF NOT EXISTS `data_records` (
   KEY `idx_records_consent_withdrawn`  (`consent_withdrawn_at`),
   KEY `idx_records_escalation`         (`escalation_sent_at`),
   CONSTRAINT `fk_records_category`          FOREIGN KEY (`category_id`)           REFERENCES `data_categories` (`id`),
+  CONSTRAINT `fk_records_retention_rule`  FOREIGN KEY (`retention_rule_id`)     REFERENCES `category_retention_rules` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_records_orig_category`     FOREIGN KEY (`original_category_id`)  REFERENCES `data_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_records_hold_by`           FOREIGN KEY (`legal_hold_by`)         REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_records_disposed_by`       FOREIGN KEY (`disposed_by`)           REFERENCES `users` (`id`) ON DELETE SET NULL,
@@ -191,7 +227,8 @@ CREATE TABLE IF NOT EXISTS `notifications` (
                         'consent_withdrawal_due','escalation_alert',
                         'recalculation_pending','bulk_import_complete',
                         'dsar_received','dsar_due_soon','dsar_overdue',
-                        'record_created_by_owner','password_reset'
+                        'record_created_by_owner','password_reset',
+                        'onboarding_setup'
                       ) NOT NULL,
   `related_record_id` INT UNSIGNED  NULL,
   `related_dsar_id`   INT UNSIGNED  NULL COMMENT 'BUG-06 FIX: FK added below',
@@ -783,16 +820,18 @@ ALTER TABLE `data_records` ADD INDEX `idx_records_reference` (`record_reference`
 -- SAAS MULTI-TENANT (organisations + per-tenant isolation)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS `organizations` (
-  `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name`          VARCHAR(255) NOT NULL,
-  `slug`          VARCHAR(100) NOT NULL,
-  `tier`          ENUM('core','enterprise') NOT NULL DEFAULT 'core',
+  `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`            VARCHAR(255) NOT NULL,
+  `slug`            VARCHAR(100) NOT NULL,
+  `primary_domain`  VARCHAR(255) NOT NULL,
+  `tier`            ENUM('core','enterprise') NOT NULL DEFAULT 'core',
   `status`        ENUM('active','trial','suspended') NOT NULL DEFAULT 'trial',
   `trial_ends_at` TIMESTAMP NULL,
   `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_organizations_slug` (`slug`)
+  UNIQUE KEY `uq_organizations_slug` (`slug`),
+  UNIQUE KEY `uq_organizations_primary_domain` (`primary_domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `organization_settings` (
@@ -805,8 +844,8 @@ CREATE TABLE IF NOT EXISTS `organization_settings` (
   CONSTRAINT `fk_org_settings_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT IGNORE INTO `organizations` (`id`, `name`, `slug`, `tier`, `status`) VALUES
-(1, 'Default Organisation', 'default', 'core', 'active');
+INSERT IGNORE INTO `organizations` (`id`, `name`, `slug`, `primary_domain`, `tier`, `status`) VALUES
+(1, 'Default Organisation', 'default', 'default.local', 'core', 'active');
 
 ALTER TABLE `users` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
 ALTER TABLE `data_categories` ADD COLUMN `organization_id` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `id`;
@@ -873,6 +912,26 @@ CREATE TABLE IF NOT EXISTS `payment_transactions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_payment_reference` (`reference`),
   CONSTRAINT `fk_payment_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `organization_invitations` (
+  `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `organization_id` INT UNSIGNED NOT NULL,
+  `email`           VARCHAR(255) NOT NULL,
+  `name`            VARCHAR(255) NOT NULL,
+  `role`            ENUM('admin','dpo','data_owner') NOT NULL DEFAULT 'data_owner',
+  `token_hash`      CHAR(64)     NOT NULL,
+  `invited_by`      INT UNSIGNED NULL,
+  `expires_at`      TIMESTAMP    NOT NULL,
+  `accepted_at`     TIMESTAMP    NULL,
+  `revoked_at`      TIMESTAMP    NULL,
+  `created_at`      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_invites_org` (`organization_id`),
+  KEY `idx_invites_email` (`email`),
+  KEY `idx_invites_token` (`token_hash`),
+  CONSTRAINT `fk_invites_org` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_invites_user` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES

@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $pwErr;
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'A valid email address is required.';
+    } elseif (($domainErr = org_member_email_error($pdo, $email)) !== null) {
+        $error = $domainErr;
     } elseif (!in_array($role, ['admin','dpo','data_owner'], true)) {
         $error = 'Invalid role.';
     } else {
@@ -50,7 +52,13 @@ require __DIR__ . '/../../includes/layout_header.php';
   <form method="post">
     <?= csrf_field() ?>
     <div class="mb-3"><label class="form-label">Name *</label><input name="name" class="form-control" required value="<?= escape_html($_POST['name'] ?? '') ?>"></div>
-    <div class="mb-3"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" required value="<?= escape_html($_POST['email'] ?? '') ?>"></div>
+    <div class="mb-3"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" required value="<?= escape_html($_POST['email'] ?? '') ?>">
+      <?php
+      $curOrg = fetch_current_organization($pdo);
+      if ($curOrg && !empty($curOrg['primary_domain']) && !str_ends_with($curOrg['primary_domain'], '.local')): ?>
+      <div class="form-text">Must be a work email at <strong>@<?= escape_html($curOrg['primary_domain']) ?></strong>.</div>
+      <?php endif; ?>
+    </div>
     <div class="mb-3"><label class="form-label">Temporary password * (min 10 chars)</label><input type="password" name="password" class="form-control" required minlength="10"><div class="form-text">The user must change this password on first login.</div></div>
     <div class="mb-3"><label class="form-label">Role *</label>
       <select name="role" class="form-select">

@@ -30,11 +30,11 @@ function public_page_nav(?PDO $pdo = null): void {
     <a class="navbar-brand fw-bold" href="<?= APP_URL ?>/" style="color:var(--3c-orange)"><?= escape_html($appName) ?></a>
     <div class="d-flex gap-2">
       <?php if (function_exists('is_saas_deployment') && is_saas_deployment($pdo)): ?>
-        <a class="btn btn-outline-light btn-sm" href="<?= APP_URL ?>/register?tier=core">Start free trial</a>
+        <a class="btn btn-outline-light btn-sm me-2" href="<?= APP_URL ?>/register?tier=core">Start free trial</a>
       <?php elseif (public_signup_enabled($pdo)): ?>
-        <a class="btn btn-outline-light btn-sm" href="<?= APP_URL ?>/signup">Create account</a>
+        <a class="btn btn-outline-light btn-sm me-2" href="<?= APP_URL ?>/signup">Create account</a>
       <?php endif; ?>
-      <a class="btn btn-primary btn-sm" href="<?= APP_URL ?>/login">Sign in</a>
+      <a class="btn btn-light btn-sm text-dark" href="<?= APP_URL ?>/login">Sign in</a>
     </div>
   </div>
 </nav><?php

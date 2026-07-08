@@ -27,17 +27,8 @@ function compliance_metrics(PDO $pdo): array {
     $totStmt->execute(['o' => $orgId]);
     $holdStmt = $pdo->prepare("SELECT COUNT(*) FROM data_records WHERE organization_id = :o AND legal_hold=1 AND deleted_at IS NULL");
     $holdStmt->execute(['o' => $orgId]);
-    $dsarOpenStmt = $pdo->prepare("SELECT COUNT(*) FROM dsar_requests WHERE organization_id = :o AND status NOT IN ('completed','rejected')");
-    $dsarOpenStmt->execute(['o' => $orgId]);
-    $dsarTotStmt = $pdo->prepare('SELECT COUNT(*) FROM dsar_requests WHERE organization_id = :o');
-    $dsarTotStmt->execute(['o' => $orgId]);
-    $breachStmt = $pdo->prepare("SELECT COUNT(*) FROM breach_incidents WHERE organization_id = :o AND status != 'closed'");
-    $breachStmt->execute(['o' => $orgId]);
-    $dpiaStmt = $pdo->prepare("SELECT COUNT(*) FROM dpia_assessments WHERE organization_id = :o AND risk_level='high'");
-    $dpiaStmt->execute(['o' => $orgId]);
     $auditStmt = $pdo->prepare('SELECT COUNT(*) FROM audit_log WHERE organization_id = :o');
     $auditStmt->execute(['o' => $orgId]);
-
     return [
         'categories'      => (int) $catStmt->fetchColumn(),
         'records_total'   => (int) $totStmt->fetchColumn(),
@@ -47,10 +38,6 @@ function compliance_metrics(PDO $pdo): array {
         'records_hold'    => (int) ($recStatus['legal_hold'] ?? 0) + (int) $holdStmt->fetchColumn(),
         'upcoming_30d'    => $upcoming30,
         'overdue'         => $overdue,
-        'dsar_open'       => (int) $dsarOpenStmt->fetchColumn(),
-        'dsar_total'      => (int) $dsarTotStmt->fetchColumn(),
-        'breaches_open'   => (int) $breachStmt->fetchColumn(),
-        'dpia_high'       => (int) $dpiaStmt->fetchColumn(),
         'audit_events'    => (int) $auditStmt->fetchColumn(),
     ];
 }

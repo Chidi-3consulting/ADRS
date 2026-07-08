@@ -23,11 +23,12 @@ require __DIR__ . '/../../includes/layout_header.php';
 <h1 class="h4 mb-3">All organisations</h1>
 <div class="card shadow-sm"><div class="card-body table-responsive">
   <table class="table table-sm align-middle">
-    <thead><tr><th>Name</th><th>Tier</th><th>Status</th><th>Subscription</th><th>Users</th><th>Records</th><th>Trial ends</th><th></th></tr></thead>
+    <thead><tr><th>Name</th><th>Domain</th><th>Tier</th><th>Status</th><th>Subscription</th><th>Users</th><th>Records</th><th>Trial ends</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($orgs as $o): ?>
       <tr>
         <td><?= escape_html($o['name']) ?><br><span class="text-muted small"><?= escape_html($o['slug']) ?></span></td>
+        <td><code><?= escape_html($o['primary_domain'] ?? '—') ?></code></td>
         <td><?= escape_html($o['tier']) ?></td>
         <td><?= escape_html($o['status']) ?></td>
         <td><?= escape_html($o['subscription_status'] ?? '') ?></td>

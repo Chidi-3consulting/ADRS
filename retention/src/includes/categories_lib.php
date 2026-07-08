@@ -2,6 +2,7 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/notifications_lib.php';
+require_once __DIR__ . '/retention_rules_lib.php';
 
 /**
  * Data Category register business logic (B1 disposal_trigger, B2 recalculation queue,
@@ -67,6 +68,18 @@ function create_category(PDO $pdo, array $in, int $actor_id): int {
         'rf'    => $in['review_frequency'] ?? 'quarterly',
     ]);
     $id = (int) $pdo->lastInsertId();
+    create_retention_rule($pdo, $id, [
+        'rule_name'              => 'Default retention',
+        'legal_basis'            => $in['legal_basis'],
+        'processing_purpose'     => null,
+        'institution_type'       => 'all',
+        'retention_period_days'  => $days,
+        'retention_period_label' => $in['retention_period_label'] ?? ($days > 0 ? "$days days" : 'Until consent withdrawn'),
+        'disposal_method'        => $in['disposal_method'] ?? 'delete',
+        'disposal_trigger'       => $trigger,
+        'requires_dual_approval' => !empty($in['requires_dual_approval']) ? 1 : 0,
+        'is_default'             => 1,
+    ]);
     log_audit($pdo, 'category_created', 'data_category', $id, $actor_id, ['name' => $in['name']], get_client_ip());
     return $id;
 }
@@ -139,6 +152,18 @@ function update_category(PDO $pdo, int $id, array $in, int $actor_id): array {
         'id'    => $id,
     ]);
     log_audit($pdo, 'category_updated', 'data_category', $id, $actor_id, ['name' => $in['name']], get_client_ip());
+
+    $defaultRule = fetch_default_retention_rule($pdo, $id);
+    if ($defaultRule) {
+        update_retention_rule($pdo, (int) $defaultRule['id'], [
+            'legal_basis'            => $in['legal_basis'],
+            'retention_period_days'  => $days,
+            'retention_period_label' => $in['retention_period_label'] ?? ($days > 0 ? "$days days" : 'Until consent withdrawn'),
+            'disposal_method'        => $in['disposal_method'] ?? 'delete',
+            'disposal_trigger'       => $trigger,
+            'requires_dual_approval' => !empty($in['requires_dual_approval']) ? 1 : 0,
+        ]);
+    }
 
     $queued = 0;
     if ($trigger === 'date_based' && $days !== (int) $existing['retention_period_days']) {

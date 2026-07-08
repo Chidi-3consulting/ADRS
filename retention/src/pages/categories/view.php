@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/categories_lib.php';
+require_once __DIR__ . '/../../includes/retention_rules_lib.php';
 require_login();
 $pdo = get_db();
 $id = (int) ($_GET['id'] ?? 0);
@@ -57,6 +58,33 @@ require __DIR__ . '/../../includes/layout_header.php';
     <dt class="col-sm-3">Owner</dt><dd class="col-sm-9"><?= escape_html($ownerName ?? '—') ?></dd>
     <dt class="col-sm-3">Source</dt><dd class="col-sm-9"><?= $category['source']==='seeded' ? '📚 Seeded' : 'Custom' ?></dd>
   </dl>
+</div></div>
+
+<?php $rules = list_category_retention_rules($pdo, $id); ?>
+<div class="card shadow-sm mt-3"><div class="card-body">
+  <h2 class="h5 mb-3">Retention rules (<?= count($rules) ?>)</h2>
+  <?php if (empty($rules)): ?>
+    <p class="text-muted mb-0">No retention rules configured.</p>
+  <?php else: ?>
+  <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+    <thead><tr>
+      <th>Rule</th><th>Legal basis</th><th>Purpose</th><th>Org type</th><th>Retention</th><th>Disposal</th><th>Dual</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($rules as $r): ?>
+      <tr>
+        <td><?= escape_html($r['rule_name']) ?><?= (int)$r['is_default'] ? ' <span class="badge bg-primary">Default</span>' : '' ?></td>
+        <td><?= escape_html(get_legal_basis_label($r['legal_basis'])) ?></td>
+        <td><?= escape_html($r['processing_purpose'] ?: '—') ?></td>
+        <td><?= escape_html(institution_type_label($r['institution_type'])) ?></td>
+        <td><?= $r['disposal_trigger'] === 'consent_withdrawal' ? 'Until consent withdrawn' : escape_html($r['retention_period_label']) ?></td>
+        <td><?= escape_html(get_disposal_method_label($r['disposal_method'])) ?></td>
+        <td><?= (int)$r['requires_dual_approval'] ? 'Yes 🔐' : 'No' ?></td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table></div>
+  <?php endif; ?>
 </div></div>
 <?php if (has_role('admin')): ?>
 <form method="post" action="<?= APP_URL ?>/categories/delete" class="mt-3" data-confirm="Soft-delete this category? Blocked if active records exist.">

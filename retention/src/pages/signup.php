@@ -5,6 +5,9 @@ require_once __DIR__ . '/../includes/public_layout.php';
 
 $pdo = get_db();
 if (is_logged_in()) { redirect(APP_URL . '/dashboard'); }
+if (is_saas_deployment($pdo)) {
+    redirect(APP_URL . '/register?tier=core');
+}
 require_setup_complete();
 if (!public_signup_enabled($pdo)) {
     http_response_code(403);

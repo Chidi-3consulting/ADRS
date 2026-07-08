@@ -7,6 +7,26 @@ require_once __DIR__ . '/../includes/notifications_lib.php';
 /** Organisation scope for engine queries (cron sets $__cron_org_id). */
 function engine_org_id(): int { return current_org_id() ?? 1; }
 
+/** SQL join for effective retention rule on a record. */
+function engine_retention_rule_join(): string {
+    return 'LEFT JOIN category_retention_rules crr ON crr.id = dr.retention_rule_id';
+}
+
+/** Effective disposal trigger (rule overrides category default). */
+function engine_disposal_trigger_expr(): string {
+    return 'COALESCE(crr.disposal_trigger, dc.disposal_trigger)';
+}
+
+/** Effective dual-approval flag. */
+function engine_dual_approval_expr(): string {
+    return 'COALESCE(crr.requires_dual_approval, dc.requires_dual_approval)';
+}
+
+/** Effective disposal method. */
+function engine_disposal_method_expr(): string {
+    return 'COALESCE(crr.disposal_method, dc.disposal_method)';
+}
+
 /**
  * Retention engine business logic (callable + testable). The CLI cron (retention_cron.php)
  * is a thin wrapper around run_retention_engine(). Every step is idempotent and safe to
@@ -28,8 +48,10 @@ function execute_disposal(PDO $pdo, array $record, ?int $actor_id = null): bool 
     try {
         // Re-read fresh under the transaction (idempotency + race guard).
         $stmt = $pdo->prepare(
-            "SELECT dr.id, dr.status, dr.legal_hold, dc.disposal_method
-             FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id
+            "SELECT dr.id, dr.status, dr.legal_hold, " . engine_disposal_method_expr() . " AS disposal_method
+             FROM data_records dr
+             JOIN data_categories dc ON dc.id = dr.category_id
+             " . engine_retention_rule_join() . "
              WHERE dr.id = :id FOR UPDATE"
         );
         $stmt->execute(['id' => $id]);
@@ -80,12 +102,15 @@ function execute_disposal(PDO $pdo, array $record, ?int $actor_id = null): bool 
 
 /** Step 2: flag date_based active records approaching their end date. Returns count flagged. */
 function engine_flag_due_reviews(PDO $pdo, int $review_days): int {
+    $dt = engine_disposal_trigger_expr();
     $stmt = $pdo->prepare(
         "UPDATE data_records dr
-            JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL AND dc.disposal_trigger='date_based'
+            JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL
+            " . engine_retention_rule_join() . "
             SET dr.status='due_review', dr.review_flagged_at=NOW()
           WHERE dr.organization_id = :org AND dr.status='active' AND dr.legal_hold=0 AND dr.deleted_at IS NULL
             AND dr.retention_end_date IS NOT NULL
+            AND {$dt}='date_based'
             AND dr.retention_end_date <= DATE_ADD(CURDATE(), INTERVAL :days DAY)"
     );
     $stmt->execute(['org' => engine_org_id(), 'days' => $review_days]);
@@ -96,11 +121,14 @@ function engine_flag_due_reviews(PDO $pdo, int $review_days): int {
 
 /** Step 3 (B1): dispose consent-withdrawal records whose withdrawal is >= consent_days old. */
 function engine_process_consent_disposals(PDO $pdo, int $consent_days): int {
+    $dt = engine_disposal_trigger_expr();
     $stmt = $pdo->prepare(
         "SELECT dr.id FROM data_records dr
-            JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL AND dc.disposal_trigger='consent_withdrawal'
+            JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL
+            " . engine_retention_rule_join() . "
           WHERE dr.organization_id = :org AND dr.consent_withdrawn_at IS NOT NULL AND dr.status != 'disposed'
             AND dr.legal_hold=0 AND dr.deleted_at IS NULL
+            AND {$dt}='consent_withdrawal'
             AND dr.consent_withdrawn_at <= DATE_SUB(NOW(), INTERVAL :days DAY)"
     );
     $stmt->execute(['org' => engine_org_id(), 'days' => $consent_days]);
@@ -114,12 +142,16 @@ function engine_process_consent_disposals(PDO $pdo, int $consent_days): int {
  * requires_dual_approval (B5 safeguard). Returns ['disposed'=>int, 'skipped_dual'=>int].
  */
 function engine_auto_dispose_overdue(PDO $pdo): array {
+    $dt = engine_disposal_trigger_expr();
+    $dual = engine_dual_approval_expr();
     $stmt = $pdo->prepare(
-        "SELECT dr.id, dc.requires_dual_approval
+        "SELECT dr.id, {$dual} AS requires_dual_approval
          FROM data_records dr
-         JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL AND dc.disposal_trigger='date_based'
+         JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL
+         " . engine_retention_rule_join() . "
          WHERE dr.organization_id = :org AND dr.status='due_review' AND dr.legal_hold=0 AND dr.deleted_at IS NULL
-           AND dr.retention_end_date IS NOT NULL AND dr.retention_end_date < CURDATE()"
+           AND dr.retention_end_date IS NOT NULL AND dr.retention_end_date < CURDATE()
+           AND {$dt}='date_based'"
     );
     $stmt->execute(['org' => engine_org_id()]);
     $disposed = 0; $skipped = 0;
@@ -155,33 +187,7 @@ function engine_escalate(PDO $pdo, int $escalation_days): int {
     return count($ids);
 }
 
-/** Step 6 (C1): DSAR alerts for requests due in 5 days or overdue. Returns count alerted. */
-function engine_dsar_alerts(PDO $pdo): int {
-    $stmt = $pdo->prepare(
-        "SELECT id, reference, assigned_to, due_date,
-                (due_date < CURDATE()) AS overdue
-         FROM dsar_requests
-         WHERE organization_id = :org AND status NOT IN ('completed','rejected')
-           AND ( due_date = DATE_ADD(CURDATE(), INTERVAL 5 DAY)
-              OR (due_date < CURDATE() AND (extended_due_date IS NULL OR extended_due_date < CURDATE())) )"
-    );
-    $stmt->execute(['org' => engine_org_id()]);
-    $dpos = users_with_role($pdo, 'dpo');
-    $n = 0;
-    foreach ($stmt->fetchAll() as $d) {
-        $type = $d['overdue'] ? 'dsar_overdue' : 'dsar_due_soon';
-        $subject = ($d['overdue'] ? 'OVERDUE DSAR ' : 'DSAR due soon: ') . $d['reference'];
-        $recipients = $dpos;
-        if ($d['assigned_to']) { $recipients[] = ['id' => $d['assigned_to']]; }
-        foreach ($recipients as $u) {
-            create_notification($pdo, (int) $u['id'], $type, $subject,
-                'DSAR ' . $d['reference'] . ' is ' . ($d['overdue'] ? 'overdue' : 'due on ' . $d['due_date']) . '.', null, (int) $d['id']);
-            $n++;
-        }
-        log_audit($pdo, 'notification_sent', 'dsar', (int) $d['id'], null, ['type' => $type], null);
-    }
-    return $n;
-}
+
 
 /** Step 7: notify category owners (N1: DPO fallback) about their flagged records. Returns notifications sent. */
 function engine_notify_review_owners(PDO $pdo): int {
@@ -221,13 +227,13 @@ function run_retention_engine(PDO $pdo): array {
     $consent   = engine_process_consent_disposals($pdo, $consentDays);
     $auto      = engine_auto_dispose_overdue($pdo);
     $escalated = engine_escalate($pdo, $escalationDays);
-    $dsar      = engine_dsar_alerts($pdo);
+
     $notified  = engine_notify_review_owners($pdo);
 
     return [
         'flagged' => $flagged, 'consent_disposed' => $consent,
         'auto_disposed' => $auto['disposed'], 'dual_skipped' => $auto['skipped_dual'],
-        'escalated' => $escalated, 'dsar_alerts' => $dsar, 'review_notifications' => $notified,
+        'escalated' => $escalated, 'review_notifications' => $notified,
     ];
 }
 
@@ -252,12 +258,11 @@ function run_quarterly_review(PDO $pdo): array {
         'total_categories' => (int) $pdo->query("SELECT COUNT(*) c FROM data_categories WHERE deleted_at IS NULL")->fetch()['c'],
         'on_legal_hold'    => (int) $pdo->query("SELECT COUNT(*) c FROM data_records WHERE legal_hold=1 AND deleted_at IS NULL")->fetch()['c'],
         'disposed_quarter' => (int) $pdo->query("SELECT COUNT(*) c FROM data_records WHERE status='disposed' AND disposed_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)")->fetch()['c'],
-        'open_dsars'       => (int) $pdo->query("SELECT COUNT(*) c FROM dsar_requests WHERE status NOT IN ('completed','rejected')")->fetch()['c'],
         'due_review'       => (int) $pdo->query("SELECT COUNT(*) c FROM data_records WHERE status='due_review' AND deleted_at IS NULL")->fetch()['c'],
     ];
     $msg = sprintf(
-        'Quarterly compliance review: %d categories, %d on legal hold, %d disposed this quarter, %d open DSARs, %d records due for review.',
-        $summary['total_categories'], $summary['on_legal_hold'], $summary['disposed_quarter'], $summary['open_dsars'], $summary['due_review']
+        'Quarterly compliance review: %d categories, %d on legal hold, %d disposed this quarter, %d records due for review.',
+        $summary['total_categories'], $summary['on_legal_hold'], $summary['disposed_quarter'], $summary['due_review']
     );
     notify_role($pdo, ['admin', 'dpo'], 'quarterly_review', 'Quarterly Compliance Review', $msg);
     log_audit($pdo, 'schedule_reviewed', 'system', null, null, $summary, null);

@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_login();
+$pdo = get_db();
+
 $page_title = 'Dashboard';
 $active_nav = 'dashboard';
 require __DIR__ . '/../includes/layout_header.php';
@@ -20,8 +24,6 @@ $k = $pdo->query(
 )->fetch();
 
 $isStaff = has_role('admin', 'dpo');
-$openDsar = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM dsar_requests WHERE organization_id = {$orgId} AND status NOT IN ('completed','rejected')")->fetch()['c'] : 0;
-$overdueDsar = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM dsar_requests WHERE organization_id = {$orgId} AND status NOT IN ('completed','rejected') AND due_date < CURDATE()")->fetch()['c'] : 0;
 $pendingRecalc = $isStaff ? (int) $pdo->query("SELECT COUNT(*) c FROM pending_recalculations WHERE organization_id = {$orgId} AND status='pending'")->fetch()['c'] : 0;
 $recent = $isStaff ? $pdo->query("SELECT al.*, u.name pbn FROM audit_log al LEFT JOIN users u ON u.id=al.performed_by WHERE al.organization_id = {$orgId} ORDER BY al.id DESC LIMIT 8")->fetchAll() : [];
 
@@ -32,10 +34,18 @@ function dash_card(string $label, int $val, string $cls, string $href = ''): str
 }
 ?>
 <h1 class="h4 mb-1">Compliance Dashboard</h1>
-<p class="text-muted">Welcome, <?= escape_html($__user['name']) ?> · <?= get_role_badge($__user['role']) ?></p>
+<p class="text-muted mb-0">
+  <?php
+  $__dashOrg = fetch_current_organization($pdo);
+  if ($__dashOrg): ?>
+    <span class="fw-medium text-dark"><?= escape_html($__dashOrg['name']) ?></span> ·
+  <?php endif; ?>
+  Welcome, <?= escape_html($__user['name']) ?> · <?= get_role_badge($__user['role']) ?>
+</p>
+<div class="mb-3"></div>
 
 <?php if (has_role('admin') && !smtp_is_configured($pdo)): ?>
-  <div class="alert alert-warning">⚠️ <strong>Email is not configured.</strong> Retention alerts, escalations, and DSAR notifications won't be delivered until SMTP is set in <a href="<?= APP_URL ?>/settings" class="alert-link">Settings</a>.</div>
+  <div class="alert alert-warning">⚠️ <strong>Email is not configured.</strong> Retention alerts and escalations won't be delivered until SMTP is set in <a href="<?= APP_URL ?>/settings?tab=email" class="alert-link">Settings → Email delivery</a>.</div>
 <?php endif; ?>
 
 <div class="row">
@@ -48,7 +58,6 @@ function dash_card(string $label, int $val, string $cls, string $href = ''): str
   <?= dash_card('Escalated', (int)$k['escalated'], 'text-danger') ?>
   <?= dash_card('Disposed this month', (int)$k['disposed_month'], 'text-secondary') ?>
   <?php if ($isStaff): ?>
-    <?= dash_card('Open DSARs', $openDsar, $overdueDsar > 0 ? 'text-danger' : 'text-dark', APP_URL.'/dsar') ?>
     <?= dash_card('Recalc. pending', $pendingRecalc, $pendingRecalc > 0 ? 'text-warning' : 'text-dark', APP_URL.'/recalculations') ?>
   <?php endif; ?>
 </div>

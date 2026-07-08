@@ -20,11 +20,11 @@ set_setting($pdo, 'allow_public_signup', $prevSignup);
 clear_setting_cache();
 
 // Category seed import is idempotent on a seeded DB.
-assert_eq(import_category_seed($pdo), 0, 'seeded DB skips category import');
+assert_equals(0, import_category_seed($pdo), 'seeded DB skips category import');
 
 // must_change_password on seeded admin.
 $row = $pdo->query("SELECT must_change_password FROM users WHERE email='admin@3consult-ng.com'")->fetch();
-assert_eq((int) ($row['must_change_password'] ?? 0), 1, 'seeded admin must change password');
+assert_equals(1, (int) ($row['must_change_password'] ?? 0), 'seeded admin must change password');
 
 // Simulated fresh install (in-memory checks only — restore settings after).
 $prevSetup = get_setting($pdo, 'setup_complete', '1');

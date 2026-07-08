@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $res = create_data_record($pdo, [
             'category_id' => (int) ($_POST['category_id'] ?? 0),
+            'retention_rule_id' => (int) ($_POST['retention_rule_id'] ?? 0),
             'record_reference' => trim($_POST['record_reference'] ?? ''),
             'data_subject_type' => trim($_POST['data_subject_type'] ?? ''),
             'collection_date' => trim($_POST['collection_date'] ?? ''),
@@ -52,6 +53,11 @@ require __DIR__ . '/../../includes/layout_header.php';
         <option value="">Select category…</option>
         <?php foreach ($categories as $c): ?><option value="<?= (int)$c['id'] ?>"><?= escape_html($c['name']) ?> (<?= escape_html($c['compliance_framework']) ?>)</option><?php endforeach; ?>
       </select></div>
+    <div class="mb-3 d-none" id="ruleBlock">
+      <label class="form-label">Retention rule *</label>
+      <select name="retention_rule_id" id="retention_rule_id" class="form-select"></select>
+      <div class="form-text">Choose the rule that matches this record's legal basis, purpose, or your organisation type.</div>
+    </div>
     <div class="mb-3"><label class="form-label">Record reference *</label>
       <input name="record_reference" class="form-control" required value="<?= escape_html($_POST['record_reference'] ?? '') ?>"></div>
     <div class="mb-3"><label class="form-label">Data subject type</label>
@@ -78,6 +84,34 @@ require __DIR__ . '/../../includes/layout_header.php';
 </div></div>
 <script nonce="<?= csp_nonce() ?>">
 const APP_URL = '<?= APP_URL ?>';
+let currentRules = [];
+
+function selectedRule() {
+  const rid = document.getElementById('retention_rule_id')?.value;
+  return currentRules.find(r => String(r.id) === String(rid)) || currentRules[0] || null;
+}
+
+function populateRules(cat) {
+  const block = document.getElementById('ruleBlock');
+  const sel = document.getElementById('retention_rule_id');
+  currentRules = cat.rules || [];
+  sel.innerHTML = '';
+  if (!currentRules.length) { block.classList.add('d-none'); return; }
+  block.classList.toggle('d-none', currentRules.length <= 1);
+  currentRules.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    let label = r.rule_name;
+    if (r.processing_purpose) label += ' — ' + r.processing_purpose;
+    if (r.institution_type && r.institution_type !== 'all') label += ' (' + r.institution_type_label + ')';
+    label += ' · ' + (r.retention_period_label || r.retention_period_days + ' days');
+    opt.textContent = label;
+    if (r.is_default) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  if (currentRules.length === 1) sel.value = currentRules[0].id;
+}
+
 async function updatePreview(){
   const sel = document.getElementById('category_id');
   if (!sel || !sel.value) return;
@@ -85,25 +119,28 @@ async function updatePreview(){
   if (!res.ok) return;
   const cat = await res.json();
   if (cat.error) return;
+  populateRules(cat);
+  const rule = selectedRule() || cat;
   const box = document.getElementById('retentionPreview');
   const calcDate = document.getElementById('calcDate');
   const consent = document.getElementById('consentNotice');
   const dual = document.getElementById('dualWarn');
   box.classList.remove('d-none');
-  dual.classList.toggle('d-none', !cat.requires_dual_approval || cat.requires_dual_approval == 0);
-  if (cat.disposal_trigger === 'consent_withdrawal') {
+  dual.classList.toggle('d-none', !rule.requires_dual_approval || rule.requires_dual_approval == 0);
+  if (rule.disposal_trigger === 'consent_withdrawal') {
     calcDate.textContent = 'Not set';
     document.getElementById('calcLabel').textContent = '';
     consent.classList.remove('d-none');
   } else {
     consent.classList.add('d-none');
     const cd = (document.getElementById('collection_date') && document.getElementById('collection_date').value) || '<?= date('Y-m-d') ?>';
-    const d = new Date(cd); d.setDate(d.getDate() + parseInt(cat.retention_period_days || 0));
+    const d = new Date(cd); d.setDate(d.getDate() + parseInt(rule.retention_period_days || 0));
     calcDate.textContent = d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
-    document.getElementById('calcLabel').textContent = '(' + (cat.retention_period_label || '') + ')';
+    document.getElementById('calcLabel').textContent = '(' + (rule.retention_period_label || '') + ')';
   }
 }
 document.getElementById('category_id')?.addEventListener('change', updatePreview);
+document.getElementById('retention_rule_id')?.addEventListener('change', updatePreview);
 document.getElementById('collection_date')?.addEventListener('change', updatePreview);
 </script>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>

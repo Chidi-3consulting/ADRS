@@ -198,24 +198,6 @@ foreach (['dispose','approve','legal_hold','consent'] as $__act) {
     }
 }
 
-if ($trimmed === '/dsar' || $trimmed === '/dsar/index.php') {
-    require_login();
-    require __DIR__ . '/src/pages/dsar/index.php';
-    exit;
-}
-
-if ($trimmed === '/dsar/create' || $trimmed === '/dsar/create.php') {
-    require_login();
-    require __DIR__ . '/src/pages/dsar/create.php';
-    exit;
-}
-
-if ($trimmed === '/dsar/view' || $trimmed === '/dsar/view.php') {
-    require_login();
-    require __DIR__ . '/src/pages/dsar/view.php';
-    exit;
-}
-
 if ($trimmed === '/notifications' || $trimmed === '/notifications/index.php') {
     require_login();
     require __DIR__ . '/src/pages/notifications/index.php';
@@ -259,6 +241,12 @@ if ($trimmed === '/settings' || $trimmed === '/settings/index.php') {
     exit;
 }
 
+if ($trimmed === '/settings/organization') {
+    require_login();
+    require __DIR__ . '/src/pages/settings/organization.php';
+    exit;
+}
+
 if ($trimmed === '/webhooks' || $trimmed === '/webhooks/index.php') {
     require_login();
     require __DIR__ . '/src/pages/webhooks/index.php';
@@ -274,6 +262,17 @@ if ($trimmed === '/users' || $trimmed === '/users/index.php') {
 if ($trimmed === '/users/create' || $trimmed === '/users/create.php') {
     require_login();
     require __DIR__ . '/src/pages/users/create.php';
+    exit;
+}
+
+if ($trimmed === '/users/invite') {
+    require_login();
+    require __DIR__ . '/src/pages/users/invite.php';
+    exit;
+}
+
+if ($trimmed === '/invite/accept') {
+    require __DIR__ . '/src/pages/invite/accept.php';
     exit;
 }
 
@@ -327,21 +326,10 @@ if (isset($integrationRoutes[$trimmed])) {
     exit;
 }
 
-// --- Phase 3 compliance modules ---
-$complianceRoutes = [
-    '/ropa'                    => 'ropa/index.php',
-    '/ropa/create'             => 'ropa/create.php',
-    '/dpia'                    => 'dpia/index.php',
-    '/dpia/create'             => 'dpia/create.php',
-    '/breaches'                => 'breaches/index.php',
-    '/breaches/create'         => 'breaches/create.php',
-    '/consent-receipts'        => 'consent_receipts/index.php',
-    '/consent-receipts/create' => 'consent_receipts/create.php',
-    '/reports'                 => 'reports/index.php',
-];
-if (isset($complianceRoutes[$trimmed])) {
+// --- Analytics & reports ---
+if ($trimmed === '/reports' || $trimmed === '/reports/index.php') {
     require_login();
-    require __DIR__ . '/src/pages/' . $complianceRoutes[$trimmed];
+    require __DIR__ . '/src/pages/reports/index.php';
     exit;
 }
 

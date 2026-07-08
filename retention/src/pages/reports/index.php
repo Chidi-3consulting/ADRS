@@ -40,8 +40,7 @@ function rcard($label, $val, $cls = '') { echo '<div class="col-md-3 col-6"><div
         rcard('Legal holds', $m['records_hold']); ?>
 </div>
 <div class="row g-3 mb-3">
-  <?php rcard('DSARs open', $m['dsar_open']); rcard('Breaches open', $m['breaches_open'], $m['breaches_open'] ? 'text-danger' : '');
-        rcard('High-risk DPIAs', $m['dpia_high'], $m['dpia_high'] ? 'text-danger' : ''); rcard('Audit events', $m['audit_events']); ?>
+  <?php rcard('Audit events', $m['audit_events']); ?>
 </div>
 <div class="row g-3">
   <div class="col-lg-7"><div class="card shadow-sm"><div class="card-body"><h5 class="card-title">Disposals — last 12 months</h5><canvas id="disposalsChart" height="120"></canvas></div></div></div>

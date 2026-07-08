@@ -8,6 +8,68 @@ const PLATFORM_SETTING_KEYS = [
     'trial_days', 'platform_support_email',
 ];
 
+/** Tenant settings exposed in the grouped Settings UI (never includes tier/API flags). */
+const ORG_SETTING_SECTIONS = [
+    'retention' => [
+        'label' => 'Retention & compliance',
+        'description' => 'Default deadlines and list behaviour for your organisation.',
+        'keys' => [
+            'review_alert_days'      => ['label' => 'Review alert (days before end)', 'type' => 'number'],
+            'escalation_days'        => ['label' => 'Escalation window (days)', 'type' => 'number'],
+            'consent_disposal_days'  => ['label' => 'Consent withdrawal disposal (days)', 'type' => 'number'],
+            'attachment_max_size_mb' => ['label' => 'Max attachment size (MB)', 'type' => 'number'],
+            'rows_per_page'          => ['label' => 'Rows per page', 'type' => 'number'],
+        ],
+    ],
+    'email' => [
+        'label' => 'Email delivery',
+        'description' => 'SMTP settings for retention alerts and escalations.',
+        'keys' => [
+            'smtp_host'       => ['label' => 'SMTP host', 'type' => 'text'],
+            'smtp_port'       => ['label' => 'SMTP port', 'type' => 'number'],
+            'smtp_encryption' => ['label' => 'Encryption (ssl / tls)', 'type' => 'text'],
+            'smtp_user'       => ['label' => 'SMTP username', 'type' => 'text'],
+            'smtp_pass'       => ['label' => 'SMTP password', 'type' => 'password'],
+            'smtp_from_name'  => ['label' => 'From name', 'type' => 'text'],
+        ],
+    ],
+    'branding' => [
+        'label' => 'Portal branding',
+        'description' => 'How ADRS appears to your team (white-label options).',
+        'keys' => [
+            'white_label_name'    => ['label' => 'Portal display name', 'type' => 'text'],
+            'white_label_primary' => ['label' => 'Primary colour (hex)', 'type' => 'text', 'placeholder' => '#C85C1A'],
+            'white_label_logo_url'=> ['label' => 'Logo URL', 'type' => 'url'],
+            'white_label_footer'  => ['label' => 'Footer text', 'type' => 'text'],
+        ],
+    ],
+];
+
+/** Flat allowlist of organisation setting keys editable via Settings forms. */
+function org_editable_setting_keys(): array {
+    $keys = [];
+    foreach (ORG_SETTING_SECTIONS as $section) {
+        foreach ($section['keys'] as $k => $_meta) {
+            $keys[] = $k;
+        }
+    }
+    return $keys;
+}
+
+/** Load current values for a settings section. */
+function org_settings_for_section(PDO $pdo, int $orgId, string $sectionKey): array {
+    $section = ORG_SETTING_SECTIONS[$sectionKey] ?? null;
+    if ($section === null) { return []; }
+    $out = [];
+    foreach ($section['keys'] as $key => $meta) {
+        $out[$key] = [
+            'meta'  => $meta,
+            'value' => (string) get_setting($pdo, $key, '', $orgId),
+        ];
+    }
+    return $out;
+}
+
 /* ---------------- Date & retention (D4: fixed days) ---------------- */
 
 /** Collection date + N days, as Y-m-d. */
@@ -50,6 +112,9 @@ function get_setting(PDO $pdo, string $key, $default = null, ?int $orgId = null)
     if (!isset($GLOBALS['__setting_cache'])) { $GLOBALS['__setting_cache'] = []; }
     $cache = &$GLOBALS['__setting_cache'];
     $orgId = $orgId ?? (function_exists('current_org_id') ? current_org_id() : null);
+    if (!in_array($key, PLATFORM_SETTING_KEYS, true) && ($orgId === null || $orgId <= 0) && PHP_SAPI === 'cli') {
+        $orgId = 1;
+    }
     $cacheKey = (in_array($key, PLATFORM_SETTING_KEYS, true) ? 'p:' : 'o:' . ($orgId ?? 0) . ':') . $key;
     if (array_key_exists($cacheKey, $cache)) { return $cache[$cacheKey]; }
 
@@ -78,6 +143,10 @@ function get_setting(PDO $pdo, string $key, $default = null, ?int $orgId = null)
 /** Clear the in-request settings cache (after updating settings, or between test scenarios). */
 function clear_setting_cache(): void { $GLOBALS['__setting_cache'] = []; }
 
+function is_local_environment(): bool {
+    return defined('APP_ENV') && APP_ENV === 'local';
+}
+
 /** True only if SMTP looks genuinely configured (non-empty host that isn't the seed placeholder). */
 function smtp_is_configured(PDO $pdo): bool {
     $host = trim((string) get_setting($pdo, 'smtp_host', ''));
@@ -92,7 +161,14 @@ function set_setting(PDO $pdo, string $key, string $value, ?int $orgId = null): 
              ON DUPLICATE KEY UPDATE setting_value = :v2"
         )->execute(['k' => $key, 'v' => $value, 'v2' => $value]);
     } else {
-        $orgId = $orgId ?? (function_exists('require_org_id') ? require_org_id() : 1);
+        $orgId = $orgId ?? (function_exists('current_org_id') ? current_org_id() : null);
+        if ($orgId === null || $orgId <= 0) {
+            if (PHP_SAPI === 'cli') {
+                $orgId = 1;
+            } else {
+                $orgId = require_org_id();
+            }
+        }
         $pdo->prepare(
             "INSERT INTO organization_settings (organization_id, setting_key, setting_value) VALUES (:o,:k,:v)
              ON DUPLICATE KEY UPDATE setting_value = :v2"
@@ -362,22 +438,6 @@ function pagination_links(array $pg, string $base, array $params = []): string {
     }
     $html .= '<li class="page-item' . ($pg['has_next'] ? '' : ' disabled') . '"><a class="page-link" href="' . $url(min($pg['pages'], $pg['current'] + 1)) . '">Next</a></li>';
     return $html . '</ul></nav>';
-}
-
-/* ---------------- DSAR (C1) ---------------- */
-
-/** Next DSAR reference: DSAR-{year}-{4-digit sequence within that year}. */
-function generate_dsar_reference(PDO $pdo): string {
-    $year = date('Y');
-    $stmt = $pdo->prepare("SELECT COUNT(*) c FROM dsar_requests WHERE YEAR(created_at) = :y");
-    $stmt->execute(['y' => $year]);
-    $seq = ((int) $stmt->fetch()['c']) + 1;
-    return sprintf('DSAR-%s-%04d', $year, $seq);
-}
-
-/** DSAR statutory due date: received + 30 days. */
-function calculate_dsar_due_date(string $received_date): string {
-    return date('Y-m-d', strtotime('+30 days', strtotime($received_date)));
 }
 
 /* ---------------- UI label/badge helpers ---------------- */

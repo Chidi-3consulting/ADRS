@@ -57,7 +57,7 @@ require __DIR__ . '/../../includes/layout_header.php';
     </select></div>
   <div class="col-md-3"><label class="form-label small">Entity</label>
     <select name="entity_type" class="form-select form-select-sm"><option value="">All</option>
-      <?php foreach (['data_record','data_category','user','dsar','attachment','notification','system'] as $e): ?><option value="<?= $e ?>" <?= $e===$entity?'selected':'' ?>><?= $e ?></option><?php endforeach; ?>
+      <?php foreach (['data_record','data_category','user','attachment','notification','system'] as $e): ?><option value="<?= $e ?>" <?= $e===$entity?'selected':'' ?>><?= $e ?></option><?php endforeach; ?>
     </select></div>
   <div class="col-md-2"><label class="form-label small">From</label><input type="date" name="from" class="form-control form-control-sm" value="<?= escape_html($from) ?>"></div>
   <div class="col-md-2"><label class="form-label small">To</label><input type="date" name="to" class="form-control form-control-sm" value="<?= escape_html($to) ?>"></div>

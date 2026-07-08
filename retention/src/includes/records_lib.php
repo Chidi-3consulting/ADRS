@@ -2,6 +2,7 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/categories_lib.php';
+require_once __DIR__ . '/retention_rules_lib.php';
 require_once __DIR__ . '/notifications_lib.php';
 
 /**
@@ -10,9 +11,9 @@ require_once __DIR__ . '/notifications_lib.php';
  */
 
 /** Pure: retention end date for a record, or null for consent-withdrawal / zero-day categories. */
-function compute_retention_end(array $category, string $collection_date): ?string {
-    if (($category['disposal_trigger'] ?? 'date_based') === 'consent_withdrawal') { return null; }
-    $days = (int) ($category['retention_period_days'] ?? 0);
+function compute_retention_end(array $categoryOrRule, string $collection_date): ?string {
+    if (($categoryOrRule['disposal_trigger'] ?? 'date_based') === 'consent_withdrawal') { return null; }
+    $days = (int) ($categoryOrRule['retention_period_days'] ?? 0);
     return $days > 0 ? retention_end_date($collection_date, $days) : null;
 }
 
@@ -34,6 +35,11 @@ function create_data_record(PDO $pdo, array $in, array $actor): array {
         throw new InvalidArgumentException('Selected category is not available.');
     }
 
+    $ruleId = isset($in['retention_rule_id']) && (int) $in['retention_rule_id'] > 0
+        ? (int) $in['retention_rule_id'] : null;
+    $rule = resolve_record_retention_rule($pdo, $category_id, $ruleId);
+    $ruleId = (int) $rule['id'];
+
     $is_owner = ($actor['role'] ?? '') === 'data_owner';
     if ($is_owner && (int) $category['owner_id'] !== (int) $actor['id']) {
         throw new InvalidArgumentException('You can only create records in your assigned categories.');
@@ -44,19 +50,20 @@ function create_data_record(PDO $pdo, array $in, array $actor): array {
         ? date('Y-m-d')
         : (trim((string) ($in['collection_date'] ?? '')) ?: date('Y-m-d'));
 
-    $retention_end    = compute_retention_end($category, $collection_date);
+    $retention_end    = compute_retention_end(retention_rule_as_category($rule), $collection_date);
     $created_by_owner = $is_owner ? 1 : 0;
 
     $orgId = function_exists('require_org_id') ? require_org_id() : (int) ($category['organization_id'] ?? 1);
     $stmt = $pdo->prepare(
         "INSERT INTO data_records
-           (organization_id, category_id, record_reference, data_subject_type, collection_date, retention_end_date,
+           (organization_id, category_id, retention_rule_id, record_reference, data_subject_type, collection_date, retention_end_date,
             status, created_by_owner, created_by, notes)
-         VALUES (:oid,:cid,:ref,:subj,:cdate,:rend,'active',:cbo,:cby,:notes)"
+         VALUES (:oid,:cid,:rid,:ref,:subj,:cdate,:rend,'active',:cbo,:cby,:notes)"
     );
     $stmt->execute([
         'oid'   => $orgId,
         'cid'   => $category_id,
+        'rid'   => $ruleId,
         'ref'   => $reference,
         'subj'  => ($in['data_subject_type'] ?? '') !== '' ? $in['data_subject_type'] : null,
         'cdate' => $collection_date,
@@ -87,9 +94,17 @@ function create_data_record(PDO $pdo, array $in, array $actor): array {
  */
 function fetch_record(PDO $pdo, int $id, bool $include_deleted = false): ?array {
     $orgId = function_exists('current_org_id') ? current_org_id() : null;
-    $sql = "SELECT dr.*, dc.name AS category_name, dc.disposal_trigger, dc.disposal_method,
-                dc.requires_dual_approval, dc.retention_period_days, dc.legal_basis, dc.compliance_framework
-         FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id
+    $sql = "SELECT dr.*, dc.name AS category_name,
+                COALESCE(crr.disposal_trigger, dc.disposal_trigger) AS disposal_trigger,
+                COALESCE(crr.disposal_method, dc.disposal_method) AS disposal_method,
+                COALESCE(crr.requires_dual_approval, dc.requires_dual_approval) AS requires_dual_approval,
+                COALESCE(crr.retention_period_days, dc.retention_period_days) AS retention_period_days,
+                COALESCE(crr.legal_basis, dc.legal_basis) AS legal_basis,
+                dc.compliance_framework,
+                crr.rule_name AS retention_rule_name
+         FROM data_records dr
+         JOIN data_categories dc ON dc.id = dr.category_id
+         LEFT JOIN category_retention_rules crr ON crr.id = dr.retention_rule_id
          WHERE dr.id = :id" . ($orgId !== null ? ' AND dr.organization_id = :org' : '')
          . ($include_deleted ? '' : ' AND dr.deleted_at IS NULL') . " LIMIT 1";
     $stmt = $pdo->prepare($sql);
@@ -115,16 +130,25 @@ function reassign_category(PDO $pdo, int $record_id, int $new_category_id, int $
     $setOriginal = $original === null ? (int) $record['category_id'] : (int) $original;
 
     $newEnd = $recalculate
-        ? compute_retention_end($newCat, $record['collection_date'])
+        ? compute_retention_end(
+            retention_rule_as_category(fetch_default_retention_rule($pdo, $new_category_id) ?? $newCat),
+            $record['collection_date']
+        )
         : $record['retention_end_date'];
+
+    $defaultRule = fetch_default_retention_rule($pdo, $new_category_id);
 
     $stmt = $pdo->prepare(
         "UPDATE data_records
-            SET category_id = :ncid, original_category_id = :orig,
+            SET category_id = :ncid, retention_rule_id = :nrid, original_category_id = :orig,
                 retention_end_date = :rend, category_reassigned_at = NOW(), category_reassigned_by = :by
           WHERE id = :id"
     );
-    $stmt->execute(['ncid' => $new_category_id, 'orig' => $setOriginal, 'rend' => $newEnd, 'by' => $actor_id, 'id' => $record_id]);
+    $stmt->execute([
+        'ncid' => $new_category_id,
+        'nrid' => $defaultRule ? (int) $defaultRule['id'] : null,
+        'orig' => $setOriginal, 'rend' => $newEnd, 'by' => $actor_id, 'id' => $record_id,
+    ]);
 
     log_audit($pdo, 'record_reassigned', 'data_record', $record_id, $actor_id, [
         'from_category' => (int) $record['category_id'], 'to_category' => $new_category_id,

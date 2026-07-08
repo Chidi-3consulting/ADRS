@@ -41,7 +41,7 @@ function require_login(): void {
 
 /** SaaS: require verified email before using the portal (platform admins exempt). */
 function enforce_email_verified(): void {
-    if (PHP_SAPI === 'cli' || is_platform_admin()) { return; }
+    if (PHP_SAPI === 'cli' || is_platform_admin() || is_local_environment()) { return; }
     $pdo = get_db();
     if (!is_saas_deployment($pdo)) { return; }
     $u = current_user();

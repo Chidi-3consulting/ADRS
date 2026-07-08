@@ -13,7 +13,7 @@ public_page_head('Automated Data Retention System', $pdo);
 public_page_nav($pdo);
 ?>
 <main class="flex-grow-1">
-  <section class="text-white py-5" style="background:linear-gradient(135deg,var(--3c-dark) 0%,var(--3c-teal) 100%);">
+  <section class="text-white py-5" style="background:linear-gradient(135deg,var(--3c-dark) 0%,var(--3c-teal) 100%); background-size:cover; min-height:600px;">
     <div class="container py-4">
       <div class="row align-items-center">
         <div class="col-lg-7">
@@ -25,10 +25,12 @@ public_page_nav($pdo);
             and data-subject-rights workflows built for regulator scrutiny.
           </p>
           <?php if ($saas): ?>
-            <div class="d-flex flex-wrap gap-2">
-              <a href="<?= APP_URL ?>/register?tier=core" class="btn btn-primary btn-lg">Start free trial — Core</a>
-              <a href="<?= APP_URL ?>/register?tier=enterprise" class="btn btn-outline-light btn-lg">Start free trial — Enterprise</a>
+            <div class="d-flex flex-wrap gap-3">
+              <a href="<?= APP_URL ?>/register?tier=core" class="btn btn-light btn-lg text-dark px-4">Start free trial — Core</a>
+              <a href="<?= APP_URL ?>/register?tier=enterprise" class="btn btn-outline-light btn-lg px-4">Start free trial — Enterprise</a>
             </div>
+          <?php elseif (public_signup_enabled($pdo)): ?>
+            <a href="<?= APP_URL ?>/signup" class="btn btn-primary btn-lg">Create an account</a>
           <?php else: ?>
             <a href="<?= APP_URL ?>/login" class="btn btn-primary btn-lg">Sign in to your portal</a>
           <?php endif; ?>
@@ -63,7 +65,7 @@ public_page_nav($pdo);
               <ul class="small">
                 <li>30 pre-built GDPR/NDPR categories</li>
                 <li>Automated retention engine &amp; dual-approval safeguard</li>
-                <li>DSAR tracking · immutable audit trail · NDPR report</li>
+                <li>Immutable audit trail · NDPR annual report</li>
                 <li>Role-based access (Admin / DPO / Data Owner)</li>
                 <li>Deploy without changing existing systems</li>
               </ul>

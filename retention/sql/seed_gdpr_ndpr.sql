@@ -9,8 +9,8 @@ SET NAMES utf8mb4;
 
 -- Default users (password: 'password' — CHANGE ON FIRST LOGIN)
 -- BCrypt hash of 'password'
-INSERT IGNORE INTO `organizations` (`id`, `name`, `slug`, `tier`, `status`) VALUES
-(1, '3Consulting Demo', '3consulting-demo', 'core', 'active');
+INSERT IGNORE INTO `organizations` (`id`, `name`, `slug`, `primary_domain`, `tier`, `status`) VALUES
+(1, '3Consulting Demo', '3consulting-demo', '3consult-ng.com', 'core', 'active');
 
 INSERT INTO `users` (`organization_id`, `name`, `email`, `password_hash`, `role`, `must_change_password`, `is_platform_admin`, `email_verified_at`) VALUES
 (1, 'System Administrator', 'admin@3consult-ng.com',

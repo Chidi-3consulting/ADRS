@@ -20,7 +20,7 @@ cPanel shared hosting. The application lives in [`retention/`](retention/).
 **Core:** 30-category GDPR/NDPR library · retention register with lawful basis & ownership ·
 automated retention engine with a **dual-approval safeguard** (sensitive data is never
 auto-disposed) · `delete`/`anonymise`/`archive` disposal · legal hold · consent-withdrawal
-lifecycle · DSAR tracking (30-day deadlines) · secure attachments · two-pass bulk import ·
+lifecycle · secure attachments · two-pass bulk import ·
 role-based access (Admin / DPO / Data Owner) · email notifications · NDPR annual report.
 
 **Enterprise:** REST API v1 (`X-API-Key` + SHA-256, rate-limited) · async intake queue +
@@ -28,8 +28,7 @@ auto-categorisation · consent-signal matching · outbound disposal webhooks · 
 management UI.
 
 **Advanced:** tamper-evident **hash-chained audit log** + verifier · **2FA (TOTP)** ·
-**RoPA / Article 30** register · **DPIA** risk scoring · **breach register** with 72-hour
-notification tracking · consent receipts · analytics & board reporting · white-label theming ·
+analytics & board reporting · white-label theming ·
 ops webhooks · automated DB backups.
 
 ## Layout
@@ -44,8 +43,8 @@ retention/
 │   ├── includes/          db, auth, helpers, libs (records, engine, enterprise, compliance,
 │   │                      analytics, twofa, webhooks, backups…), mailer, layout
 │   ├── engine/            retention_cron, intake_queue_processor, disposal_dispatch_cron, backup_cron
-│   └── pages/             UI (categories, records, dsar, audit, integrations, ropa, dpia,
-│                          breaches, consent_receipts, reports, settings, …)
+│   └── pages/             UI (categories, records, audit, integrations,
+│                          reports, settings, …)
 ├── tests/                 no-Composer CLI harness (run.php) + integration/unit tests
 └── DEPLOYMENT.md          cPanel go-live runbook
 ```

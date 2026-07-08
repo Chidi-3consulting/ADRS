@@ -49,9 +49,8 @@ operational and organisational — they cannot be "coded in".
 
 ### Privacy-by-design (GDPR/NDPR)
 - Retention schedules + automated disposal (storage limitation); legal basis recorded per category;
-  consent-withdrawal lifecycle (30-day erasure countdown); DSAR module (30-day clock); legal hold;
-  RoPA/Article 30 register; DPIA workflow; breach register (Art. 33 **72-hour** tracking);
-  consent receipts; disposal methods (delete / anonymise / archive).
+  consent-withdrawal lifecycle (30-day erasure countdown); legal hold;
+  disposal methods (delete / anonymise / archive).
 
 ### Resilience & operations (software side)
 - Self-contained **automated DB backups** (cron) + rotation; idempotent crons (safe to re-run);
@@ -102,9 +101,9 @@ client/operator's responsibility:
 
 ## 4. Framework cross-reference (how ADRS features support each)
 
-- **NIST CSF** — *Identify:* data register/RoPA, audit trail. *Protect:* RBAC, MFA, encryption-in-
+- **NIST CSF** — *Identify:* data register, audit trail. *Protect:* RBAC, MFA, encryption-in-
   transit, secure config, throttle. *Detect:* audit log + integrity verifier, ops webhooks, login
-  monitoring. *Respond:* breach register (72h), DSAR, legal hold. *Recover:* automated backups.
+  monitoring. *Respond:* legal hold. *Recover:* automated backups.
 - **ISO 27001 (Annex A)** — access control (A.9), cryptography (A.10), operations security/logging
   (A.12), comms security/headers (A.13), supplier/SRI (A.15), incident mgmt evidence (A.16). The
   *ISMS* itself is organisational.
@@ -112,8 +111,7 @@ client/operator's responsibility:
   Processing Integrity:* backups + idempotent engine + hash-chained audit. Certification requires an
   external auditor over a period — operator responsibility.
 - **GDPR / NDPR** — Art. 5 (storage limitation via retention engine), Art. 6 (lawful basis), Art. 17
-  (erasure via consent countdown + disposal), Art. 30 (RoPA), Art. 32 (security of processing), Art.
-  33/34 (breach register, 72h), Art. 12–22 (DSAR module).
+  (erasure via consent countdown + disposal), Art. 32 (security of processing).
 - **OWASP Top 10** — see §1 table.
 
 ---

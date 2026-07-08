@@ -166,7 +166,7 @@ The Enterprise crons self-skip when `adrs_tier` is `core`, so they're harmless t
    mysql -u USER_adrsapp -p USER_adrs < retention/sql/migrations/2026-06-06-hardening.sql
    ```
    - `2026-06-04-phase3-advanced.sql` — `audit_log` hash columns, `users` 2FA columns, and the
-     RoPA/DPIA/breach/consent-receipt/webhook/backup tables + settings.
+     webhook/backup tables + settings.
    - `2026-06-06-hardening.sql` — the `login_attempts` table (brute-force throttle) and a
      performance index on `data_records.record_reference`.
 
@@ -183,8 +183,6 @@ The Enterprise crons self-skip when `adrs_tier` is `core`, so they're harmless t
 | Verify audit integrity | Audit Log → **Verify integrity** (or Settings link) |
 | Export NDPR annual report | Audit Log → **NDPR Annual Report** |
 | Management/board report | **Analytics & Reports** → Export CSV / Print |
-| RoPA (Article 30) | **RoPA** → Generate from categories / Export CSV |
-| Log a breach (72h clock) | **Breach Register** → Log breach |
 | Restore a backup | Import the latest `adrs_storage/backups/adrs_backup_*.sql` via phpMyAdmin |
 | Check engine health | Tail `adrs_storage/logs/retention_cron.log` |
 

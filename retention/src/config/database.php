@@ -13,6 +13,13 @@ if (!defined('APP_ENV') && is_file($__local)) { require $__local; }
 // Environment
 defined('APP_ENV')   || define('APP_ENV', 'production');     // 'production' | 'local' | 'test'
 defined('APP_NAME')  || define('APP_NAME', 'ADRS — 3Consulting');
+
+// In local/test mode, derive APP_URL from the request so both localhost and LAN IP work.
+// Production always uses the explicit URL below.
+if (!defined('APP_URL') && APP_ENV !== 'production' && PHP_SAPI !== 'cli' && !empty($_SERVER['HTTP_HOST'])) {
+    $__scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    define('APP_URL', $__scheme . '://' . $_SERVER['HTTP_HOST']);
+}
 defined('APP_URL')   || define('APP_URL', 'https://retention.3consult-ng.com');
 defined('TIMEZONE')  || define('TIMEZONE', 'Africa/Lagos');
 
