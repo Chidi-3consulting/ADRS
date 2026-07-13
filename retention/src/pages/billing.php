@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
     $action = $_POST['action'] ?? '';
     if ($action === 'subscribe') {
-        $tier = ($_POST['plan_tier'] ?? 'core') === 'enterprise' ? 'enterprise' : 'core';
+        $tier = 'enterprise';
         try {
             $init = paystack_initialize($pdo, $orgId, $tier, current_user()['email']);
             redirect($init['authorization_url']);
@@ -50,7 +50,7 @@ require __DIR__ . '/../includes/layout_header.php';
 <div class="card shadow-sm mb-3" style="max-width:720px"><div class="card-body">
   <p>Organisation: <strong><?= escape_html($org['name'] ?? '') ?></strong></p>
   <p>Status: <span class="badge bg-<?= $hasAccess ? 'success' : 'warning' ?>"><?= escape_html($org['subscription_status'] ?? 'trial') ?></span>
-     · Tier: <span class="badge bg-secondary"><?= escape_html(strtoupper($org['tier'] ?? 'core')) ?></span></p>
+     · Tier: <span class="badge bg-secondary"><?= escape_html(strtoupper($org['tier'] ?? 'enterprise')) ?></span></p>
   <?php if ($daysLeft !== null && ($org['subscription_status'] ?? '') === 'trial'): ?>
     <p class="text-muted small"><?= (int) $daysLeft ?> day(s) left in your free trial.</p>
   <?php endif; ?>
@@ -58,7 +58,7 @@ require __DIR__ . '/../includes/layout_header.php';
 
 <?php if (!$hasAccess || ($org['subscription_status'] ?? '') !== 'active'): ?>
 <div class="row g-3" style="max-width:900px">
-  <?php foreach (['core', 'enterprise'] as $planKey): $p = $plans[$planKey]; ?>
+  <?php foreach (array_keys($plans) as $planKey): $p = $plans[$planKey]; ?>
   <div class="col-md-6">
     <div class="card h-100 shadow-sm">
       <div class="card-body">

@@ -25,6 +25,9 @@ function navlink(string $key, string $active, string $route, string $icon, strin
     $cls = $key === $active ? 'active' : '';
     return '<a class="' . $cls . '" href="' . APP_URL . $route . '"><i class="bi ' . $icon . '"></i> ' . escape_html($label) . '</a>';
 }
+function navgroup(string $label): string {
+    return '<div class="nav-group-label">' . escape_html($label) . '</div>';
+}
 ?>
 <!doctype html>
 <html lang="en"><head>
@@ -33,6 +36,9 @@ function navlink(string $key, string $active, string $route, string $icon, strin
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23C85C1A'/><text x='16' y='23' font-size='18' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial,sans-serif'>A</text></svg>">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
 <style>:root{ --3c-orange: <?= $__wlPrimary ?>; } .sidebar .brand{ color: <?= $__wlPrimary ?>; }</style>
 </head><body>
@@ -52,25 +58,40 @@ function navlink(string $key, string $active, string $route, string $icon, strin
     </div>
     <?php endif; ?>
     <div class="brand pt-2"><?php if ($__wlLogo): ?><img src="<?= escape_html($__wlLogo) ?>" alt="logo" style="max-height:32px;max-width:200px"><?php else: ?><?= escape_html($__wlName) ?><?php endif; ?></div>
+    
+    <?= navgroup('📊 Overview') ?>
     <?= navlink('dashboard', $active_nav, '/dashboard', 'bi-house', 'Dashboard') ?>
+    
+    <?= navgroup('📁 Data Life Cycle') ?>
     <?= navlink('categories', $active_nav, '/categories', 'bi-collection', 'Data Categories') ?>
-    <?= navlink('records', $active_nav, '/records', 'bi-card-list', 'Retention Schedule') ?>
+    <?= navlink('records', $active_nav, '/records', 'bi-card-list', 'Retention Register') ?>
+    
     <?php if (has_role('admin','dpo')): ?>
+      <?= navgroup('🔍 Compliance & Audit') ?>
       <?= navlink('audit', $active_nav, '/audit', 'bi-shield-check', 'Audit Log') ?>
       <?= navlink('reports', $active_nav, '/reports', 'bi-graph-up', 'Analytics & Reports') ?>
     <?php endif; ?>
-    <?= navlink('notifications', $active_nav, '/notifications', 'bi-bell', 'Notifications') ?>
-    <?php if (has_role('admin') && get_setting($__pdo, 'adrs_tier', 'core') === 'enterprise'): ?>
+    
+    <?= navgroup('🔔 Notifications') ?>
+    <?= navlink('notifications', $active_nav, '/notifications', 'bi-bell', 'Inbox') ?>
+    
+    <?php if (has_role('admin') && ($__org['tier'] ?? 'core') === 'enterprise'): ?>
+      <?= navgroup('🔌 Enterprise Hub') ?>
       <?= navlink('integrations', $active_nav, '/integrations', 'bi-hdd-network', 'Integrations') ?>
     <?php endif; ?>
+    
     <?php if (has_role('admin')): ?>
-      <?= navlink('users', $active_nav, '/users', 'bi-people', 'Users') ?>
+      <?= navgroup('⚙️ Administration') ?>
+      <?= navlink('users', $active_nav, '/users', 'bi-people', 'Team Users') ?>
       <?= navlink('settings', $active_nav, '/settings', 'bi-gear', 'Settings') ?>
-      <a href="<?= APP_URL ?>/billing"><i class="bi bi-credit-card"></i> Billing</a>
+      <?= navlink('billing', $active_nav, '/billing', 'bi-credit-card', 'Billing & subscription') ?>
     <?php endif; ?>
+    
     <?php if (!empty($__user['is_platform_admin'])): ?>
+      <?= navgroup('🛡️ Platform Control') ?>
       <a href="<?= APP_URL ?>/platform" class="text-warning"><i class="bi bi-shield-lock"></i> Platform admin</a>
     <?php endif; ?>
+    
     <div class="mt-auto p-3 border-top border-secondary">
       <div class="small text-light"><?= escape_html($__user['name']) ?></div>
       <?= get_role_badge($__user['role']) ?>

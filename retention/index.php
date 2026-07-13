@@ -23,7 +23,7 @@ if ($trimmed === '/healthz' || $trimmed === '/health') {
 }
 
 if ($trimmed === '/setup' || $trimmed === '/setup.php') {
-    require __DIR__ . '/src/pages/setup.php';
+    redirect(APP_URL . '/register');
     exit;
 }
 
@@ -133,6 +133,12 @@ if ($trimmed === '/help' || $trimmed === '/help.php') {
 if ($trimmed === '/categories' || $trimmed === '/categories/index.php') {
     require_login();
     require __DIR__ . '/src/pages/categories/index.php';
+    exit;
+}
+
+if ($trimmed === '/categories/export') {
+    require_login();
+    require __DIR__ . '/src/pages/categories/export.php';
     exit;
 }
 

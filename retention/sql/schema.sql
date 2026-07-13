@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS `data_categories` (
   `id`                     INT UNSIGNED  NOT NULL AUTO_INCREMENT,
   `name`                   VARCHAR(255)  NOT NULL,
   `description`            TEXT,
-  `compliance_framework`   ENUM('GDPR','NDPR','BOTH') NOT NULL DEFAULT 'GDPR',
+  `retention_reason`       TEXT,
+  `compliance_framework`   VARCHAR(50)   NOT NULL DEFAULT 'GDPR',
   `legal_basis`            ENUM(
                              'legal_obligation','contract','consent',
                              'legitimate_interest','vital_interest','public_task'
@@ -60,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `data_categories` (
                              COMMENT '0 means disposal_trigger=consent_withdrawal',
   `retention_period_label` VARCHAR(100)  NOT NULL,
   `disposal_method`        ENUM('delete','anonymise','archive') NOT NULL DEFAULT 'delete',
-  `disposal_trigger`       ENUM('date_based','consent_withdrawal') NOT NULL DEFAULT 'date_based'
+  `disposal_trigger`       ENUM('date_based','consent_withdrawal','account_closure') NOT NULL DEFAULT 'date_based'
                              COMMENT 'BUG-02 FIX: explicitly set in seed — no UPDATE needed',
   `requires_dual_approval` TINYINT(1)    NOT NULL DEFAULT 0
                              COMMENT 'BUG-02 FIX: explicitly set in seed for sensitive categories',
@@ -100,7 +101,7 @@ CREATE TABLE IF NOT EXISTS `category_retention_rules` (
   `retention_period_days`  INT UNSIGNED NOT NULL DEFAULT 0,
   `retention_period_label` VARCHAR(100) NOT NULL,
   `disposal_method`        ENUM('delete','anonymise','archive') NOT NULL DEFAULT 'delete',
-  `disposal_trigger`       ENUM('date_based','consent_withdrawal') NOT NULL DEFAULT 'date_based',
+  `disposal_trigger`       ENUM('date_based','consent_withdrawal','account_closure') NOT NULL DEFAULT 'date_based',
   `requires_dual_approval` TINYINT(1)   NOT NULL DEFAULT 0,
   `is_default`             TINYINT(1)   NOT NULL DEFAULT 0,
   `sort_order`             INT UNSIGNED NOT NULL DEFAULT 0,
@@ -329,7 +330,7 @@ CREATE TABLE IF NOT EXISTS `dsar_requests` (
                             'access','rectification','erasure',
                             'restriction','portability','objection'
                           ) NOT NULL,
-  `compliance_framework`  ENUM('GDPR','NDPR','BOTH') NOT NULL DEFAULT 'GDPR',
+  `compliance_framework`  VARCHAR(50)   NOT NULL DEFAULT 'GDPR',
   `data_subject_name`     VARCHAR(255)  NOT NULL,
   `data_subject_email`    VARCHAR(255)  NULL,
   `data_subject_phone`    VARCHAR(50)   NULL,
@@ -458,6 +459,7 @@ CREATE TABLE IF NOT EXISTS `connected_systems` (
                       'loan_management','ecommerce','custom'
                     ) NOT NULL DEFAULT 'custom',
   `base_url`        VARCHAR(500)  NULL COMMENT 'Base URL of the external system API if bidirectional',
+  `signing_secret`  VARCHAR(255)  NULL COMMENT 'Signing secret for outbound webhook HMAC verification',
   `description`     TEXT          NULL,
   `is_active`       TINYINT(1)    NOT NULL DEFAULT 1,
   `health_status`   ENUM('healthy','degraded','offline','unknown') NOT NULL DEFAULT 'unknown',
@@ -824,6 +826,7 @@ CREATE TABLE IF NOT EXISTS `organizations` (
   `name`            VARCHAR(255) NOT NULL,
   `slug`            VARCHAR(100) NOT NULL,
   `primary_domain`  VARCHAR(255) NOT NULL,
+  `country`         VARCHAR(2) NULL,
   `tier`            ENUM('core','enterprise') NOT NULL DEFAULT 'core',
   `status`        ENUM('active','trial','suspended') NOT NULL DEFAULT 'trial',
   `trial_ends_at` TIMESTAMP NULL,
@@ -833,6 +836,27 @@ CREATE TABLE IF NOT EXISTS `organizations` (
   UNIQUE KEY `uq_organizations_slug` (`slug`),
   UNIQUE KEY `uq_organizations_primary_domain` (`primary_domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `regulations` (
+  `code`        VARCHAR(20) NOT NULL,
+  `name`        VARCHAR(255) NOT NULL,
+  `country`     VARCHAR(2) NULL COMMENT 'ISO 3166-1 alpha-2 or NULL for global/regional',
+  `continent`   VARCHAR(20) NULL,
+  `description` TEXT NULL,
+  `is_active`   TINYINT(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `regulations` (`code`, `name`, `country`, `continent`, `description`) VALUES
+('GDPR', 'EU GDPR (General Data Protection Regulation)', NULL, 'Europe', 'European Union general data protection regulation'),
+('NDPR', 'Nigeria NDPR/NDPA (Nigeria Data Protection)', 'NG', 'Africa', 'Nigeria Data Protection Regulation & Act'),
+('CCPA', 'US CCPA/CPRA (California Consumer Privacy Act)', 'US', 'North America', 'California Consumer Privacy Act'),
+('LGPD', 'Brazil LGPD (Lei Geral de Proteção de Dados)', 'BR', 'South America', 'Brazilian General Data Protection Law'),
+('POPIA', 'South Africa POPIA (Protection of Personal Information Act)', 'ZA', 'Africa', 'South African personal information protection law'),
+('DPA_KE', 'Kenya DPA (Data Protection Act)', 'KE', 'Africa', 'Kenyan Data Protection Act'),
+('UK_GDPR', 'United Kingdom GDPR', 'GB', 'Europe', 'UK General Data Protection Regulation'),
+('DPA_GH', 'Ghana DPA (Data Protection Act)', 'GH', 'Africa', 'Ghanaian Data Protection Act'),
+('PDPA_SG', 'Singapore PDPA (Personal Data Protection Act)', 'SG', 'Asia', 'Singapore Personal Data Protection Act');
 
 CREATE TABLE IF NOT EXISTS `organization_settings` (
   `organization_id` INT UNSIGNED NOT NULL,

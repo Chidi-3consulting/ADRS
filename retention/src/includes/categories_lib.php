@@ -42,30 +42,33 @@ function count_active_records_for_category(PDO $pdo, int $category_id): int {
  * Consent-withdrawal categories always store retention_period_days = 0 (B1).
  */
 function create_category(PDO $pdo, array $in, int $actor_id): int {
-    $trigger = $in['disposal_trigger'] === 'consent_withdrawal' ? 'consent_withdrawal' : 'date_based';
+    $trigger = in_array($in['disposal_trigger'] ?? '', ['consent_withdrawal', 'account_closure'], true)
+        ? $in['disposal_trigger']
+        : 'date_based';
     $days = $trigger === 'consent_withdrawal' ? 0 : max(0, (int) ($in['retention_period_days'] ?? 0));
 
     $orgId = function_exists('require_org_id') ? require_org_id() : 1;
     $stmt = $pdo->prepare(
         "INSERT INTO data_categories
-           (organization_id, name, description, compliance_framework, legal_basis, retention_period_days,
+           (organization_id, name, description, retention_reason, compliance_framework, legal_basis, retention_period_days,
             retention_period_label, disposal_method, disposal_trigger, requires_dual_approval,
             owner_id, review_frequency, source, is_active)
-         VALUES (:oid,:name,:descr,:fw,:lb,:days,:label,:dm,:dt,:dual,:owner,:rf,'custom',1)"
+         VALUES (:oid,:name,:descr,:reason,:fw,:lb,:days,:label,:dm,:dt,:dual,:owner,:rf,'custom',1)"
     );
     $stmt->execute([
-        'oid'   => $orgId,
-        'name'  => $in['name'],
-        'descr' => $in['description'] ?? null,
-        'fw'    => $in['compliance_framework'] ?? 'GDPR',
-        'lb'    => $in['legal_basis'],
-        'days'  => $days,
-        'label' => $in['retention_period_label'] ?? ($days > 0 ? "$days days" : 'Until consent withdrawn'),
-        'dm'    => $in['disposal_method'] ?? 'delete',
-        'dt'    => $trigger,
-        'dual'  => !empty($in['requires_dual_approval']) ? 1 : 0,
-        'owner' => $in['owner_id'] ?? null,
-        'rf'    => $in['review_frequency'] ?? 'quarterly',
+        'oid'    => $orgId,
+        'name'   => $in['name'],
+        'descr'  => $in['description'] ?? null,
+        'reason' => $in['retention_reason'] ?? null,
+        'fw'     => $in['compliance_framework'] ?? 'GDPR',
+        'lb'     => $in['legal_basis'],
+        'days'   => $days,
+        'label'  => $in['retention_period_label'] ?? ($days > 0 ? "$days days" : 'Until consent withdrawn'),
+        'dm'     => $in['disposal_method'] ?? 'delete',
+        'dt'     => $trigger,
+        'dual'   => !empty($in['requires_dual_approval']) ? 1 : 0,
+        'owner'  => $in['owner_id'] ?? null,
+        'rf'     => $in['review_frequency'] ?? 'quarterly',
     ]);
     $id = (int) $pdo->lastInsertId();
     create_retention_rule($pdo, $id, [
@@ -127,29 +130,32 @@ function update_category(PDO $pdo, int $id, array $in, int $actor_id): array {
     $existing = fetch_category($pdo, $id);
     if ($existing === null) { throw new RuntimeException('Category not found'); }
 
-    $trigger = $in['disposal_trigger'] === 'consent_withdrawal' ? 'consent_withdrawal' : 'date_based';
+    $trigger = in_array($in['disposal_trigger'] ?? '', ['consent_withdrawal', 'account_closure'], true)
+        ? $in['disposal_trigger']
+        : 'date_based';
     $days = $trigger === 'consent_withdrawal' ? 0 : max(0, (int) ($in['retention_period_days'] ?? 0));
 
     $stmt = $pdo->prepare(
         "UPDATE data_categories SET
-           name=:name, description=:descr, compliance_framework=:fw, legal_basis=:lb,
+           name=:name, description=:descr, retention_reason=:reason, compliance_framework=:fw, legal_basis=:lb,
            retention_period_days=:days, retention_period_label=:label, disposal_method=:dm,
            disposal_trigger=:dt, requires_dual_approval=:dual, owner_id=:owner, review_frequency=:rf
          WHERE id=:id AND deleted_at IS NULL"
     );
     $stmt->execute([
-        'name'  => $in['name'],
-        'descr' => $in['description'] ?? null,
-        'fw'    => $in['compliance_framework'] ?? 'GDPR',
-        'lb'    => $in['legal_basis'],
-        'days'  => $days,
-        'label' => $in['retention_period_label'] ?? ($days > 0 ? "$days days" : 'Until consent withdrawn'),
-        'dm'    => $in['disposal_method'] ?? 'delete',
-        'dt'    => $trigger,
-        'dual'  => !empty($in['requires_dual_approval']) ? 1 : 0,
-        'owner' => $in['owner_id'] ?? null,
-        'rf'    => $in['review_frequency'] ?? 'quarterly',
-        'id'    => $id,
+        'name'   => $in['name'],
+        'descr'  => $in['description'] ?? null,
+        'reason' => $in['retention_reason'] ?? null,
+        'fw'     => $in['compliance_framework'] ?? 'GDPR',
+        'lb'     => $in['legal_basis'],
+        'days'   => $days,
+        'label'  => $in['retention_period_label'] ?? ($days > 0 ? "$days days" : 'Until consent withdrawn'),
+        'dm'     => $in['disposal_method'] ?? 'delete',
+        'dt'     => $trigger,
+        'dual'   => !empty($in['requires_dual_approval']) ? 1 : 0,
+        'owner'  => $in['owner_id'] ?? null,
+        'rf'     => $in['review_frequency'] ?? 'quarterly',
+        'id'     => $id,
     ]);
     log_audit($pdo, 'category_updated', 'data_category', $id, $actor_id, ['name' => $in['name']], get_client_ip());
 

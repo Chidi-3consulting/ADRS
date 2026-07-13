@@ -468,8 +468,24 @@ function get_role_badge(string $role): string {
 }
 
 function get_framework_badge(string $f): string {
-    $cls = ['GDPR' => 'badge-gdpr', 'NDPR' => 'badge-ndpr', 'BOTH' => 'badge-both'][$f] ?? 'bg-secondary';
-    return '<span class="badge ' . $cls . '">' . escape_html($f) . '</span>';
+    $parts = array_filter(array_map('trim', explode(',', $f)));
+    $html = '';
+    foreach ($parts as $p) {
+        $cls = ['GDPR' => 'badge-gdpr', 'NDPR' => 'badge-ndpr', 'BOTH' => 'badge-both', 'CCPA' => 'bg-info text-dark', 'LGPD' => 'bg-success', 'POPIA' => 'bg-dark', 'DPA_KE' => 'bg-primary', 'UK_GDPR' => 'bg-primary', 'DPA_GH' => 'bg-success', 'PDPA_SG' => 'bg-info text-dark'][$p] ?? 'bg-secondary';
+        $html .= '<span class="badge ' . $cls . ' me-1">' . escape_html($p) . '</span>';
+    }
+    return $html ?: '<span class="badge bg-secondary">—</span>';
+}
+
+function list_regulations(PDO $pdo): array {
+    return $pdo->query("SELECT * FROM regulations WHERE is_active = 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function get_regulation_name(PDO $pdo, string $code): string {
+    $stmt = $pdo->prepare("SELECT name FROM regulations WHERE code = :c LIMIT 1");
+    $stmt->execute(['c' => $code]);
+    $name = $stmt->fetchColumn();
+    return $name ?: $code;
 }
 
 /* ---------------- Notification bell (N2) ---------------- */

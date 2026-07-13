@@ -89,9 +89,72 @@ assert_equals(1, count($disp), 'one disposal dispatch queued for the originating
 assert_equals('delete', $disp[0]['dispatch_type'], 'dispatch carries the disposal method');
 
 // Process dispatches with a stubbed sender (no real HTTP).
-$result = process_disposal_dispatches($pdo, 50, fn($url, $payload) => [200, 'ok']);
+$result = process_disposal_dispatches($pdo, 50, fn($url, $payload, $headers = []) => [200, 'ok']);
 assert_equals(1, $result['sent'], 'dispatch sent via stub webhook');
 assert_equals('confirmed', $pdo->query("SELECT status FROM disposal_dispatches WHERE id={$disp[0]['id']}")->fetchColumn(), 'dispatch confirmed');
+
+// --- Test HMAC signature generation on outbound dispatch ---
+$pdo->prepare("UPDATE connected_systems SET signing_secret = 'my_secret_key' WHERE id = :sys")->execute(['sys' => $sys]);
+$sigTestRecord = create_data_record($pdo, [
+    'category_id' => $catCustomer, 'record_reference' => 'SIG-REF-1', 'collection_date' => '2025-01-01'
+], ['id' => $admin, 'role' => 'admin']);
+
+$pdo->prepare("INSERT INTO intake_queue (organization_id, system_id, api_key_id, payload, status, record_id)
+               VALUES (1, :sys, null, '{}', 'completed', :recId)")
+    ->execute(['sys' => $sys, 'recId' => $sigTestRecord['id']]);
+
+queue_disposal_dispatch($pdo, $sigTestRecord['id'], 'delete');
+$dispSig = $pdo->query("SELECT * FROM disposal_dispatches WHERE record_id={$sigTestRecord['id']}")->fetch();
+
+$capturedHeaders = [];
+process_disposal_dispatches($pdo, 50, function($url, $payload, $headers = []) use (&$capturedHeaders) {
+    $capturedHeaders = $headers;
+    return [200, 'ok'];
+});
+
+assert_true(count($capturedHeaders) > 0, 'headers captured');
+$expectedSig = hash_hmac('sha256', $dispSig['payload'], 'my_secret_key');
+assert_equals('X-ADRS-Signature: ' . $expectedSig, $capturedHeaders[0], 'HMAC signature matches expected');
+
+// --- Test account_closure dynamic calculation ---
+$catClosure = create_category($pdo, [
+    'name' => 'API Closure', 'legal_basis' => 'contract', 'retention_period_days' => 10,
+    'disposal_trigger' => 'account_closure', 'disposal_method' => 'delete'
+], $admin);
+
+$closureRecord = create_data_record($pdo, [
+    'category_id' => $catClosure, 'record_reference' => 'CLOSURE-REF-1', 'collection_date' => '2025-01-01'
+], ['id' => $admin, 'role' => 'admin']);
+
+$recFetched = fetch_record($pdo, $closureRecord['id']);
+assert_true($recFetched['retention_end_date'] === null, 'account_closure record has NULL retention_end_date initially');
+
+$stmtTerminate = $pdo->prepare(
+    "SELECT dr.id, dc.name AS category_name, dc.retention_period_days, crr.retention_period_days AS rule_period_days
+     FROM data_records dr
+     JOIN data_categories dc ON dc.id = dr.category_id
+     LEFT JOIN category_retention_rules crr ON crr.id = dr.retention_rule_id
+     WHERE dr.record_reference = :ref
+       AND dr.organization_id = :oid
+       AND COALESCE(crr.disposal_trigger, dc.disposal_trigger) = 'account_closure'
+       AND dr.retention_end_date IS NULL
+       AND dr.deleted_at IS NULL
+       AND dr.status != 'disposed'"
+);
+$stmtTerminate->execute(['ref' => 'CLOSURE-REF-1', 'oid' => 1]);
+$terminateRows = $stmtTerminate->fetchAll();
+assert_equals(1, count($terminateRows), 'found 1 record to terminate');
+
+$terminationDate = '2026-07-10';
+foreach ($terminateRows as $tRow) {
+    $days = $tRow['rule_period_days'] !== null ? (int)$tRow['rule_period_days'] : (int)$tRow['retention_period_days'];
+    $rend = date('Y-m-d', strtotime($terminationDate . " + $days days"));
+    $pdo->prepare("UPDATE data_records SET retention_end_date = :rend WHERE id = :id")->execute(['rend' => $rend, 'id' => $tRow['id']]);
+}
+
+$recTerminated = fetch_record($pdo, $closureRecord['id']);
+assert_equals('2026-07-20', $recTerminated['retention_end_date'], 'retention end date calculated properly (2026-07-10 + 10 days)');
+
 
 // Enterprise daily steps (C): purge integration_logs older than retention window.
 $pdo->prepare("INSERT INTO integration_logs (system_id, direction, endpoint, method, status_code, created_at) VALUES (:s,'inbound','/old','GET',200, DATE_SUB(NOW(), INTERVAL 200 DAY))")->execute(['s'=>$sys]);

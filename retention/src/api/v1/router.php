@@ -43,6 +43,8 @@ match (true) {
     $method === 'POST' && $route === 'ingest'           => require __DIR__ . '/endpoints/ingest.php',
     $method === 'POST' && $route === 'ingest/batch'     => require __DIR__ . '/endpoints/ingest_batch.php',
     $method === 'POST' && $route === 'consent/withdraw' => require __DIR__ . '/endpoints/consent_withdraw.php',
+    $method === 'POST' && $route === 'records/terminate' => require __DIR__ . '/endpoints/terminate.php',
+    $method === 'POST' && $route === 'records/disposed'  => require __DIR__ . '/endpoints/disposed.php',
     $method === 'GET'  && str_starts_with($route, 'records/') => require __DIR__ . '/endpoints/record_status.php',
     default => api_response(404, ['error' => 'not_found', 'message' => "No route for $method /api/v1/$route"]),
 };

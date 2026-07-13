@@ -70,3 +70,36 @@ function records_by_category(PDO $pdo, int $limit = 10): array {
     $stmt->execute(['o' => $orgId, 'o2' => $orgId]);
     return $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 }
+
+/** Returns the compliance percentage score (0-100) of active records not overdue. */
+function compliance_score(PDO $pdo): int {
+    $orgId = function_exists('current_org_id') ? (current_org_id() ?? 1) : 1;
+    $stmtActive = $pdo->prepare("SELECT COUNT(*) FROM data_records WHERE organization_id = :o AND deleted_at IS NULL AND status != 'disposed'");
+    $stmtActive->execute(['o' => $orgId]);
+    $active = (int) $stmtActive->fetchColumn();
+    if ($active === 0) { return 100; }
+    
+    $stmtOverdue = $pdo->prepare("SELECT COUNT(*) FROM data_records WHERE organization_id = :o AND deleted_at IS NULL AND status != 'disposed' AND retention_end_date IS NOT NULL AND retention_end_date < CURDATE()");
+    $stmtOverdue->execute(['o' => $orgId]);
+    $overdue = (int) $stmtOverdue->fetchColumn();
+    
+    $score = (($active - $overdue) / $active) * 100;
+    return max(0, min(100, (int) round($score)));
+}
+
+/** Returns next N upcoming review/retention deadlines. */
+function upcoming_deadlines(PDO $pdo, int $limit = 5): array {
+    $orgId = function_exists('current_org_id') ? (current_org_id() ?? 1) : 1;
+    $stmt = $pdo->prepare(
+        "SELECT dr.id, dr.record_reference, dr.retention_end_date, dr.status, dc.name as category_name
+         FROM data_records dr
+         JOIN data_categories dc ON dc.id = dr.category_id
+         WHERE dr.organization_id = :o AND dr.deleted_at IS NULL AND dr.status != 'disposed' AND dr.retention_end_date IS NOT NULL
+         ORDER BY dr.retention_end_date ASC
+         LIMIT :l"
+    );
+    $stmt->bindValue(':o', $orgId, PDO::PARAM_INT);
+    $stmt->bindValue(':l', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}

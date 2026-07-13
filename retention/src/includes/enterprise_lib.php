@@ -308,7 +308,11 @@ function queue_disposal_dispatch(PDO $pdo, int $record_id, string $method): int 
  */
 function process_disposal_dispatches(PDO $pdo, int $limit = 50, ?callable $sender = null): array {
     $retryLimit = (int) get_setting($pdo, 'webhook_retry_limit', '3');
-    $rows = $pdo->query("SELECT * FROM disposal_dispatches WHERE status='pending' AND attempts < " . $retryLimit . " ORDER BY id ASC LIMIT " . (int) $limit)->fetchAll();
+    $rows = $pdo->query(
+        "SELECT dd.*, cs.signing_secret FROM disposal_dispatches dd
+         JOIN connected_systems cs ON cs.id = dd.system_id
+         WHERE dd.status='pending' AND dd.attempts < " . $retryLimit . " ORDER BY dd.id ASC LIMIT " . (int) $limit
+    )->fetchAll();
     $sender = $sender ?? 'enterprise_http_post';
     $sent = 0; $failed = 0;
     foreach ($rows as $d) {
@@ -317,7 +321,15 @@ function process_disposal_dispatches(PDO $pdo, int $limit = 50, ?callable $sende
             $sent++;
             continue;
         }
-        [$code, $body] = $sender($d['endpoint_url'], json_decode($d['payload'], true) ?: []);
+        
+        $headers = [];
+        $payloadArr = json_decode($d['payload'], true) ?: [];
+        if (!empty($d['signing_secret'])) {
+            $sig = hash_hmac('sha256', $d['payload'], $d['signing_secret']);
+            $headers[] = 'X-ADRS-Signature: ' . $sig;
+        }
+
+        [$code, $body] = $sender($d['endpoint_url'], $payloadArr, $headers);
         if ($code >= 200 && $code < 300) {
             $pdo->prepare("UPDATE disposal_dispatches SET status='confirmed', response_code=:c, response_body=:b, sent_at=NOW(), confirmed_at=NOW(), attempts=attempts+1 WHERE id=:id")
                 ->execute(['c' => $code, 'b' => substr((string) $body, 0, 2000), 'id' => $d['id']]);

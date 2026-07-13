@@ -137,7 +137,9 @@ function create_retention_rule(PDO $pdo, int $categoryId, array $in): int {
     $cat = $catStmt->fetch();
     if (!$cat) { throw new RuntimeException('Category not found'); }
 
-    $trigger = ($in['disposal_trigger'] ?? 'date_based') === 'consent_withdrawal' ? 'consent_withdrawal' : 'date_based';
+    $trigger = in_array($in['disposal_trigger'] ?? '', ['consent_withdrawal', 'account_closure'], true)
+        ? $in['disposal_trigger']
+        : 'date_based';
     $days = $trigger === 'consent_withdrawal' ? 0 : max(0, (int) ($in['retention_period_days'] ?? 0));
     $isDefault = !empty($in['is_default']);
 
@@ -181,7 +183,10 @@ function update_retention_rule(PDO $pdo, int $ruleId, array $in): void {
     $rule = fetch_retention_rule($pdo, $ruleId);
     if ($rule === null) { throw new RuntimeException('Rule not found'); }
 
-    $trigger = ($in['disposal_trigger'] ?? $rule['disposal_trigger']) === 'consent_withdrawal' ? 'consent_withdrawal' : 'date_based';
+    $inTrigger = $in['disposal_trigger'] ?? $rule['disposal_trigger'];
+    $trigger = in_array($inTrigger, ['consent_withdrawal', 'account_closure'], true)
+        ? $inTrigger
+        : 'date_based';
     $days = $trigger === 'consent_withdrawal' ? 0 : max(0, (int) ($in['retention_period_days'] ?? $rule['retention_period_days']));
 
     $pdo->prepare(

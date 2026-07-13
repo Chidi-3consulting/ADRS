@@ -4,7 +4,7 @@ require_once __DIR__ . '/helpers.php';
 
 /** True when this deployment accepts public organisation registration (SaaS). */
 function is_saas_deployment(PDO $pdo): bool {
-    return get_setting($pdo, 'deployment_mode', 'saas') === 'saas';
+    return true;
 }
 
 /** Active organisation id for the current HTTP request, CLI cron step, or explicit override. */
@@ -121,7 +121,16 @@ function org_member_email_error(PDO $pdo, string $email, ?int $orgId = null): ?s
     }
     return null;
 }
-function default_org_settings(string $tier): array {
+function default_org_settings(string $tier, ?string $country = null): array {
+    $tz = 'Africa/Lagos';
+    if ($country === 'GB') { $tz = 'Europe/London'; }
+    elseif ($country === 'US') { $tz = 'America/New_York'; }
+    elseif ($country === 'BR') { $tz = 'America/Sao_Paulo'; }
+    elseif ($country === 'ZA') { $tz = 'Africa/Johannesburg'; }
+    elseif ($country === 'KE') { $tz = 'Africa/Nairobi'; }
+    elseif ($country === 'GH') { $tz = 'Africa/Accra'; }
+    elseif ($country === 'SG') { $tz = 'Asia/Singapore'; }
+
     return [
         'adrs_tier'              => $tier,
         'enterprise_api_enabled' => $tier === 'enterprise' ? '1' : '0',
@@ -130,7 +139,7 @@ function default_org_settings(string $tier): array {
         'consent_disposal_days'  => '30',
         'attachment_max_size_mb' => '10',
         'rows_per_page'          => '25',
-        'timezone'               => 'Africa/Lagos',
+        'timezone'               => $tz,
         'white_label_name'       => '',
         'white_label_primary'    => '#C85C1A',
         'white_label_logo_url'   => '',
@@ -144,8 +153,8 @@ function default_org_settings(string $tier): array {
     ];
 }
 
-function provision_org_settings(PDO $pdo, int $orgId, string $orgName, string $tier): void {
-    $settings = default_org_settings($tier);
+function provision_org_settings(PDO $pdo, int $orgId, string $orgName, string $tier, ?string $country = null): void {
+    $settings = default_org_settings($tier, $country);
     $settings['white_label_name'] = $orgName;
     $settings['app_name'] = $orgName;
     $ins = $pdo->prepare(
@@ -177,6 +186,7 @@ function provision_org_categories(PDO $pdo, int $orgId): int {
             review_frequency, source, is_active
          FROM data_categories WHERE organization_id = 0 AND deleted_at IS NULL"
     )->execute(['oid' => $orgId]);
+
 
     require_once __DIR__ . '/retention_rules_lib.php';
     $newCats = $pdo->prepare('SELECT id, name FROM data_categories WHERE organization_id = :o AND deleted_at IS NULL');
@@ -224,8 +234,8 @@ function import_master_category_templates(PDO $pdo): void {
  * One organisation per company domain — admin email must match primary_domain.
  * Returns ['organization_id' => int, 'user_id' => int] or throws on validation failure.
  */
-function register_organization(PDO $pdo, string $orgName, string $primaryDomainInput, string $adminName, string $email, string $password, string $tier = 'core'): array {
-    $tier = $tier === 'enterprise' ? 'enterprise' : 'core';
+function register_organization(PDO $pdo, string $orgName, string $primaryDomainInput, string $adminName, string $email, string $password, string $tier = 'core', ?string $country = null): array {
+    $tier = 'enterprise';
     $email = strtolower(trim($email));
     $primaryDomain = normalize_org_domain($primaryDomainInput);
 
@@ -265,9 +275,9 @@ function register_organization(PDO $pdo, string $orgName, string $primaryDomainI
         $slug = generate_org_slug($pdo, $orgName);
         $trialDays = max(1, (int) get_setting($pdo, 'trial_days', '14'));
         $pdo->prepare(
-            "INSERT INTO organizations (name, slug, primary_domain, tier, status, subscription_status, trial_ends_at, billing_email)
-             VALUES (:n, :s, :d, :t, 'trial', 'trial', DATE_ADD(NOW(), INTERVAL :days DAY), :email)"
-        )->execute(['n' => $orgName, 's' => $slug, 'd' => $primaryDomain, 't' => $tier, 'days' => $trialDays, 'email' => $email]);
+            "INSERT INTO organizations (name, slug, primary_domain, country, tier, status, subscription_status, trial_ends_at, billing_email)
+             VALUES (:n, :s, :d, :country, :t, 'trial', 'trial', DATE_ADD(NOW(), INTERVAL :days DAY), :email)"
+        )->execute(['n' => $orgName, 's' => $slug, 'd' => $primaryDomain, 'country' => $country, 't' => $tier, 'days' => $trialDays, 'email' => $email]);
         $orgId = (int) $pdo->lastInsertId();
 
         $pdo->prepare(
@@ -281,7 +291,7 @@ function register_organization(PDO $pdo, string $orgName, string $primaryDomainI
         ]);
         $userId = (int) $pdo->lastInsertId();
 
-        provision_org_settings($pdo, $orgId, $orgName, $tier);
+        provision_org_settings($pdo, $orgId, $orgName, $tier, $country);
         provision_org_categories($pdo, $orgId);
 
         $pdo->commit();

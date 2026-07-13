@@ -5,7 +5,6 @@ require_once __DIR__ . '/../includes/tenant_lib.php';
 require_once __DIR__ . '/../includes/public_layout.php';
 
 if (is_logged_in()) { redirect(APP_URL . '/dashboard'); }
-if (!setup_is_complete(get_db())) { redirect(APP_URL . '/setup'); }
 
 $pdo = get_db();
 $saas = is_saas_deployment($pdo);
@@ -13,39 +12,59 @@ public_page_head('Automated Data Retention System', $pdo);
 public_page_nav($pdo);
 ?>
 <main class="flex-grow-1">
-  <section class="text-white py-5" style="background:linear-gradient(135deg,var(--3c-dark) 0%,var(--3c-teal) 100%); background-size:cover; min-height:600px;">
-    <div class="container py-4">
-      <div class="row align-items-center">
+  <!-- Hero Section -->
+  <section class="text-white py-5 position-relative overflow-hidden" style="background: radial-gradient(circle at 80% 20%, #2e1065 0%, #0f0f1b 100%); min-height: 640px; display: flex; align-items: center;">
+    <div class="position-absolute w-100 h-100 top-0 start-0 opacity-10" style="background-image: radial-gradient(rgba(200, 92, 26, 0.15) 1px, transparent 0); background-size: 24px 24px;"></div>
+    <div class="container py-5 position-relative z-3">
+      <div class="row align-items-center g-5">
         <div class="col-lg-7">
-          <p class="text-uppercase small fw-semibold mb-2" style="color:var(--3c-yellow)">3Consulting · GDPR &amp; NDPR</p>
-          <h1 class="display-5 fw-bold mb-3">Turn compliance from a burden into a competitive advantage</h1>
-          <p class="lead mb-4 opacity-90">
-            ADRS governs personal data from the moment it is collected to the day it is securely disposed of —
-            with a documented retention register, an automated enforcement engine, immutable audit evidence,
-            and data-subject-rights workflows built for regulator scrutiny.
+          <div class="badge bg-primary text-white mb-3 px-3 py-2 rounded-pill font-monospace small">COMPLIANCE LIFECYCLE MANAGEMENT</div>
+          <h1 class="display-4 fw-extrabold mb-3 lh-sm" style="letter-spacing: -0.03em;">
+            Turn data retention from a <span style="background: linear-gradient(to right, #ff7e33, #e8a84c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">compliance burden</span> into a trusted asset
+          </h1>
+          <p class="lead mb-4 opacity-90 fs-5" style="max-width: 620px; line-height: 1.6;">
+            ADRS automates the lifecycle of personal data from capture to disposal. Build immutable audit proof, fulfill DSAR requests, and manage complex retention schedules without changing your existing databases.
           </p>
-          <?php if ($saas): ?>
-            <div class="d-flex flex-wrap gap-3">
-              <a href="<?= APP_URL ?>/register?tier=core" class="btn btn-light btn-lg text-dark px-4">Start free trial — Core</a>
-              <a href="<?= APP_URL ?>/register?tier=enterprise" class="btn btn-outline-light btn-lg px-4">Start free trial — Enterprise</a>
-            </div>
-          <?php elseif (public_signup_enabled($pdo)): ?>
-            <a href="<?= APP_URL ?>/signup" class="btn btn-primary btn-lg">Create an account</a>
-          <?php else: ?>
-            <a href="<?= APP_URL ?>/login" class="btn btn-primary btn-lg">Sign in to your portal</a>
-          <?php endif; ?>
+          <div class="d-flex flex-wrap gap-3">
+            <a href="<?= APP_URL ?>/register?tier=core" class="btn btn-primary btn-lg px-4 shadow-lg hover-lift">Start Trial — Core</a>
+            <a href="<?= APP_URL ?>/register?tier=enterprise" class="btn btn-teal btn-lg px-4 shadow-lg hover-lift">Start Trial — Enterprise</a>
+          </div>
+          <div class="mt-4 pt-2 d-flex align-items-center gap-4 text-muted small">
+            <span class="d-flex align-items-center gap-2"><i class="bi bi-shield-check text-success fs-5"></i> GDPR & NDPR Ready</span>
+            <span class="d-flex align-items-center gap-2"><i class="bi bi-lock text-success fs-5"></i> Tamper-Proof Audit Chain</span>
+          </div>
         </div>
-        <div class="col-lg-5 mt-4 mt-lg-0">
-          <div class="card shadow border-0">
-            <div class="card-body p-4">
-              <h2 class="h5">Five-stage governed lifecycle</h2>
-              <ol class="small mb-0 ps-3">
-                <li class="mb-1">Collection &amp; registration</li>
-                <li class="mb-1">Active use monitoring</li>
-                <li class="mb-1">Retention alerts (30-day warning)</li>
-                <li class="mb-1">Review &amp; decision (14-day escalation)</li>
-                <li>Secure disposal with full audit trail</li>
-              </ol>
+        <div class="col-lg-5">
+          <div class="card shadow-lg border-0 bg-dark text-white p-4 position-relative" style="background: rgba(20, 20, 38, 0.6) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08) !important;">
+            <div class="position-absolute top-0 end-0 p-3"><span class="badge bg-success">Automated Cron</span></div>
+            <h3 class="h5 mb-4 text-primary">5-Stage Retention Lifecycle</h3>
+            
+            <div class="position-relative ps-4 border-start border-secondary" style="margin-left: 10px;">
+              <div class="mb-4 position-relative">
+                <div class="position-absolute rounded-circle bg-primary" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
+                <h4 class="h6 mb-1 text-white">1. Capture &amp; Ingest</h4>
+                <p class="text-muted small mb-0">API intake or CSV upload maps data objects to predefined policies.</p>
+              </div>
+              <div class="mb-4 position-relative">
+                <div class="position-absolute rounded-circle bg-primary" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
+                <h4 class="h6 mb-1 text-white">2. Monitor Retention Clock</h4>
+                <p class="text-muted small mb-0">Records automatically follow duration policies down to the day.</p>
+              </div>
+              <div class="mb-4 position-relative">
+                <div class="position-absolute rounded-circle bg-warning" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
+                <h4 class="h6 mb-1 text-white">3. Review Window (30 Days)</h4>
+                <p class="text-muted small mb-0">Category owners get notified. DPOs can override or request extensions.</p>
+              </div>
+              <div class="mb-4 position-relative">
+                <div class="position-absolute rounded-circle bg-danger" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
+                <h4 class="h6 mb-1 text-white">4. Dual Approval &amp; Hold</h4>
+                <p class="text-muted small mb-0">Sensitive data categories lock automatically. Requires dual signature to dispose.</p>
+              </div>
+              <div class="position-relative">
+                <div class="position-absolute rounded-circle bg-success" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
+                <h4 class="h6 mb-1 text-white">5. Secure Cryptographic Disposal</h4>
+                <p class="text-muted small mb-0">Hard delete, anonymisation, or archival with immutable hash logging.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -53,84 +72,104 @@ public_page_nav($pdo);
     </div>
   </section>
 
+  <!-- Feature Grid -->
   <section class="py-5 bg-white">
-    <div class="container">
-      <h2 class="h3 text-center mb-4">One product. Two tiers. No dead ends.</h2>
+    <div class="container py-4">
+      <div class="text-center mb-5">
+        <h2 class="h3 fw-bold">Built for compliance, optimized for security</h2>
+        <p class="text-muted">A pure PHP platform designed to satisfy regulators and IT teams alike.</p>
+      </div>
       <div class="row g-4">
-        <div class="col-lg-6">
-          <div class="card h-100 border-primary shadow-sm">
-            <div class="card-header card-header-teal"><h3 class="h5 mb-0">ADRS Core</h3><span class="small">Entry-level deployment</span></div>
-            <div class="card-body">
-              <p class="text-muted small">Standalone compliance portal. Your team registers records; the engine automates alerts, escalations, deadlines, and disposal workflows.</p>
-              <ul class="small">
-                <li>30 pre-built GDPR/NDPR categories</li>
-                <li>Automated retention engine &amp; dual-approval safeguard</li>
-                <li>Immutable audit trail · NDPR annual report</li>
-                <li>Role-based access (Admin / DPO / Data Owner)</li>
-                <li>Deploy without changing existing systems</li>
-              </ul>
-              <?php if ($saas): ?>
-                <a href="<?= APP_URL ?>/register?tier=core" class="btn btn-primary">Start Core trial</a>
-              <?php endif; ?>
-            </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 hover-lift border-0 bg-light p-4">
+            <div class="text-primary mb-3"><i class="bi bi-journal-check fs-3"></i></div>
+            <h3 class="h5">Retention Policy Register</h3>
+            <p class="text-muted small mb-0">Establish lawful bases, retention periods, and record owners across 30+ pre-seeded compliance categories.</p>
           </div>
         </div>
-        <div class="col-lg-6">
-          <div class="card h-100 border-success shadow-sm">
-            <div class="card-header" style="background:#1E7D34;color:#fff"><h3 class="h5 mb-0">ADRS Enterprise</h3><span class="small">Integration tier</span></div>
-            <div class="card-body">
-              <p class="text-muted small">Everything in Core, plus API integration with your CRM, core banking, HR, and customer databases — automatic capture at the point data is created.</p>
-              <ul class="small">
-                <li>REST API · async intake queue · auto-categorisation</li>
-                <li>Consent-signal matching &amp; outbound disposal dispatch</li>
-                <li>Real-time retention enforcement across connected systems</li>
-                <li>Integration management UI &amp; enterprise SLA support</li>
-              </ul>
-              <?php if ($saas): ?>
-                <a href="<?= APP_URL ?>/register?tier=enterprise" class="btn btn-success">Start Enterprise trial</a>
-              <?php endif; ?>
-            </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 hover-lift border-0 bg-light p-4">
+            <div class="text-primary mb-3"><i class="bi bi-shield-lock-fill fs-3"></i></div>
+            <h3 class="h5">Immutable Audit Trails</h3>
+            <p class="text-muted small mb-0">Every disposal is signed, chained cryptographically, and tamper-evident to withstand external regulator audits.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 hover-lift border-0 bg-light p-4">
+            <div class="text-primary mb-3"><i class="bi bi-people-fill fs-3"></i></div>
+            <h3 class="h5">DSAR Management Portal</h3>
+            <p class="text-muted small mb-0">Receive, verify, and resolve data subject rights requests (erasure, access, portability) within statutory deadlines.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 hover-lift border-0 bg-light p-4">
+            <div class="text-primary mb-3"><i class="bi bi-cpu fs-3"></i></div>
+            <h3 class="h5">REST Integration API</h3>
+            <p class="text-muted small mb-0">Enterprise systems ingest data dynamically. Automate categorisation and dispatch deletions to downstream systems.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 hover-lift border-0 bg-light p-4">
+            <div class="text-primary mb-3"><i class="bi bi-key-fill fs-3"></i></div>
+            <h3 class="h5">Dual-Signature Safeguard</h3>
+            <p class="text-muted small mb-0">Prevent accidental or malicious data loss. Highly sensitive categories require double authorization before purge.</p>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 hover-lift border-0 bg-light p-4">
+            <div class="text-primary mb-3"><i class="bi bi-globe fs-3"></i></div>
+            <h3 class="h5">Multi-Jurisdiction Scope</h3>
+            <p class="text-muted small mb-0">Operate seamlessly across global guidelines including GDPR, NDPR/NDPA, CCPA, LGPD, and custom local regulations.</p>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="py-5">
-    <div class="container">
-      <h2 class="h4 text-center mb-4">Built for organisations that cannot afford data slipping through</h2>
-      <div class="row g-4">
-        <?php
-        $sectors = [
-            ['Financial services', 'KYC, transactions, and customer records — CBN-aligned retention for banks and fintechs.'],
-            ['Professional services', 'Governed client and employee data across engagements without disrupting workflows.'],
-            ['Healthcare', 'Patient and staff categories with dual-approval safeguards for sensitive disposals.'],
-            ['Technology &amp; digital', 'High-volume cross-border obligations with Enterprise API capture at scale.'],
-        ];
-        foreach ($sectors as [$title, $desc]): ?>
-        <div class="col-md-6 col-lg-3">
-          <div class="card h-100 shadow-sm border-0">
-            <div class="card-body">
-              <h3 class="h6"><?= $title ?></h3>
-              <p class="text-muted small mb-0"><?= $desc ?></p>
+  <!-- Pricing / Plans -->
+  <section class="py-5" style="background: #f1f5f9;">
+    <div class="container py-4">
+      <div class="text-center mb-5">
+        <h2 class="h3 fw-bold text-dark">Enterprise Compliance, Simplified</h2>
+        <p class="text-muted">Start with a 14-day free trial. Fully automated, API-driven compliance lifecycle.</p>
+      </div>
+      <div class="row g-4 justify-content-center" style="max-width: 540px; margin: 0 auto;">
+        <div class="col-md-12">
+          <div class="card h-100 border-0 shadow-lg p-5 bg-white position-relative" style="border-top: 5px solid var(--3c-primary) !important;">
+            <div class="position-absolute top-0 end-0 bg-primary text-white px-3 py-1 rounded-bottom-left small fw-bold" style="border-bottom-left-radius: 8px;">ENTERPRISE SAAS</div>
+            <h3 class="h4 fw-bold text-dark">ADRS Enterprise Plan</h3>
+            <p class="text-muted small">For businesses integrating data lifecycle automation directly with their internal transactional databases, systems, and APIs.</p>
+            <div class="my-4">
+              <span class="display-5 fw-bold text-dark">₦250,000</span>
+              <span class="text-muted"> / year</span>
             </div>
+            <hr>
+            <h4 class="h6 fw-bold text-dark mb-3">What's included:</h4>
+            <ul class="list-unstyled mb-4 small flex-grow-1">
+              <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-2"></i> REST API v1 Integration Gateway</li>
+              <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-2"></i> Auto-Categorisation &amp; Custom Field Mapping</li>
+              <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-2"></i> Outbound Webhook Disposal Dispatches with HMAC signatures</li>
+              <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-2"></i> Event-Driven Account Closure and Disposal API Triggers</li>
+              <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-2"></i> Automated Async API Intake Queue &amp; Deduplication</li>
+              <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-2"></i> Secure Dual-Signature Safeguards for Sensitive Categories</li>
+              <li class="mb-3"><i class="bi bi-check-circle-fill text-primary me-2"></i> Immutable Cryptographically Chained Compliance Ledger</li>
+            </ul>
+            <a href="<?= APP_URL ?>/register?tier=enterprise" class="btn btn-primary btn-lg w-100 mt-auto shadow-sm">Start Your 14-Day Free Trial</a>
           </div>
         </div>
-        <?php endforeach; ?>
       </div>
     </div>
   </section>
 
-  <section class="py-5 bg-white">
-    <div class="container text-center">
-      <h2 class="h4 mb-3">Ready to go from zero governance to audit-ready?</h2>
-      <p class="text-muted mb-4">Core organisations are typically operational in 4–6 weeks. Enterprise integrations in 10–14 weeks with guided onboarding.</p>
-      <?php if ($saas): ?>
-        <a href="<?= APP_URL ?>/register?tier=core" class="btn btn-primary btn-lg me-2">Create your organisation</a>
-        <a href="<?= APP_URL ?>/login" class="btn btn-outline-secondary btn-lg">Sign in</a>
-      <?php else: ?>
-        <a href="<?= APP_URL ?>/login" class="btn btn-primary btn-lg">Sign in</a>
-      <?php endif; ?>
+  <!-- CTA section -->
+  <section class="py-5 text-white text-center" style="background: linear-gradient(135deg, #141426 0%, #1e293b 100%);">
+    <div class="container py-4">
+      <h2 class="h3 fw-bold mb-3">Ready to deploy secure, audit-proof retention?</h2>
+      <p class="text-muted mb-4" style="max-width: 600px; margin: 0 auto;">Join forward-thinking businesses automating data compliance. No credit card required to start your trial.</p>
+      <div class="d-flex justify-content-center gap-3">
+        <a href="<?= APP_URL ?>/register?tier=core" class="btn btn-primary btn-lg px-4 hover-lift">Register Organisation</a>
+        <a href="<?= APP_URL ?>/login" class="btn btn-outline-light btn-lg px-4">Sign In</a>
+      </div>
     </div>
   </section>
 </main>

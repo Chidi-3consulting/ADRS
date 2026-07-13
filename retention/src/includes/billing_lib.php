@@ -6,15 +6,10 @@ require_once __DIR__ . '/tenant_lib.php';
 /** Plan prices and labels for the billing UI. */
 function billing_plan_catalog(PDO $pdo): array {
     return [
-        'core' => [
-            'name'   => 'ADRS Core',
-            'amount' => (int) get_setting($pdo, 'core_plan_amount_kobo', '7500000'),
-            'label'  => 'Standalone compliance portal',
-        ],
         'enterprise' => [
             'name'   => 'ADRS Enterprise',
             'amount' => (int) get_setting($pdo, 'enterprise_plan_amount_kobo', '25000000'),
-            'label'  => 'Core + API integration & automatic data capture',
+            'label'  => 'Enterprise API integrations, webhooks, and automated retention scheduler',
         ],
     ];
 }

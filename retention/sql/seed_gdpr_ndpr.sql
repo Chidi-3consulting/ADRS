@@ -19,7 +19,7 @@ INSERT INTO `users` (`organization_id`, `name`, `email`, `password_hash`, `role`
  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'dpo', 1, 0, NOW());
 
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
-('deployment_mode', 'single', 'Dev/demo install uses single-tenant mode'),
+('deployment_mode', 'saas', 'Dev/demo install uses SaaS mode'),
 ('setup_complete', '1', 'Set to 1 after initial setup wizard completes')
 ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 

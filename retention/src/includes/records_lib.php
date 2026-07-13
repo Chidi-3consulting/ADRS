@@ -12,7 +12,8 @@ require_once __DIR__ . '/notifications_lib.php';
 
 /** Pure: retention end date for a record, or null for consent-withdrawal / zero-day categories. */
 function compute_retention_end(array $categoryOrRule, string $collection_date): ?string {
-    if (($categoryOrRule['disposal_trigger'] ?? 'date_based') === 'consent_withdrawal') { return null; }
+    $trigger = $categoryOrRule['disposal_trigger'] ?? 'date_based';
+    if ($trigger === 'consent_withdrawal' || $trigger === 'account_closure') { return null; }
     $days = (int) ($categoryOrRule['retention_period_days'] ?? 0);
     return $days > 0 ? retention_end_date($collection_date, $days) : null;
 }
