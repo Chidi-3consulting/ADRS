@@ -81,13 +81,12 @@ echo settings_nav('organization');
     <div class="card shadow-sm mb-3">
       <div class="card-body">
         <h2 class="h6 text-muted mb-3">Subscription</h2>
-        <p class="mb-2">Plan: <span class="badge bg-<?= $org['tier'] === 'enterprise' ? 'success' : 'secondary' ?>"><?= escape_html(org_tier_label($org['tier'])) ?></span></p>
         <p class="mb-2">Status: <?= org_status_badge($org) ?></p>
         <?php if ($trialDays !== null): ?>
           <p class="mb-0 small text-muted">Trial: <?= (int) $trialDays ?> day<?= $trialDays === 1 ? '' : 's' ?> remaining</p>
         <?php endif; ?>
         <a href="<?= APP_URL ?>/billing" class="btn btn-outline-primary btn-sm mt-3">Manage billing</a>
-        <a href="<?= APP_URL ?>/integrations/tier" class="btn btn-outline-secondary btn-sm mt-3 ms-1">Tier &amp; licence</a>
+        <a href="<?= APP_URL ?>/integrations/tier" class="btn btn-outline-secondary btn-sm mt-3 ms-1">Licence &amp; API</a>
       </div>
     </div>
     <div class="card shadow-sm">

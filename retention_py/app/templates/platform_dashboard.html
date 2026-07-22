@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0 fw-bold text-dark">Platform Administration</h1>
+    <p class="text-muted small mb-0">System-wide metrics and multi-tenant organization management.</p>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body">
+        <div class="text-muted small fw-semibold">Total Organisations</div>
+        <div class="h2 mb-0 fw-bold text-primary mt-1">{{ metrics.organizations }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body">
+        <div class="text-muted small fw-semibold">Active Tenants</div>
+        <div class="h2 mb-0 fw-bold text-success mt-1">{{ metrics.active_orgs }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body">
+        <div class="text-muted small fw-semibold">Active Trials</div>
+        <div class="h2 mb-0 fw-bold text-warning mt-1">{{ metrics.trial_orgs }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body">
+        <div class="text-muted small fw-semibold">Paid Subscriptions</div>
+        <div class="h2 mb-0 fw-bold text-info mt-1">{{ metrics.paid_orgs }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body">
+        <div class="text-muted small fw-semibold">Registered Users</div>
+        <div class="h2 mb-0 fw-bold text-dark mt-1">{{ metrics.users }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body">
+        <div class="text-muted small fw-semibold">Retained Records</div>
+        <div class="h2 mb-0 fw-bold text-secondary mt-1">{{ metrics.records }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 bg-white">
+  <div class="card-body">
+    <h2 class="h6 fw-bold mb-3">Revenue & Transactions</h2>
+    <div class="d-flex align-items-center mb-4">
+      <div class="me-4">
+        <div class="text-muted small">Successful Payments</div>
+        <div class="h4 mb-0 fw-bold text-dark">{{ metrics.revenue_tx }}</div>
+      </div>
+      <div>
+        <div class="text-muted small">Global Price Tier</div>
+        <div class="h4 mb-0 fw-bold text-success">$399/year or $40/month</div>
+      </div>
+    </div>
+    <a href="/platform/organizations" class="btn btn-primary fw-bold">Manage Organisations</a>
+  </div>
+</div>
+{% endblock %}

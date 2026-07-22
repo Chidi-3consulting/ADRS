@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Audit Log</h1>
+    <p class="text-muted mb-0 small">Immutable, append-only compliance evidence — tamper-evident hash chain.</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<form class="card shadow-sm mb-3" method="get" action="/audit">
+  <div class="card-body row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label small">Action</label>
+      <select name="action" class="form-select form-select-sm">
+        <option value="">All</option>
+        {% for a in actions %}
+        <option value="{{ a }}" {{ 'selected' if a == filter_action else '' }}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small">Entity Type</label>
+      <select name="entity_type" class="form-select form-select-sm">
+        <option value="">All</option>
+        {% for e in ['data_record','data_category','user','notification','system'] %}
+        <option value="{{ e }}" {{ 'selected' if e == filter_entity else '' }}>{{ e }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-primary btn-sm w-100">Filter</button>
+    </div>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">{{ total }} entr{{ 'y' if total == 1 else 'ies' }}</span>
+      {% if total_pages > 1 %}
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item {{ 'disabled' if page_num <= 1 }}">
+            <a class="page-link" href="/audit?page={{ page_num - 1 }}&action={{ filter_action }}&entity_type={{ filter_entity }}">Prev</a>
+          </li>
+          {% for p in range(1, total_pages + 1) %}
+            {% if p >= page_num - 2 and p <= page_num + 2 %}
+            <li class="page-item {{ 'active' if p == page_num }}">
+              <a class="page-link" href="/audit?page={{ p }}&action={{ filter_action }}&entity_type={{ filter_entity }}">{{ p }}</a>
+            </li>
+            {% endif %}
+          {% endfor %}
+          <li class="page-item {{ 'disabled' if page_num >= total_pages }}">
+            <a class="page-link" href="/audit?page={{ page_num + 1 }}&action={{ filter_action }}&entity_type={{ filter_entity }}">Next</a>
+          </li>
+        </ul>
+      </nav>
+      {% endif %}
+    </div>
+
+    {% if rows | length == 0 %}
+    <p class="text-muted mb-0">No matching audit entries.</p>
+    {% else %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle small">
+        <thead>
+          <tr><th>When</th><th>Action</th><th>Entity</th><th>By</th><th>IP</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td class="text-nowrap">{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '—' }}</td>
+            <td><code>{{ r.action }}</code></td>
+            <td>{{ r.entity_type }}{{ ' #' ~ r.entity_id if r.entity_id else '' }}</td>
+            <td>{{ user_map.get(r.performed_by, 'Automated') if r.performed_by else 'Automated' }}</td>
+            <td>{{ r.ip_address or '—' }}</td>
+            <td>{% if r.details %}<code class="small">{{ r.details }}</code>{% else %}—{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

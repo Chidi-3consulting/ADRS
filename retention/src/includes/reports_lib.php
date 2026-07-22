@@ -3,10 +3,10 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
 
 /**
- * NDPR Annual Report builder (testable). Summarises the compliance posture for a year:
+ * Annual Compliance Report builder (testable). Summarises the compliance posture for a year:
  * categories, records by status, disposals by method, and audit volume.
  */
-function build_ndpr_report(PDO $pdo, int $year): array {
+function build_compliance_report(PDO $pdo, int $year): array {
     $disposed = $pdo->prepare(
         "SELECT dc.disposal_method AS method, COUNT(*) c
          FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id
@@ -32,8 +32,8 @@ function build_ndpr_report(PDO $pdo, int $year): array {
 }
 
 /** Flatten the report into CSV rows (header + key/value lines) for export. */
-function ndpr_report_to_csv_rows(array $report): array {
-    $rows = [['NDPR Annual Compliance Report']];
+function compliance_report_to_csv_rows(array $report, string $title = 'Annual Compliance Report'): array {
+    $rows = [[$title]];
     $rows[] = ['Year', $report['year']];
     $rows[] = ['Generated at', $report['generated_at']];
     $rows[] = [];
@@ -47,4 +47,12 @@ function ndpr_report_to_csv_rows(array $report): array {
     $rows[] = ['Disposed total', $report['disposed_total']];
     $rows[] = ['Audit events', $report['audit_events']];
     return $rows;
+}
+
+// Backward-compatibility aliases
+function build_ndpr_report(PDO $pdo, int $year): array {
+    return build_compliance_report($pdo, $year);
+}
+function ndpr_report_to_csv_rows(array $report, string $title = 'NDPR Annual Compliance Report'): array {
+    return compliance_report_to_csv_rows($report, $title);
 }

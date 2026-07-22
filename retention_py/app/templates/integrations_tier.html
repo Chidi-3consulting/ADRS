@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="/integrations" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Back to Integrations</a>
+  <h1 class="h4 mt-1">{{ page_title }}</h1>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100 border-primary">
+      <div class="card-header bg-primary text-white py-3">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-cpu me-2"></i> Current Product Tier</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span class="fs-4 fw-bold text-uppercase">{{ org.tier }} TIER</span>
+          <span class="badge bg-success fs-6">ACTIVE</span>
+        </div>
+        <p class="text-muted">Your organisation is currently operating under the <strong>{{ org.tier | upper }}</strong> ADRS license.</p>
+        
+        <ul class="list-group list-group-flush mb-4">
+          <li class="list-group-item px-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Regulatory Categories & Retention Engine</li>
+          <li class="list-group-item px-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Legal Hold & Dual Approval Workflow</li>
+          <li class="list-group-item px-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Cryptographic Audit Trail & Evidence Storage</li>
+          {% if org.tier == 'enterprise' %}
+            <li class="list-group-item px-0"><i class="bi bi-check-circle-fill text-success me-2"></i> REST API Ingest & External Integrations</li>
+            <li class="list-group-item px-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Asynchronous Intake Queue & Outbound Dispatches</li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light py-3">
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-key-fill me-2"></i> Enterprise Licence Key</h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small">Redeem an Enterprise licence key provided by 3Consulting to unlock API ingestion, automated webhooks, and unlimited connected systems.</p>
+        
+        <form method="post" action="/billing/license">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Enterprise Licence Key</label>
+            <input type="text" name="license_key" class="form-control font-monospace" placeholder="ADRS-ENT-XXXX-XXXX-XXXX" required>
+          </div>
+          <button type="submit" class="btn btn-dark w-100"><i class="bi bi-shield-check me-1"></i> Redeem Licence</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -39,7 +39,7 @@ Write-Host ""
 Write-Host "Starting ADRS on port $Port (all interfaces)" -ForegroundColor Green
 Write-Host "  Local:  http://localhost:${Port}/" -ForegroundColor Yellow
 Write-Host "  LAN:    $AppUrl/" -ForegroundColor Yellow
-Write-Host "  Register: $AppUrl/register?tier=core" -ForegroundColor Yellow
+Write-Host "  Register: $AppUrl/register" -ForegroundColor Yellow
 Write-Host "  Press Ctrl+C to stop" -ForegroundColor DarkGray
 Write-Host ""
 Set-Location $Root

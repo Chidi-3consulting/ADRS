@@ -39,7 +39,6 @@ require __DIR__ . '/../../includes/layout_header.php';
   <h1 class="h4 mb-0"><?= escape_html($record['record_reference']) ?> <?= get_status_badge($record['status']) ?></h1>
   <div>
     <?php if ($canAct): ?><a href="<?= APP_URL ?>/records/edit?id=<?= $id ?>" class="btn btn-outline-primary">Edit</a><?php endif; ?>
-    <a href="<?= APP_URL ?>/records" class="btn btn-secondary">Back</a>
   </div>
 </div>
 <?php if ($isDisposed): ?>

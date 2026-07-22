@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">My Profile</h1>
+</div>
+
+{% if request.query_params.get('saved') %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  Profile updated successfully.
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="card-title mb-0">Account Details</h5>
+      </div>
+      <div class="card-body">
+        <form method="post" action="/profile">
+          <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="name" class="form-control" value="{{ user.name }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email Address</label>
+            <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New Password</label>
+            <input type="password" name="password" class="form-control" minlength="8"
+                   placeholder="Leave blank to keep current">
+            <div class="form-text">Minimum 8 characters. Leave blank to keep your current password.</div>
+          </div>
+          <button class="btn btn-primary">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="card-title mb-0">Account Info</h5>
+      </div>
+      <div class="card-body">
+        <dl class="mb-0">
+          <dt class="small text-muted">Role</dt>
+          <dd>
+            <span class="badge bg-{{ 'primary' if user.role == 'admin' else ('info' if user.role == 'dpo' else 'secondary') }}">
+              {{ user.role | upper }}
+            </span>
+          </dd>
+          <dt class="small text-muted mt-2">Organisation</dt>
+          <dd>{{ org_name }}</dd>
+          <dt class="small text-muted mt-2">Account Created</dt>
+          <dd>{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</dd>
+          <dt class="small text-muted mt-2">Last Login</dt>
+          <dd>{{ user.last_login_at.strftime('%d %b %Y %H:%M') if user.last_login_at else 'Never' }}</dd>
+          <dt class="small text-muted mt-2">Email Verified</dt>
+          <dd>
+            {% if user.email_verified_at %}
+            <span class="text-success"><i class="bi bi-check-circle-fill"></i> Verified</span>
+            {% else %}
+            <span class="text-warning"><i class="bi bi-exclamation-circle-fill"></i> Unverified</span>
+            {% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

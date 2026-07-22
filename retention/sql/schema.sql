@@ -794,7 +794,7 @@ CREATE TABLE IF NOT EXISTS `backup_log` (
 
 INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
 ('white_label_name',     'ADRS - 3Consulting', 'White-label product name shown in the UI'),
-('white_label_primary',  '#C85C1A',            'White-label primary colour (hex)'),
+('white_label_primary',  '#ff914d',            'White-label primary colour (hex)'),
 ('white_label_logo_url', '',                   'White-label logo URL (optional)'),
 ('white_label_footer',   '3Consulting Limited','White-label footer text'),
 ('ops_webhooks_enabled', '0',                  'Send ops event notifications to configured webhooks'),
@@ -856,7 +856,13 @@ INSERT IGNORE INTO `regulations` (`code`, `name`, `country`, `continent`, `descr
 ('DPA_KE', 'Kenya DPA (Data Protection Act)', 'KE', 'Africa', 'Kenyan Data Protection Act'),
 ('UK_GDPR', 'United Kingdom GDPR', 'GB', 'Europe', 'UK General Data Protection Regulation'),
 ('DPA_GH', 'Ghana DPA (Data Protection Act)', 'GH', 'Africa', 'Ghanaian Data Protection Act'),
-('PDPA_SG', 'Singapore PDPA (Personal Data Protection Act)', 'SG', 'Asia', 'Singapore Personal Data Protection Act');
+('PDPA_SG', 'Singapore PDPA (Personal Data Protection Act)', 'SG', 'Asia', 'Singapore Personal Data Protection Act'),
+('DPDP',    'India DPDP Act (Digital Personal Data Protection)',   'IN', 'Asia',          'India Digital Personal Data Protection Act 2023'),
+('PDPL',    'UAE PDPL (Personal Data Protection Law)',             'AE', 'Middle East',   'UAE Federal Decree-Law No. 45 of 2021 on Personal Data Protection'),
+('PIPEDA',  'Canada PIPEDA (Personal Information Protection)',     'CA', 'North America', 'Personal Information Protection and Electronic Documents Act'),
+('APPs',    'Australia Privacy Act / APPs (Australian Privacy Principles)', 'AU', 'Oceania', 'Australian Privacy Principles under the Privacy Act 1988'),
+('EGDPL',   'Egypt EGDPL (Data Protection Law)',                   'EG', 'Africa',        'Egyptian Personal Data Protection Law No. 151 of 2020'),
+('BOTH',    'Cross-Framework (GDPR & NDPR)',                       NULL, NULL,            'Data categories applicable under both GDPR and NDPR frameworks');
 
 CREATE TABLE IF NOT EXISTS `organization_settings` (
   `organization_id` INT UNSIGNED NOT NULL,

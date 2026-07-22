@@ -40,7 +40,6 @@ require __DIR__ . '/../../includes/layout_header.php';
   <div><h1 class="h4 mb-0">Audit Log</h1><p class="text-muted mb-0 small">Immutable, append-only compliance evidence — tamper-evident hash chain.</p></div>
   <div>
     <a href="<?= APP_URL ?>/audit?verify=1" class="btn btn-outline-secondary"><i class="bi bi-shield-check"></i> Verify integrity</a>
-    <a href="<?= APP_URL ?>/audit/export" class="btn btn-outline-primary"><i class="bi bi-download"></i> NDPR Annual Report</a>
   </div>
 </div>
 <?php if ($integrity !== null): ?>

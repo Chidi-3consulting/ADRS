@@ -1,0 +1,32 @@
+{% extends "public_layout.html" %}
+{% block content %}
+<main class="flex-grow-1 d-flex align-items-center justify-content-center py-5" style="background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #09090b 100%); min-height: 80vh;">
+  <div class="card border-0 shadow-lg p-4 text-white" style="width: 100%; max-width: 440px; background: rgba(20, 20, 38, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08) !important; border-radius: var(--radius-xl);">
+    <div class="text-center mb-4">
+      <h1 class="h3 fw-bold mb-1" style="font-family: var(--font-headings);">Sign In to ADRS</h1>
+      <p class="text-muted small" style="color: #94a3b8 !important;">Access your dashboard and manage retention schedules</p>
+    </div>
+
+    <form method="POST" action="/login">
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Email address</label>
+        <input type="email" name="email" class="form-control bg-dark border-secondary text-white py-2" required placeholder="name@company.com" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+      </div>
+
+      <div class="mb-4">
+        <div class="d-flex justify-content-between mb-1">
+          <label class="form-label small fw-semibold mb-0">Password</label>
+          <a href="/forgot-password" class="small text-primary text-decoration-none">Forgot password?</a>
+        </div>
+        <input type="password" name="password" class="form-control bg-dark border-secondary text-white py-2" required placeholder="••••••••" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 py-2.5 fw-bold shadow-lg">Sign In</button>
+    </form>
+
+    <div class="text-center mt-4 pt-3 border-top border-white border-opacity-10">
+      <p class="small text-muted mb-0" style="color: #94a3b8 !important;">New to ADRS? <a href="/register" class="text-primary text-decoration-none fw-semibold">Start free trial &rarr;</a></p>
+    </div>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Intake Queue</h1>
+    <p class="text-muted small mb-0">Asynchronous buffer for high-volume record intake from connected APIs.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    {% if not items %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+        Intake queue is currently empty.
+      </div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>System ID</th>
+              <th>Batch ID</th>
+              <th>Status</th>
+              <th>Attempts</th>
+              <th>Created At</th>
+              <th>Processed At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in items %}
+              <tr>
+                <td>#{{ i.id }}</td>
+                <td>{{ i.system_id }}</td>
+                <td><code>{{ i.batch_id or 'Single' }}</code></td>
+                <td>
+                  {% if i.status == 'completed' %}
+                    <span class="badge bg-success">Completed</span>
+                  {% elif i.status == 'pending' %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                  {% else %}
+                    <span class="badge bg-danger">{{ i.status }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ i.attempts }}</td>
+                <td><small>{{ i.created_at }}</small></td>
+                <td><small>{{ i.processed_at or '—' }}</small></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

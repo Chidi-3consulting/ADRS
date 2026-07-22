@@ -40,33 +40,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+$page_title = 'Sign In';
+public_page_head('Sign In', $pdo);
+public_page_nav($pdo);
 ?>
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login — <?= escape_html(APP_NAME) ?></title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23C85C1A'/><text x='16' y='23' font-size='18' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial,sans-serif'>A</text></svg>">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-<link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
-</head><body class="d-flex align-items-center" style="min-height:100vh;">
+<main class="flex-grow-1 d-flex align-items-center py-5">
 <div class="container" style="max-width:420px;">
-  <div class="card shadow-sm">
-    <div class="card-header card-header-orange text-center"><h1 class="h4 mb-0">ADRS</h1></div>
-    <div class="card-body">
-      <?php if ($error): ?><div class="alert alert-danger"><?= escape_html($error) ?></div><?php endif; ?>
+  <div class="card shadow-sm border-0">
+    <div class="card-header card-header-orange text-center py-3 rounded-top" style="border-bottom:0px;">
+      <h1 class="h5 mb-0 text-white fw-bold">Sign In to ADRS</h1>
+    </div>
+    <div class="card-body p-4">
+      <?php if ($error): ?><div class="alert alert-danger mb-4 small"><?= escape_html($error) ?></div><?php endif; ?>
       <form method="post" novalidate>
         <?= csrf_field() ?>
-        <div class="mb-3"><label class="form-label">Email</label>
-          <input type="email" name="email" class="form-control" required autofocus value="<?= escape_html($_POST['email'] ?? '') ?>"></div>
-        <div class="mb-3"><label class="form-label">Password</label>
-          <input type="password" name="password" class="form-control" required></div>
-        <button class="btn btn-primary w-100">Sign in</button>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Work Email</label>
+          <input type="email" name="email" class="form-control" required autofocus value="<?= escape_html($_POST['email'] ?? '') ?>" placeholder="name@company.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-secondary">Password</label>
+          <input type="password" name="password" class="form-control" required placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary w-100 hover-lift mt-2">Sign in</button>
       </form>
-      <p class="mt-3 mb-0 small text-center">
-        <a href="<?= APP_URL ?>/forgot_password">Forgot your password?</a>
+      <p class="mt-4 mb-0 small text-center text-muted">
+        <a href="<?= APP_URL ?>/forgot_password" class="text-decoration-none">Forgot password?</a>
         <?php if (is_saas_deployment($pdo)): ?>
-          · <a href="<?= APP_URL ?>/register?tier=core">Start free trial</a>
+          · <a href="<?= APP_URL ?>/register" class="text-decoration-none fw-semibold">Start free trial</a>
         <?php elseif (public_signup_enabled($pdo)): ?>
-          · <a href="<?= APP_URL ?>/signup">Create an account</a>
+          · <a href="<?= APP_URL ?>/signup" class="text-decoration-none fw-semibold">Create account</a>
         <?php endif; ?>
       </p>
     </div>
@@ -74,4 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <p class="text-center text-muted small mt-3">
     <a href="<?= APP_URL ?>/" class="text-muted text-decoration-none">&larr; Back to home</a>
   </p>
-</div></body></html>
+</div>
+</main>
+<?php public_page_foot(); ?>

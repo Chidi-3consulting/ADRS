@@ -26,17 +26,14 @@ function api_body(): array {
     return is_array($decoded) ? $decoded : [];
 }
 
-/** 403 unless the deployment is on the Enterprise tier. */
+/** Enterprise-only SaaS: API is always available. Retained for backward compatibility. */
 function require_enterprise_tier(PDO $pdo): void {
-    $tier = get_setting($pdo, 'adrs_tier', 'core');
-    if ($tier !== 'enterprise') {
-        api_response(403, ['error' => 'enterprise_tier_required', 'message' => 'This endpoint requires ADRS Enterprise. Current tier: ' . $tier]);
-    }
+    // No-op: every ADRS deployment is enterprise.
+    return;
 }
 
-/** 403 unless the Enterprise REST API is switched on in settings. */
+/** Enterprise-only SaaS: REST API is always enabled. Retained for backward compatibility. */
 function require_api_enabled(PDO $pdo): void {
-    if (get_setting($pdo, 'enterprise_api_enabled', '0') !== '1') {
-        api_response(403, ['error' => 'api_disabled', 'message' => 'The Enterprise REST API is disabled.']);
-    }
+    // No-op: Enterprise API is always active in SaaS mode.
+    return;
 }

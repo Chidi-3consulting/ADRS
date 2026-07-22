@@ -18,8 +18,8 @@ $__org = fetch_current_organization($__pdo);
 $__trialDays = $__org ? organization_trial_days_left($__pdo, (int) $__org['id']) : null;
 // White-label theming (Phase 3)
 $__wlName    = get_setting($__pdo, 'white_label_name', APP_NAME) ?: APP_NAME;
-$__wlPrimary = get_setting($__pdo, 'white_label_primary', '#C85C1A');
-if (!preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $__wlPrimary)) { $__wlPrimary = '#C85C1A'; }
+$__wlPrimary = get_setting($__pdo, 'white_label_primary', '#ff914d');
+if (!preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $__wlPrimary)) { $__wlPrimary = '#ff914d'; }
 $__wlLogo    = get_setting($__pdo, 'white_label_logo_url', '');
 function navlink(string $key, string $active, string $route, string $icon, string $label): string {
     $cls = $key === $active ? 'active' : '';
@@ -38,7 +38,7 @@ function navgroup(string $label): string {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
 <style>:root{ --3c-orange: <?= $__wlPrimary ?>; } .sidebar .brand{ color: <?= $__wlPrimary ?>; }</style>
 </head><body>
@@ -48,19 +48,26 @@ function navgroup(string $label): string {
     <div class="org-context px-3 pt-3 pb-2 border-bottom border-secondary">
       <div class="org-context-name"><?= escape_html($__org['name']) ?></div>
       <div class="org-context-meta">
-        <span class="badge bg-<?= ($__org['tier'] ?? '') === 'enterprise' ? 'success' : 'secondary' ?> badge-sm"><?= escape_html(org_tier_label($__org['tier'] ?? 'core')) ?></span>
         <?= org_status_badge($__org) ?>
         <?php if ($__trialDays !== null): ?>
           <span class="badge bg-warning text-dark badge-sm"><?= (int) $__trialDays ?>d trial</span>
         <?php endif; ?>
       </div>
-      <div class="org-context-domain small text-muted mt-1">@<?= escape_html($__org['primary_domain'] ?? '') ?></div>
+      <div class="org-context-domain small mt-1" style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">@<?= escape_html($__org['primary_domain'] ?? '') ?></div>
+      <?php
+        require_once __DIR__ . '/country_regulation_map.php';
+        $__labels = get_country_regulation_labels($__org['country'] ?? 'OTHER');
+      ?>
+      <div class="org-context-law small mt-2" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); line-height: 1.4;">
+        <i class="bi bi-shield-check text-warning me-1"></i><?= escape_html($__labels['law']) ?>
+      </div>
     </div>
     <?php endif; ?>
     <div class="brand pt-2"><?php if ($__wlLogo): ?><img src="<?= escape_html($__wlLogo) ?>" alt="logo" style="max-height:32px;max-width:200px"><?php else: ?><?= escape_html($__wlName) ?><?php endif; ?></div>
     
     <?= navgroup('📊 Overview') ?>
     <?= navlink('dashboard', $active_nav, '/dashboard', 'bi-house', 'Dashboard') ?>
+    <?= navlink('help', $active_nav, '/help', 'bi-book', 'Solution Manual & Help') ?>
     
     <?= navgroup('📁 Data Life Cycle') ?>
     <?= navlink('categories', $active_nav, '/categories', 'bi-collection', 'Data Categories') ?>
@@ -75,8 +82,8 @@ function navgroup(string $label): string {
     <?= navgroup('🔔 Notifications') ?>
     <?= navlink('notifications', $active_nav, '/notifications', 'bi-bell', 'Inbox') ?>
     
-    <?php if (has_role('admin') && ($__org['tier'] ?? 'core') === 'enterprise'): ?>
-      <?= navgroup('🔌 Enterprise Hub') ?>
+    <?php if (has_role('admin')): ?>
+      <?= navgroup('🔌 API & Integrations') ?>
       <?= navlink('integrations', $active_nav, '/integrations', 'bi-hdd-network', 'Integrations') ?>
     <?php endif; ?>
     

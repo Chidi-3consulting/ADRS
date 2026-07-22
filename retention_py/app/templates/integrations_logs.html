@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Integration API Logs</h1>
+    <p class="text-muted small mb-0">Comprehensive audit trail of all inbound and outbound REST API communications.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    {% if not logs %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-file-earmark-code fs-2 d-block mb-2"></i>
+        No API logs recorded yet.
+      </div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Direction</th>
+              <th>Endpoint</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Records</th>
+              <th>IP Address</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in logs %}
+              <tr>
+                <td>#{{ l.id }}</td>
+                <td>
+                  {% if l.direction == 'inbound' %}
+                    <span class="badge bg-primary">INBOUND</span>
+                  {% else %}
+                    <span class="badge bg-info text-dark">OUTBOUND</span>
+                  {% endif %}
+                </td>
+                <td><code>{{ l.endpoint }}</code></td>
+                <td><span class="badge bg-secondary">{{ l.method }}</span></td>
+                <td>
+                  {% if l.status_code >= 200 and l.status_code < 300 %}
+                    <span class="badge bg-success">{{ l.status_code }}</span>
+                  {% else %}
+                    <span class="badge bg-danger">{{ l.status_code }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ l.records_affected }}</td>
+                <td><small>{{ l.ip_address or '127.0.0.1' }}</small></td>
+                <td><small>{{ l.created_at }}</small></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

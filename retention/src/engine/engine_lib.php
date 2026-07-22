@@ -217,6 +217,49 @@ function engine_notify_review_owners(PDO $pdo): int {
     return $sent;
 }
 
+/** Step 8: send follow-ups for unread review/escalation notifications > 3 days old. */
+function engine_send_follow_ups(PDO $pdo): int {
+    $orgId = engine_org_id();
+    try {
+        // Fail-safe check: see if column exists
+        $pdo->query("SELECT follow_up_sent_at FROM notifications LIMIT 1");
+    } catch (Throwable $e) {
+        return 0; // migration not run yet, skip
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT * FROM notifications
+         WHERE organization_id = :org
+           AND read_at IS NULL
+           AND type IN ('review_due', 'escalation_alert')
+           AND follow_up_sent_at IS NULL
+           AND created_at <= DATE_SUB(NOW(), INTERVAL 3 DAY)"
+    );
+    $stmt->execute(['org' => $orgId]);
+    $notifications = $stmt->fetchAll();
+    if (!$notifications) { return 0; }
+
+    $sent = 0;
+    $updateStmt = $pdo->prepare("UPDATE notifications SET follow_up_sent_at = NOW() WHERE id = :id");
+    
+    foreach ($notifications as $n) {
+        // Create a new notification row representing the follow-up
+        create_notification(
+            $pdo,
+            (int) $n['recipient_id'],
+            $n['type'],
+            '[Follow-up] ' . $n['subject'],
+            'Follow-up reminder: ' . $n['message'],
+            $n['related_record_id'] ? (int) $n['related_record_id'] : null,
+            $n['related_dsar_id'] ? (int) $n['related_dsar_id'] : null,
+            (bool) $n['owner_missing']
+        );
+        $updateStmt->execute(['id' => $n['id']]);
+        $sent++;
+    }
+    return $sent;
+}
+
 /** Orchestrate the full daily engine. Returns a summary of counts. */
 function run_retention_engine(PDO $pdo): array {
     $reviewDays    = (int) get_setting($pdo, 'review_alert_days', '30');
@@ -229,11 +272,13 @@ function run_retention_engine(PDO $pdo): array {
     $escalated = engine_escalate($pdo, $escalationDays);
 
     $notified  = engine_notify_review_owners($pdo);
+    $followups = engine_send_follow_ups($pdo);
 
     return [
         'flagged' => $flagged, 'consent_disposed' => $consent,
         'auto_disposed' => $auto['disposed'], 'dual_skipped' => $auto['skipped_dual'],
         'escalated' => $escalated, 'review_notifications' => $notified,
+        'follow_ups' => $followups
     ];
 }
 

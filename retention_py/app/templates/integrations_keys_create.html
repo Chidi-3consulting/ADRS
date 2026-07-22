@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="/integrations/keys" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Back to API Keys</a>
+  <h1 class="h4 mt-1">{{ page_title }}</h1>
+</div>
+
+{% if new_raw_key %}
+  <div class="alert alert-success border-success shadow-sm p-4 mb-4">
+    <h4 class="alert-heading text-success fw-bold"><i class="bi bi-shield-check me-2"></i> API Key Generated Successfully!</h4>
+    <p class="mb-2">Copy your secret API Key now. <strong>You will not be able to see it again!</strong></p>
+    <div class="input-group my-3" style="max-width: 600px;">
+      <input type="text" class="form-control font-monospace fw-bold bg-light" id="key_input" value="{{ new_raw_key }}" readonly>
+      <button class="btn btn-primary" type="button" onclick="navigator.clipboard.writeText('{{ new_raw_key }}'); alert('API Key copied to clipboard!');">
+        <i class="bi bi-clipboard me-1"></i> Copy Key
+      </button>
+    </div>
+    <a href="/integrations/keys" class="btn btn-outline-secondary btn-sm mt-2">Done</a>
+  </div>
+{% else %}
+  <div class="card shadow-sm" style="max-width: 600px;">
+    <div class="card-body">
+      <form method="post" action="/integrations/keys/create">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Target Connected System <span class="text-danger">*</span></label>
+          <select name="system_id" class="form-select" required>
+            {% for s in systems %}
+              <option value="{{ s.id }}">{{ s.name }} ({{ s.system_type }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Key Name / Identifier <span class="text-danger">*</span></label>
+          <input type="text" name="key_name" class="form-control" required placeholder="e.g. Production Ingestion Key">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rate Limit (requests per minute)</label>
+          <input type="number" name="rate_limit_per_min" class="form-control" value="60" min="1" max="1000">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold d-block">Permissions</label>
+          <div class="form-check form-check-inline">
+            <input type="checkbox" name="permissions" value="ingest" class="form-check-input" id="p_ingest" checked>
+            <label class="form-check-label" for="p_ingest">Ingest</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input type="checkbox" name="permissions" value="batch" class="form-check-input" id="p_batch" checked>
+            <label class="form-check-label" for="p_batch">Batch</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input type="checkbox" name="permissions" value="consent" class="form-check-input" id="p_consent" checked>
+            <label class="form-check-label" for="p_consent">Consent</label>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 pt-2">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-key me-1"></i> Generate Key</button>
+          <a href="/integrations/keys" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

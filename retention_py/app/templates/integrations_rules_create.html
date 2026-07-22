@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="/integrations/rules" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Back to Rules</a>
+  <h1 class="h4 mt-1">{{ page_title }}</h1>
+</div>
+
+<div class="card shadow-sm" style="max-width: 600px;">
+  <div class="card-body">
+    <form method="post" action="/integrations/rules/create">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">System <span class="text-danger">*</span></label>
+        <select name="system_id" class="form-select" required>
+          {% for s in systems %}
+            <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Rule Name <span class="text-danger">*</span></label>
+        <input type="text" name="rule_name" class="form-control" required placeholder="e.g. Rejected Loan Applications Rule">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Object Type <span class="text-danger">*</span></label>
+        <input type="text" name="object_type" class="form-control" required placeholder="e.g. loan_application">
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label class="form-label fw-semibold">Condition Field</label>
+          <input type="text" name="condition_field" class="form-control" placeholder="e.g. status">
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-semibold">Condition Value</label>
+          <input type="text" name="condition_value" class="form-control" placeholder="e.g. rejected">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Target ADRS Category <span class="text-danger">*</span></label>
+        <select name="category_id" class="form-select" required>
+          {% for c in categories %}
+            <option value="{{ c.id }}">{{ c.name }} ({{ c.compliance_framework }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Priority (Lower = Higher Priority)</label>
+        <input type="number" name="priority" class="form-control" value="10" min="1" max="100">
+      </div>
+
+      <div class="d-flex gap-2 pt-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save Rule</button>
+        <a href="/integrations/rules" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "public_layout.html" %}
+{% block content %}
+<main class="flex-grow-1 d-flex align-items-center py-5">
+  <div class="container" style="max-width: 420px;">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-primary text-center py-3 rounded-top">
+        <h1 class="h5 mb-0 text-white fw-bold">Two-Factor Authentication</h1>
+      </div>
+      <div class="card-body p-4 text-center">
+        <p class="text-muted small mb-4">Enter the 6-digit verification code from your authenticator app, or a recovery code.</p>
+        
+        {% if error %}
+          <div class="alert alert-danger small text-start">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/login/2fa">
+          <div class="mb-3">
+            <input type="text" name="code" class="form-control form-control-lg text-center font-monospace" placeholder="123456" required autocomplete="one-time-code" autofocus>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 mt-2">Verify & Sign In</button>
+        </form>
+        
+        <p class="mt-4 mb-0 small">
+          <a href="/logout" class="text-decoration-none text-warning fw-semibold">Cancel Sign In</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

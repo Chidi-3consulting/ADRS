@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Connected Systems</h1>
+    <p class="text-muted small mb-0">External platforms integrated with ADRS for automated intake & disposal dispatches.</p>
+  </div>
+  <a href="/integrations/systems/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Add Connected System</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    {% if not systems %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-hdd-network fs-2 d-block mb-2"></i>
+        No connected systems registered yet. Click "Add Connected System" to register your CRM, Banking core, HR, or custom application.
+      </div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>System Name</th>
+              <th>Type</th>
+              <th>Base URL</th>
+              <th>Status</th>
+              <th>Synced Records</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in systems %}
+              <tr>
+                <td class="fw-semibold">{{ s.name }}</td>
+                <td><span class="badge bg-secondary text-uppercase">{{ s.system_type }}</span></td>
+                <td class="text-truncate" style="max-width: 200px;"><code>{{ s.base_url or 'N/A' }}</code></td>
+                <td>
+                  {% if s.is_active %}
+                    <span class="badge bg-success">Active</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>{{ s.records_synced }}</td>
+                <td>
+                  <a href="/integrations/systems/edit/{{ s.id }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

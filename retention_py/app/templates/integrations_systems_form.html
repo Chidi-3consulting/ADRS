@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="/integrations/systems" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Back to Connected Systems</a>
+  <h1 class="h4 mt-1">{{ page_title }}</h1>
+</div>
+
+<div class="card shadow-sm" style="max-width: 650px;">
+  <div class="card-body">
+    <form method="post" action="{{ '/integrations/systems/edit/' ~ system.id if system else '/integrations/systems/create' }}">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">System Name <span class="text-danger">*</span></label>
+        <input type="text" name="name" class="form-control" value="{{ system.name if system else '' }}" required placeholder="e.g. Salesforce CRM / Core Banking">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">System Type</label>
+        <select name="system_type" class="form-select">
+          {% for st in ['crm', 'core_banking', 'hr_platform', 'customer_db', 'loan_management', 'ecommerce', 'custom'] %}
+            <option value="{{ st }}" {% if system and system.system_type == st %}selected{% endif %}>{{ st.replace('_', ' ') | title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Base URL (for Outbound Webhooks / Dispatches)</label>
+        <input type="url" name="base_url" class="form-control" value="{{ system.base_url if system else '' }}" placeholder="https://api.yourcompany.com">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Description</label>
+        <textarea name="description" class="form-control" rows="3">{{ system.description if system else '' }}</textarea>
+      </div>
+
+      {% if system %}
+        <div class="mb-3 form-check">
+          <input type="checkbox" name="is_active" class="form-check-input" id="is_active" value="true" {% if system.is_active %}checked{% endif %}>
+          <label class="form-check-label fw-semibold" for="is_active">System is Active</label>
+        </div>
+      {% endif %}
+
+      <div class="d-flex gap-2 pt-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Save System</button>
+        <a href="/integrations/systems" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

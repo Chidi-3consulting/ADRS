@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --3c-orange: #C85C1A;
-  --3c-primary: var(--3c-orange, #C85C1A);
-  --3c-primary-hover: #b04e13;
-  --3c-primary-rgb: 200, 92, 26;
+  --3c-orange: #ff914d;
+  --3c-primary: var(--3c-orange, #ff914d);
+  --3c-primary-hover: #e67a35;
+  --3c-primary-rgb: 255, 145, 77;
   --3c-teal: #1A6187;
   --3c-yellow: #E8A84C;
   --3c-dark: #0f0f1b;
@@ -16,6 +16,7 @@
   --3c-border: #e2e8f0;
   
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-headings: 'Outfit', var(--font-sans);
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
@@ -33,6 +34,12 @@ body {
   color: var(--3c-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headings);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 body.public-page {
@@ -243,6 +250,15 @@ body.public-page {
 .stat-card-gradient.yellow::after {
   background: var(--3c-yellow);
 }
+.stat-card-gradient.danger::after {
+  background: #dc3545;
+}
+.stat-card-gradient.orange::after {
+  background: var(--3c-primary);
+}
+.stat-card-gradient.secondary::after {
+  background: #6c757d;
+}
 
 /* Buttons */
 .btn {
@@ -280,6 +296,11 @@ body.public-page {
 .badge-gdpr { background: #1e3a8a; color: #dbeafe; }
 .badge-ndpr { background: #064e3b; color: #d1fae5; }
 .badge-both { background: #581c87; color: #f3e8ff; }
+.badge-dpdp { background: #ea580c; color: #ffedd5; }
+.badge-pdpl { background: #0d9488; color: #ccfbf1; }
+.badge-pipeda { background: #e11d48; color: #ffe4e6; }
+.badge-apps { background: #2563eb; color: #dbeafe; }
+.badge-egdpl { background: #4f46e5; color: #e0e7ff; }
 
 /* Settings Sub-navigation */
 .settings-nav .nav-link {

@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Pending Recalculations</h1>
+    <p class="text-muted small mb-0">Review retention period adjustments resulting from category parameter updates or record reassignments.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    {% if not items %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-calculator fs-2 d-block mb-2"></i>
+        No pending retention recalculations awaiting review.
+      </div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Record Reference</th>
+              <th>Category</th>
+              <th>Current End Date</th>
+              <th>New Proposed Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in items %}
+              <tr>
+                <td>#{{ r.id }}</td>
+                <td><a href="/records/view/{{ r.record_id }}" class="fw-semibold text-decoration-none">{{ r.record.record_reference if r.record else 'Record #' ~ r.record_id }}</a></td>
+                <td>{{ r.category.name if r.category else 'Category #' ~ r.category_id }}</td>
+                <td><span class="badge bg-secondary">{{ r.old_retention_end_date }}</span></td>
+                <td><span class="badge bg-primary fs-6">{{ r.new_retention_end_date }}</span></td>
+                <td>
+                  {% if r.status == 'pending' %}
+                    <span class="badge bg-warning text-dark">Pending Review</span>
+                  {% elif r.status == 'recalculate' %}
+                    <span class="badge bg-success">Recalculated</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ r.status }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if r.status == 'pending' %}
+                    <div class="d-flex gap-1">
+                      <form method="post" action="/recalculations/{{ r.id }}/action">
+                        <input type="hidden" name="decision" value="recalculate">
+                        <button type="submit" class="btn btn-sm btn-success py-0 px-2" title="Apply New Date">Apply</button>
+                      </form>
+                      <form method="post" action="/recalculations/{{ r.id }}/action">
+                        <input type="hidden" name="decision" value="keep_original">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Keep Original Date">Keep</button>
+                      </form>
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

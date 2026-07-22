@@ -2,9 +2,15 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/categories_lib.php';
+require_once __DIR__ . '/../../includes/tenant_lib.php';
+require_once __DIR__ . '/../../includes/country_regulation_map.php';
 require_role('admin', 'dpo');
 $pdo = get_db();
 $error = null;
+
+$org = fetch_current_organization($pdo);
+$orgCountry = $org['country'] ?? 'OTHER';
+$defaultRegs = get_country_regulations($orgCountry);
 
 $owners = list_org_users($pdo, "role = 'data_owner'");
 $regulationsList = list_regulations($pdo);
@@ -14,11 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if (trim($_POST['name'] ?? '') === '') { throw new InvalidArgumentException('Name is required.'); }
         
-        $selectedFrameworks = $_POST['compliance_framework'] ?? [];
-        if (empty($selectedFrameworks)) {
-            throw new InvalidArgumentException('At least one regulation framework must be selected.');
-        }
-        $frameworkString = implode(',', $selectedFrameworks);
+        $frameworkString = implode(',', $defaultRegs);
 
         $id = create_category($pdo, [
             'name' => trim($_POST['name']),
@@ -58,24 +60,6 @@ $v = fn($k, $d = '') => escape_html($_POST[$k] ?? $d);
     <div class="mb-3"><label class="form-label">Retention Reason / Lawful Purpose *</label>
       <textarea name="retention_reason" class="form-control" rows="2" placeholder="e.g. Required for tax audits, post-employment litigation defense"><?= $v('retention_reason') ?></textarea></div>
     
-    <div class="mb-3">
-      <label class="form-label d-block">Applicable Regulations *</label>
-      <div class="row g-2">
-        <?php foreach ($regulationsList as $reg):
-          $checked = in_array($reg['code'], $_POST['compliance_framework'] ?? ['GDPR']) ? 'checked' : '';
-        ?>
-          <div class="col-md-6">
-            <div class="form-check border p-2 rounded bg-light-subtle">
-              <input class="form-check-input ms-0 me-2" type="checkbox" name="compliance_framework[]" value="<?= escape_html($reg['code']) ?>" id="reg-<?= escape_html($reg['code']) ?>" <?= $checked ?>>
-              <label class="form-check-label small" for="reg-<?= escape_html($reg['code']) ?>">
-                <strong><?= escape_html($reg['code']) ?></strong> — <?= escape_html($reg['name']) ?>
-              </label>
-            </div>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    </div>
-
     <div class="row">
       <div class="col-md-6 mb-3"><label class="form-label">Legal basis *</label>
         <select name="legal_basis" class="form-select">
@@ -104,7 +88,7 @@ $v = fn($k, $d = '') => escape_html($_POST[$k] ?? $d);
         </select></div>
       <div class="col-md-6 mb-3"><label class="form-label">Review frequency *</label>
         <select name="review_frequency" class="form-select">
-          <?php foreach (['monthly','quarterly','annually'] as $o): ?><option <?= ($_POST['review_frequency'] ?? '')===$o?'selected':'' ?>><?= ucfirst($o) ?></option><?php endforeach; ?>
+          <?php foreach (['monthly','quarterly','annually'] as $o): ?><option value="<?= $o ?>" <?= ($_POST['review_frequency'] ?? '')===$o?'selected':'' ?>><?= ucfirst($o) ?></option><?php endforeach; ?>
         </select></div>
     </div>
 

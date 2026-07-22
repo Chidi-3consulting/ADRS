@@ -43,7 +43,7 @@ try {
             clear_setting_cache();
             $log('--- Organisation ' . $org['id'] . ' ---');
             $s = run_retention_engine($pdo);
-            $log("Flagged: {$s['flagged']} | Consent-disposed: {$s['consent_disposed']} | Auto-disposed: {$s['auto_disposed']} | Dual-approval SKIPPED: {$s['dual_skipped']} | Escalated: {$s['escalated']} | Review notifications: {$s['review_notifications']}");
+            $log("Flagged: {$s['flagged']} | Consent-disposed: {$s['consent_disposed']} | Auto-disposed: {$s['auto_disposed']} | Dual-approval SKIPPED: {$s['dual_skipped']} | Escalated: {$s['escalated']} | Review notifications: {$s['review_notifications']} | Follow-ups: {$s['follow_ups']}");
             $mail = dispatch_pending_notifications($pdo);
             $log("Emails sent: {$mail['sent']} | failed: {$mail['failed']}");
 

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/country_regulation_map.php';
 
 /** True when this deployment accepts public organisation registration (SaaS). */
 function is_saas_deployment(PDO $pdo): bool {
@@ -122,14 +123,14 @@ function org_member_email_error(PDO $pdo, string $email, ?int $orgId = null): ?s
     return null;
 }
 function default_org_settings(string $tier, ?string $country = null): array {
-    $tz = 'Africa/Lagos';
-    if ($country === 'GB') { $tz = 'Europe/London'; }
-    elseif ($country === 'US') { $tz = 'America/New_York'; }
-    elseif ($country === 'BR') { $tz = 'America/Sao_Paulo'; }
-    elseif ($country === 'ZA') { $tz = 'Africa/Johannesburg'; }
-    elseif ($country === 'KE') { $tz = 'Africa/Nairobi'; }
-    elseif ($country === 'GH') { $tz = 'Africa/Accra'; }
-    elseif ($country === 'SG') { $tz = 'Asia/Singapore'; }
+    $tzMap = [
+        'NG' => 'Africa/Lagos', 'GB' => 'Europe/London', 'US' => 'America/New_York',
+        'BR' => 'America/Sao_Paulo', 'ZA' => 'Africa/Johannesburg', 'KE' => 'Africa/Nairobi',
+        'GH' => 'Africa/Accra', 'SG' => 'Asia/Singapore', 'EU' => 'Europe/Berlin',
+        'IN' => 'Asia/Kolkata', 'AE' => 'Asia/Dubai', 'CA' => 'America/Toronto',
+        'AU' => 'Australia/Sydney', 'EG' => 'Africa/Cairo',
+    ];
+    $tz = $tzMap[$country ?? ''] ?? 'Africa/Lagos';
 
     return [
         'adrs_tier'              => $tier,
@@ -141,7 +142,7 @@ function default_org_settings(string $tier, ?string $country = null): array {
         'rows_per_page'          => '25',
         'timezone'               => $tz,
         'white_label_name'       => '',
-        'white_label_primary'    => '#C85C1A',
+        'white_label_primary'    => '#ff914d',
         'white_label_logo_url'   => '',
         'white_label_footer'     => '3Consulting Limited',
         'smtp_host'              => '',
@@ -157,6 +158,7 @@ function provision_org_settings(PDO $pdo, int $orgId, string $orgName, string $t
     $settings = default_org_settings($tier, $country);
     $settings['white_label_name'] = $orgName;
     $settings['app_name'] = $orgName;
+    if ($country) { $settings['org_country'] = $country; }
     $ins = $pdo->prepare(
         'INSERT INTO organization_settings (organization_id, setting_key, setting_value)
          VALUES (:oid, :k, :v) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
@@ -166,13 +168,26 @@ function provision_org_settings(PDO $pdo, int $orgId, string $orgName, string $t
     }
 }
 
-/** Clone master category templates (organization_id = 0) into a new tenant. */
-function provision_org_categories(PDO $pdo, int $orgId): int {
+/** Clone master category templates (organization_id = 0) into a new tenant, filtered by country. */
+function provision_org_categories(PDO $pdo, int $orgId, ?string $country = null): int {
     $stmt = $pdo->prepare('SELECT COUNT(*) FROM data_categories WHERE organization_id = :o AND deleted_at IS NULL');
     $stmt->execute(['o' => $orgId]);
     if ((int) $stmt->fetchColumn() > 0) { return 0; }
 
     import_master_category_templates($pdo);
+
+    // Determine which compliance frameworks apply to this country
+    $allowedFrameworks = get_country_regulations($country ?? 'OTHER');
+
+    // Build a WHERE clause to filter by framework
+    $placeholders = [];
+    $params = ['oid' => $orgId];
+    foreach ($allowedFrameworks as $i => $fw) {
+        $key = 'fw' . $i;
+        $placeholders[] = ':' . $key;
+        $params[$key] = $fw;
+    }
+    $fwWhere = 'compliance_framework IN (' . implode(',', $placeholders) . ')';
 
     $templates = $pdo->query('SELECT id, name FROM data_categories WHERE organization_id = 0 AND deleted_at IS NULL')->fetchAll();
 
@@ -184,9 +199,8 @@ function provision_org_categories(PDO $pdo, int $orgId): int {
          SELECT :oid, name, description, compliance_framework, legal_basis, retention_period_days,
             retention_period_label, disposal_method, disposal_trigger, requires_dual_approval,
             review_frequency, source, is_active
-         FROM data_categories WHERE organization_id = 0 AND deleted_at IS NULL"
-    )->execute(['oid' => $orgId]);
-
+         FROM data_categories WHERE organization_id = 0 AND deleted_at IS NULL AND {$fwWhere}"
+    )->execute($params);
 
     require_once __DIR__ . '/retention_rules_lib.php';
     $newCats = $pdo->prepare('SELECT id, name FROM data_categories WHERE organization_id = :o AND deleted_at IS NULL');
@@ -292,7 +306,7 @@ function register_organization(PDO $pdo, string $orgName, string $primaryDomainI
         $userId = (int) $pdo->lastInsertId();
 
         provision_org_settings($pdo, $orgId, $orgName, $tier, $country);
-        provision_org_categories($pdo, $orgId);
+        provision_org_categories($pdo, $orgId, $country);
 
         $pdo->commit();
         return ['organization_id' => $orgId, 'user_id' => $userId];

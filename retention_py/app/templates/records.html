@@ -1,0 +1,245 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0 fw-bold text-dark">Data Retention Register</h1>
+    <p class="text-muted small mb-0">Monitor and manage organizational records in accordance with global regulations.</p>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row row-cols-2 row-cols-md-6 g-2 mb-3">
+  <div class="col">
+    <div class="card shadow-sm h-100">
+      <div class="card-body py-2 px-3 text-center">
+        <div class="text-muted small" style="font-size: 0.75rem;">Active</div>
+        <div class="h4 mb-0 fw-bold text-success">{{ kpi.active or 0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card shadow-sm h-100">
+      <div class="card-body py-2 px-3 text-center">
+        <div class="text-muted small" style="font-size: 0.75rem;">Due Review</div>
+        <div class="h4 mb-0 fw-bold text-warning">{{ kpi.due_review or 0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card shadow-sm h-100">
+      <div class="card-body py-2 px-3 text-center">
+        <div class="text-muted small" style="font-size: 0.75rem;">Overdue</div>
+        <div class="h4 mb-0 fw-bold text-danger">{{ kpi.overdue or 0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card shadow-sm h-100">
+      <div class="card-body py-2 px-3 text-center">
+        <div class="text-muted small" style="font-size: 0.75rem;">On Hold</div>
+        <div class="h4 mb-0 fw-bold text-primary">{{ kpi.on_hold or 0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card shadow-sm h-100">
+      <div class="card-body py-2 px-3 text-center">
+        <div class="text-muted small" style="font-size: 0.75rem;">Awaiting Approval</div>
+        <div class="h4 mb-0 fw-bold text-info">{{ kpi.awaiting_approval or 0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card shadow-sm h-100">
+      <div class="card-body py-2 px-3 text-center">
+        <div class="text-muted small" style="font-size: 0.75rem;">Disposed (mo)</div>
+        <div class="h4 mb-0 fw-bold text-secondary">{{ kpi.disposed_month or 0 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Left Side: Records List with Filters -->
+  <div class="col-lg-8">
+    <form class="card shadow-sm mb-3" method="get" action="/records">
+      <div class="card-body row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label small mb-1">Search reference / subject</label>
+          <input name="q" class="form-control form-control-sm" value="{{ filter_q or '' }}" placeholder="e.g. CUST-001">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small mb-1">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All active</option>
+            {% for s in ['active','due_review','disposal_requested','legal_hold','disposed','overdue'] %}
+            <option value="{{ s }}" {{ 'selected' if s == filter_status else '' }}>{{ s | replace('_', ' ') | title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small mb-1">Category</label>
+          <select name="category_id" class="form-select form-select-sm">
+            <option value="0">All categories</option>
+            {% for c in categories %}
+            <option value="{{ c.id }}" {{ 'selected' if c.id == filter_category_id else '' }}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex gap-1">
+          <button class="btn btn-primary btn-sm flex-grow-1">Filter</button>
+          <a href="/records" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+        </div>
+      </div>
+    </form>
+
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+        <span class="fw-bold text-dark mb-0" style="font-size:0.9rem;">Records Inventory ({{ total_count }} total)</span>
+        {% if total_pages > 1 %}
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item {{ 'disabled' if page_num <= 1 }}">
+              <a class="page-link" href="/records?page={{ page_num - 1 }}&q={{ filter_q or '' }}&status={{ filter_status or '' }}&category_id={{ filter_category_id or 0 }}">Prev</a>
+            </li>
+            {% for p in range(1, total_pages + 1) %}
+              {% if p >= page_num - 2 and p <= page_num + 2 %}
+              <li class="page-item {{ 'active' if p == page_num }}">
+                <a class="page-link" href="/records?page={{ p }}&q={{ filter_q or '' }}&status={{ filter_status or '' }}&category_id={{ filter_category_id or 0 }}">{{ p }}</a>
+              </li>
+              {% endif %}
+            {% endfor %}
+            <li class="page-item {{ 'disabled' if page_num >= total_pages }}">
+              <a class="page-link" href="/records?page={{ page_num + 1 }}&q={{ filter_q or '' }}&status={{ filter_status or '' }}&category_id={{ filter_category_id or 0 }}">Next</a>
+            </li>
+          </ul>
+        </nav>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle small">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Category</th>
+                <th>Trigger</th>
+                <th>Collected At</th>
+                <th>Retention End</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rec in records %}
+              <tr>
+                <td>
+                  <strong>{{ rec.record_reference }}</strong>
+                  {% if rec.created_by_owner %}
+                    <span class="ms-1" title="Added by Data Owner">👤</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-secondary badge-sm">{{ rec.category.name }}</span>
+                </td>
+                <td>
+                  {% if rec.category.disposal_trigger == 'consent_withdrawal' %}
+                    👤
+                  {% else %}
+                    📅
+                  {% endif %}
+                </td>
+                <td>{{ rec.collection_date }}</td>
+                <td>
+                  {% if rec.retention_end_date %}
+                    {{ rec.retention_end_date }}
+                  {% else %}
+                    <span class="text-muted">— pending event</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if rec.status == 'active' %}
+                    <span class="badge bg-success badge-sm">Active</span>
+                  {% elif rec.status == 'due_review' %}
+                    <span class="badge bg-warning text-dark badge-sm">Due Review</span>
+                  {% elif rec.status == 'disposal_requested' %}
+                    <span class="badge bg-info text-dark badge-sm">Disposal Req</span>
+                  {% elif rec.status == 'legal_hold' %}
+                    <span class="badge bg-danger badge-sm">Legal Hold</span>
+                  {% else %}
+                    <span class="badge bg-secondary badge-sm">Disposed</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <a href="/records/view/{{ rec.id }}" class="btn btn-outline-secondary btn-sm py-0.5 px-2">View</a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                  <i class="bi bi-file-earmark-lock fs-1 d-block mb-3 opacity-50"></i>
+                  No matching records in inventory.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Manual Intake Form -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-header bg-white fw-bold">Manual Record Intake</div>
+      <div class="card-body">
+        {% if user_role == 'data_owner' %}
+          <div class="alert alert-info py-2 small">
+            As a Data Owner you may register records in your assigned categories. Your DPO is notified automatically. Collection date is set to today.
+          </div>
+        {% endif %}
+        <form method="POST" action="/records/create">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Data Category *</label>
+            <select name="category_id" id="category_id" class="form-select form-select-sm" required>
+              <option value="">Select category…</option>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.compliance_framework }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Record Reference / Unique ID *</label>
+            <input type="text" name="record_reference" class="form-control form-control-sm" required placeholder="e.g. USER-40291">
+            <div class="small text-muted" style="font-size: 0.7rem; margin-top: 2px;">Reference ID mapping to your internal database user/log record.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Data Subject Type</label>
+            <input type="text" name="data_subject_type" class="form-control form-control-sm" placeholder="e.g. Customer, Employee">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Collection Date *</label>
+            {% if user_role == 'data_owner' %}
+              <input type="text" class="form-control form-control-sm text-muted bg-light" value="{{ today_str }} (today)" disabled>
+              <input type="hidden" name="collection_date" value="{{ today_str }}">
+            {% else %}
+              <input type="date" name="collection_date" class="form-control form-control-sm" required value="{{ today_str }}">
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Notes</label>
+            <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="Describe the record details..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 fw-bold btn-sm">Register Intake Record</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

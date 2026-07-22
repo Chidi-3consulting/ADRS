@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0 fw-bold text-dark">Attachments</h1>
+    <p class="text-muted small mb-0">Evidence and compliance documents linked to retention records.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 bg-white">
+  <div class="card-header bg-white"><h5 class="card-title mb-0 fw-semibold" style="font-size:0.9rem;">Uploaded Attachments (S8)</h5></div>
+  <div class="card-body p-0">
+    {% if attachments %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead>
+            <tr>
+              <th>Filename</th>
+              <th>Record Reference</th>
+              <th>Uploaded By</th>
+              <th>Size</th>
+              <th>Upload Date</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in attachments %}
+              <tr>
+                <td class="fw-semibold">
+                  <i class="bi bi-file-earmark-lock text-primary me-1"></i>
+                  {{ a.original_filename }}
+                </td>
+                <td>
+                  {% if a.record %}
+                    <a href="/records/view/{{ a.record.id }}" class="fw-bold">{{ a.record.record_reference }}</a>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>{{ a.uploader.name if a.uploader else 'System' }}</td>
+                <td>{{ a.file_size }} bytes</td>
+                <td>{{ a.created_at.strftime('%Y-%m-%d %H:%M') if a.created_at else '' }}</td>
+                <td class="text-end">
+                  <a href="/attachments/download/{{ a.id }}" class="btn btn-sm btn-outline-primary py-0.5 px-2">Download</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-paperclip fs-1 d-block mb-3 opacity-50"></i>
+        No attachments uploaded yet. Open any record page to attach evidence files.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

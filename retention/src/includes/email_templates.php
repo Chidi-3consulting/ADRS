@@ -13,7 +13,7 @@ function email_layout(string $title, string $body_html): string {
     $year = date('Y');
     return '<!doctype html><html><body style="margin:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">'
         . '<div style="max-width:600px;margin:0 auto;background:#fff;">'
-        . '<div style="background:#C85C1A;color:#fff;padding:18px 24px;font-size:20px;font-weight:bold;">ADRS</div>'
+        . '<div style="background:#ff914d;color:#fff;padding:18px 24px;font-size:20px;font-weight:bold;">ADRS</div>'
         . '<div style="padding:24px;color:#222;">'
         . '<h2 style="color:#1A6187;margin-top:0;">' . escape_html($title) . '</h2>'
         . $body_html
@@ -33,7 +33,7 @@ function render_notification_email(array $notification): string {
 function email_password_reset(string $name, string $reset_link): array {
     $body = '<p>Hello ' . escape_html($name) . ',</p>'
         . '<p>A password reset was requested for your ADRS account. This link is valid for 1 hour:</p>'
-        . '<p><a href="' . escape_html($reset_link) . '" style="background:#C85C1A;color:#fff;padding:10px 18px;'
+        . '<p><a href="' . escape_html($reset_link) . '" style="background:#ff914d;color:#fff;padding:10px 18px;'
         . 'text-decoration:none;border-radius:4px;display:inline-block;">Reset your password</a></p>'
         . '<p>If you did not request this, you can safely ignore this email.</p>';
     return ['Reset your ADRS password', email_layout('Password reset', $body)];
@@ -43,7 +43,7 @@ function email_password_reset(string $name, string $reset_link): array {
 function email_verification(string $name, string $verify_link): array {
     $body = '<p>Hello ' . escape_html($name) . ',</p>'
         . '<p>Welcome to ADRS. Please verify your email address to activate your account:</p>'
-        . '<p><a href="' . escape_html($verify_link) . '" style="background:#C85C1A;color:#fff;padding:10px 18px;'
+        . '<p><a href="' . escape_html($verify_link) . '" style="background:#ff914d;color:#fff;padding:10px 18px;'
         . 'text-decoration:none;border-radius:4px;display:inline-block;">Verify my email</a></p>'
         . '<p>If you did not create an account, ignore this message.</p>';
     return ['Verify your ADRS account', email_layout('Email verification', $body)];
@@ -56,7 +56,7 @@ function email_team_invite(string $name, string $orgName, string $role, string $
         . '<p>You have been invited to join <strong>' . escape_html($orgName) . '</strong> on ADRS'
         . ' as <strong>' . escape_html($roleLabel) . '</strong>.</p>'
         . '<p>ADRS is your organisation\'s automated data retention and compliance portal.</p>'
-        . '<p><a href="' . escape_html($invite_link) . '" style="background:#C85C1A;color:#fff;padding:10px 18px;'
+        . '<p><a href="' . escape_html($invite_link) . '" style="background:#ff914d;color:#fff;padding:10px 18px;'
         . 'text-decoration:none;border-radius:4px;display:inline-block;">Accept invitation</a></p>'
         . '<p>This link expires in 7 days. If you were not expecting this, you can ignore this email.</p>';
     return ['You\'re invited to ADRS — ' . $orgName, email_layout('Team invitation', $body)];

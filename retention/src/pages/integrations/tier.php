@@ -3,10 +3,10 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/enterprise_lib.php';
 require_once __DIR__ . '/../../includes/billing_lib.php';
-require_role('admin');           // NOT enterprise-gated: this is the upgrade entry point.
+require_role('admin');
 $pdo = get_db();
 $error = null;
-$tier = get_setting($pdo, 'adrs_tier', 'core');
+$orgId = require_org_id();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
@@ -14,12 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'upgrade') {
         $licence = trim($_POST['licence_key'] ?? '');
         if ($licence === '') {
-            $error = 'A licence key is required to activate Enterprise.';
-        } elseif (!redeem_enterprise_licence($pdo, $licence, require_org_id())) {
+            $error = 'A licence key is required to activate API access.';
+        } elseif (!redeem_enterprise_licence($pdo, $licence, $orgId)) {
             $error = 'Invalid or already-used licence key.';
         } else {
             log_audit($pdo, 'schedule_reviewed', 'system', null, (int) current_user()['id'], ['tier_upgraded' => 'enterprise'], get_client_ip());
-            flash('success', 'ADRS Enterprise activated. Integration features are now available.');
+            flash('success', 'Licence activated. Integration features are now available.');
             redirect(APP_URL . '/integrations');
         }
     } elseif ($action === 'toggle_api') {
@@ -28,29 +28,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(APP_URL . '/integrations/tier');
     }
 }
-$tier = get_setting($pdo, 'adrs_tier', 'core');
 $apiOn = get_setting($pdo, 'enterprise_api_enabled', '0') === '1';
-$page_title = 'Tier & Licence';
+$page_title = 'Licence & API Access';
 $active_nav = has_role('admin') ? 'settings' : '';
 require __DIR__ . '/../../includes/layout_header.php';
 ?>
-<h1 class="h4 mb-3">Deployment Tier &amp; Licence</h1>
+<h1 class="h4 mb-3">Licence &amp; API Access</h1>
 <div class="card shadow-sm mb-3" style="max-width:720px"><div class="card-body">
-  <p>Current tier: <span class="badge bg-<?= $tier==='enterprise'?'success':'secondary' ?> fs-6"><?= strtoupper(escape_html($tier)) ?></span></p>
   <?php if ($error): ?><div class="alert alert-danger"><?= escape_html($error) ?></div><?php endif; ?>
 
-  <?php if ($tier !== 'enterprise'): ?>
-    <p class="text-muted">ADRS Core is active. Enter your Enterprise licence key to unlock the REST API, automatic data capture, connected systems, and outbound disposal dispatch. Your existing Core data is preserved.</p>
+  <?php if (!get_setting($pdo, 'enterprise_api_enabled', '0') && !organization_has_access($pdo, $orgId)): ?>
+    <p class="text-muted">Enter your product licence key to unlock full platform integrations, REST API access, and automated disposal instructions.</p>
     <form method="post">
       <?= csrf_field() ?><input type="hidden" name="action" value="upgrade">
-      <div class="mb-3" style="max-width:420px"><label class="form-label">Enterprise licence key</label><input name="licence_key" class="form-control" required placeholder="ADRS-ENT-XXXX-XXXX"></div>
-      <button class="btn btn-primary">Activate Enterprise</button>
+      <div class="mb-3" style="max-width:420px">
+        <label class="form-label">Licence key</label>
+        <input name="licence_key" class="form-control" required placeholder="ADRS-LIC-XXXX-XXXX">
+      </div>
+      <button class="btn btn-primary">Activate Licence</button>
     </form>
   <?php else: ?>
-    <div class="alert alert-success">Enterprise is active. Downgrade is not offered here to protect cross-system data integrity — contact 3Consulting if you need to change tiers.</div>
+    <div class="alert alert-success">Platform Licence is active and valid.</div>
     <p>REST API: <span class="badge bg-<?= $apiOn?'success':'secondary' ?>"><?= $apiOn?'enabled':'disabled' ?></span></p>
-    <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="toggle_api"><button class="btn btn-outline-<?= $apiOn?'warning">Disable':'success">Enable' ?> REST API</button></form>
-    <a href="<?= APP_URL ?>/integrations" class="btn btn-link">Go to Integrations →</a>
+    <form method="post" class="mb-3"><?= csrf_field() ?><input type="hidden" name="action" value="toggle_api"><button class="btn btn-outline-<?= $apiOn?'warning">Disable':'success">Enable' ?> REST API</button></form>
+    <a href="<?= APP_URL ?>/integrations" class="btn btn-link px-0">Go to Integrations →</a>
   <?php endif; ?>
 </div></div>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>

@@ -71,6 +71,6 @@ function ecard($label, $val, $href = null, $cls = '') {
   <a href="<?= APP_URL ?>/integrations/logs" class="btn btn-outline-secondary btn-sm mb-1">Integration Logs</a>
   <a href="<?= APP_URL ?>/integrations/queue" class="btn btn-outline-secondary btn-sm mb-1">Intake Queue</a>
   <a href="<?= APP_URL ?>/integrations/dispatch" class="btn btn-outline-secondary btn-sm mb-1">Disposal Dispatch</a>
-  <a href="<?= APP_URL ?>/integrations/tier" class="btn btn-outline-dark btn-sm mb-1">Tier &amp; Licence</a>
+  <a href="<?= APP_URL ?>/integrations/tier" class="btn btn-outline-dark btn-sm mb-1">Licence &amp; API</a>
 </div></div>
 <?php require __DIR__ . '/../../includes/layout_footer.php'; ?>

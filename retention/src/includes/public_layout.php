@@ -6,8 +6,8 @@ require_once __DIR__ . '/tenant_lib.php';
 function public_page_head(string $title, ?PDO $pdo = null): void {
     $pdo = $pdo ?? get_db();
     $appName = get_setting($pdo, 'white_label_name', APP_NAME) ?: APP_NAME;
-    $primary = get_setting($pdo, 'white_label_primary', '#C85C1A');
-    if (!preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $primary)) { $primary = '#C85C1A'; }
+    $primary = get_setting($pdo, 'white_label_primary', '#ff914d');
+    if (!preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $primary)) { $primary = '#ff914d'; }
     $footer = get_setting($pdo, 'white_label_footer', '3Consulting Limited');
     $GLOBALS['__public_footer'] = $footer;
     $GLOBALS['__public_app_name'] = $appName;
@@ -19,7 +19,7 @@ function public_page_head(string $title, ?PDO $pdo = null): void {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
 <style>:root{ --3c-orange: <?= $primary ?>; }</style>
 </head><body class="public-page"><?php
@@ -33,7 +33,7 @@ function public_page_nav(?PDO $pdo = null): void {
     <a class="navbar-brand fw-bold" href="<?= APP_URL ?>/" style="color:var(--3c-orange)"><?= escape_html($appName) ?></a>
     <div class="d-flex gap-2">
       <?php if (function_exists('is_saas_deployment') && is_saas_deployment($pdo)): ?>
-        <a class="btn btn-outline-light btn-sm me-2" href="<?= APP_URL ?>/register?tier=core">Start free trial</a>
+        <a class="btn btn-outline-light btn-sm me-2" href="<?= APP_URL ?>/register">Start free trial</a>
       <?php elseif (public_signup_enabled($pdo)): ?>
         <a class="btn btn-outline-light btn-sm me-2" href="<?= APP_URL ?>/signup">Create account</a>
       <?php endif; ?>
@@ -57,7 +57,7 @@ function public_page_foot(): void {
 </body></html><?php
 }
 
-/** Import the 30-category GDPR/NDPR library for an organisation when empty. */
+/** Import the regulatory category library for an organisation when empty. */
 function import_category_seed(PDO $pdo, int $organizationId = 1): int {
     $stmt = $pdo->prepare('SELECT COUNT(*) FROM data_categories WHERE organization_id = :o AND deleted_at IS NULL');
     $stmt->execute(['o' => $organizationId]);

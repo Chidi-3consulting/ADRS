@@ -1,0 +1,195 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0 fw-bold text-dark">Settings</h1>
+    <p class="text-muted small mb-0">Configure your organization details, retention parameters, and account security.</p>
+  </div>
+</div>
+
+{% if request.query_params.get('saved') %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  Settings saved successfully.
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+{% if error %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  {{ error }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<!-- Settings Sub-Navigation -->
+<ul class="nav nav-tabs settings-nav mb-4">
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if active_tab == 'organization' else '' }}" href="/settings?tab=organization">Organisation Profile</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if active_tab == 'general' else '' }}" href="/settings?tab=general">Retention &amp; Email</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if active_tab == 'twofa' else '' }}" href="/settings?tab=twofa">Two-Factor Auth</a>
+  </li>
+</ul>
+
+<!-- Tab 1: Organization Profile -->
+{% if active_tab == 'organization' %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-header bg-white fw-bold">Your Organisation</div>
+      <div class="card-body">
+        <p class="text-muted small mb-4">
+          Each company has one ADRS tenant. Your registered domain is fixed at sign-up and defines which work emails may join your team.
+        </p>
+        <form method="post" action="/settings/save">
+          <input type="hidden" name="tab" value="organization">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Organisation Name *</label>
+            <input name="name" class="form-control" required value="{{ org.name }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Registered Domain</label>
+            <input class="form-control bg-light" value="{{ org.primary_domain }}" disabled>
+            <div class="form-text small" style="font-size:0.7rem;">Team members must use <strong>@{{ org.primary_domain }}</strong> work emails.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Billing Contact Email *</label>
+            <input type="email" name="billing_email" class="form-control" required value="{{ org.billing_email or '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Timezone</label>
+            <input name="timezone" class="form-control" value="{{ timezone }}" placeholder="Africa/Lagos">
+          </div>
+          <button class="btn btn-primary fw-bold">Save Profile</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0 bg-white mb-3">
+      <div class="card-body">
+        <h2 class="h6 text-muted mb-3 fw-bold">Subscription</h2>
+        <p class="mb-2">Status: <span class="badge bg-{{ 'success' if org.status == 'active' else 'warning text-dark' }}">{{ org.status | upper }}</span></p>
+        <p class="mb-0 small text-muted">Trial: 14 days remaining</p>
+        <a href="/billing" class="btn btn-outline-primary btn-sm mt-3">Manage Billing</a>
+      </div>
+    </div>
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body small text-muted">
+        <strong>Tenant ID:</strong> {{ org.id }}<br>
+        <strong>Slug:</strong> {{ org.slug }}<br>
+        <strong>Registered:</strong> {{ org.created_at.strftime('%Y-%m-%d %H:%M') if org.created_at else '' }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab 2: General Settings (Retention & SMTP) -->
+{% elif active_tab == 'general' %}
+<ul class="nav nav-pills mb-4">
+  {% for sub_key, sec in general_sections.items() %}
+  <li class="nav-item">
+    <a class="nav-link {{ 'active' if sub_key == sub_tab else '' }}" href="/settings?tab=general&sub_tab={{ sub_key }}">
+      {{ sec.label }}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+
+<div class="card shadow-sm border-0 bg-white">
+  <div class="card-header bg-white">
+    <h2 class="h5 mb-1 fw-bold text-dark">{{ active_section.label }}</h2>
+    <p class="text-muted small mb-0">{{ active_section.description }}</p>
+  </div>
+  <div class="card-body">
+    <form method="post" action="/settings/save">
+      <input type="hidden" name="tab" value="general">
+      <input type="hidden" name="sub_tab" value="{{ sub_tab }}">
+      <div class="row">
+        {% for key, field in fields.items() %}
+        <div class="col-md-6 mb-3">
+          <label class="form-label small fw-semibold" for="setting_{{ key }}">{{ field.meta.label }}</label>
+          {% if field.meta.type == 'password' %}
+            <input id="setting_{{ key }}"
+                   type="password"
+                   name="{{ key }}"
+                   class="form-control"
+                   value=""
+                   placeholder="Leave blank to keep current"
+                   autocomplete="off">
+            {% if field.value %}
+              <div class="form-text text-success small" style="font-size:0.7rem;">A password is saved. Enter a new value only to change it.</div>
+            {% endif %}
+          {% else %}
+            <input id="setting_{{ key }}"
+                   type="{{ 'number' if field.meta.type == 'number' else 'text' }}"
+                   name="{{ key }}"
+                   class="form-control"
+                   value="{{ field.value }}"
+                   placeholder="{{ field.meta.placeholder }}"
+                   autocomplete="off"
+                   {{ 'min=1' if field.meta.type == 'number' else '' }}>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <button class="btn btn-primary fw-bold">Save {{ active_section.label }}</button>
+    </form>
+  </div>
+</div>
+
+<!-- Tab 3: Two-Factor Authentication -->
+{% elif active_tab == 'twofa' %}
+<div class="card shadow-sm border-0 bg-white mx-auto" style="max-width: 640px;">
+  <div class="card-body">
+    <h1 class="h5 mb-3 fw-bold text-dark">Two-Factor Authentication (2FA)</h1>
+
+    {% if new_recovery %}
+      <div class="alert alert-success">
+        <strong>2FA Enabled.</strong> Save these one-time recovery codes somewhere safe — they are shown only once:
+        <pre class="mt-2 mb-0 font-monospace bg-light p-2 text-dark">{{ new_recovery | join('\n') }}</pre>
+      </div>
+      <a href="/settings?tab=twofa" class="btn btn-primary w-100 fw-bold">Done</a>
+
+    {% elif user.twofa_enabled %}
+      <p class="text-success fw-semibold"><i class="bi bi-check-circle-fill"></i> Two-factor authentication is active on your account.</p>
+      <form method="post" action="/settings/save" onsubmit="return confirm('Disable 2FA? Your account will be protected by password only.');">
+        <input type="hidden" name="tab" value="twofa">
+        <input type="hidden" name="action" value="disable">
+        <div class="mb-3" style="max-width: 320px;">
+          <label class="form-label small fw-semibold">Confirm password to disable</label>
+          <input type="password" name="password" class="form-control form-control-sm" required>
+        </div>
+        <button class="btn btn-outline-danger btn-sm fw-bold">Disable 2FA</button>
+      </form>
+
+    {% else %}
+      <p class="text-muted small">Scan this QR code with Google Authenticator, Authy, or Microsoft Authenticator, then enter the 6-digit verification code to enable.</p>
+      <div class="text-center mb-3">
+        <canvas id="qr"></canvas>
+      </div>
+      <p class="small text-muted text-center">Can't scan? Enter this key manually: <code class="font-monospace text-primary fw-bold">{{ setup_secret }}</code></p>
+      <form method="post" action="/settings/save">
+        <input type="hidden" name="tab" value="twofa">
+        <input type="hidden" name="action" value="enable">
+        <div class="mb-3 mx-auto" style="max-width: 240px;">
+          <label class="form-label small fw-semibold">Verification Code</label>
+          <input name="code" class="form-control text-center font-monospace" placeholder="123456" autocomplete="one-time-code" required>
+        </div>
+        <button class="btn btn-primary w-100 fw-bold btn-sm">Enable 2FA</button>
+      </form>
+      <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js" integrity="sha384-HGmnkDZJy7mRkoARekrrj0VjEFSh9a0Z8qxGri/kTTAJkgR8hqD1lHsYSh3JdzRi" crossorigin="anonymous"></script>
+      <script>
+        window.addEventListener('DOMContentLoaded', () => {
+          if (typeof QRCode !== 'undefined') {
+            QRCode.toCanvas(document.getElementById('qr'), "{{ totp_uri }}", { width: 200 });
+          }
+        });
+      </script>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

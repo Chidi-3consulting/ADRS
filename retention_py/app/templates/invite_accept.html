@@ -1,0 +1,50 @@
+{% extends "public_layout.html" %}
+
+{% block content %}
+<div class="card shadow-lg border-0" style="max-width: 500px; margin: 3rem auto;">
+  <div class="card-body p-4 p-md-5">
+    <h1 class="h3 text-center mb-2 font-headings fw-bold">Accept Invitation</h1>
+    <p class="text-center text-muted small mb-4">Complete your registration to join the ADRS workspace.</p>
+
+    {% if not valid_invite %}
+      <div class="alert alert-danger">
+        Invalid or expired invitation link. Please request a new invitation from your workspace administrator.
+      </div>
+      <div class="text-center mt-3">
+        <a href="/login" class="btn btn-outline-primary">Return to Sign In</a>
+      </div>
+    {% else %}
+      <form method="post" action="/invite/accept">
+        <input type="hidden" name="token" value="{{ token }}">
+
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-semibold">Email Address</label>
+          <input type="email" class="form-control bg-light" value="{{ invite.email }}" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-semibold">Full Name</label>
+          <input type="text" class="form-control bg-light" value="{{ invite.name }}" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-semibold">Assigned Role</label>
+          <input type="text" class="form-control bg-light text-uppercase fw-bold text-primary" value="{{ invite.role }}" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-muted small fw-semibold">Choose Password <span class="text-danger">*</span></label>
+          <input type="password" name="password" class="form-control" minlength="8" required placeholder="Minimum 8 characters">
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label text-muted small fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+          <input type="password" name="password_confirm" class="form-control" minlength="8" required placeholder="Repeat password">
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">Activate Account & Join Workspace</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

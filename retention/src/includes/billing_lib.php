@@ -3,19 +3,70 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/tenant_lib.php';
 
-/** Plan prices and labels for the billing UI. */
+/** Plan prices in USD cents and labels for the billing UI. */
 function billing_plan_catalog(PDO $pdo): array {
     return [
-        'enterprise' => [
-            'name'   => 'ADRS Enterprise',
-            'amount' => (int) get_setting($pdo, 'enterprise_plan_amount_kobo', '25000000'),
-            'label'  => 'Enterprise API integrations, webhooks, and automated retention scheduler',
+        'yearly' => [
+            'name'     => 'Yearly Subscription',
+            'amount'   => (int) get_setting($pdo, 'yearly_plan_amount_cents', '39900'), // $399
+            'label'    => 'Full access to all API integrations, webhooks, and automated retention scheduler (billed annually)',
+            'interval' => 'year'
+        ],
+        'monthly' => [
+            'name'     => 'Monthly Subscription',
+            'amount'   => (int) get_setting($pdo, 'monthly_plan_amount_cents', '4000'), // $40
+            'label'    => 'Full access to all API integrations, webhooks, and automated retention scheduler (billed monthly)',
+            'interval' => 'month'
         ],
     ];
 }
 
 function format_ngn_kobo(int $kobo): string {
     return '₦' . number_format($kobo / 100, 2);
+}
+
+/** Detect visitor currency based on saved settings or request country code. */
+function detect_visitor_currency(PDO $pdo, ?int $orgId = null): array {
+    $country = null;
+    if ($orgId) {
+        $country = get_setting($pdo, 'org_country', null, $orgId);
+    }
+    if (!$country && isset($_SESSION['user']['organization_id'])) {
+        $country = get_setting($pdo, 'org_country', null, (int)$_SESSION['user']['organization_id']);
+    }
+    
+    if (!$country) {
+        $lang = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+        if (str_contains($lang, 'en-NG') || str_contains($lang, 'yo-NG') || str_contains($lang, 'ig-NG') || str_contains($lang, 'ha-NG')) {
+            $country = 'NG';
+        } else {
+            $country = $_SERVER['HTTP_CF_IPCOUNTRY'] ?? $_SERVER['HTTP_X_COUNTRY_CODE'] ?? 'US';
+        }
+    }
+    
+    $country = strtoupper($country);
+    
+    // Static rate map
+    $rates = [
+        'NG' => ['code' => 'NGN', 'symbol' => '₦', 'rate' => (float)get_setting($pdo, 'usd_to_ngn_rate', '1600')],
+        'GB' => ['code' => 'GBP', 'symbol' => '£', 'rate' => (float)get_setting($pdo, 'usd_to_gbp_rate', '0.78')],
+        'EU' => ['code' => 'EUR', 'symbol' => '€', 'rate' => (float)get_setting($pdo, 'usd_to_eur_rate', '0.92')],
+    ];
+    
+    return $rates[$country] ?? ['code' => 'USD', 'symbol' => '$', 'rate' => 1.0];
+}
+
+/** Format currency dynamically showing both USD and localized equivalent if different. */
+function format_detected_price(PDO $pdo, int $usdCents, ?int $orgId = null): string {
+    $geo = detect_visitor_currency($pdo, $orgId);
+    $usdAmount = $usdCents / 100;
+    
+    if ($geo['code'] === 'USD') {
+        return '$' . number_format($usdAmount, 2);
+    }
+    
+    $convertedAmount = $usdAmount * $geo['rate'];
+    return '$' . number_format($usdAmount, 2) . ' (' . $geo['symbol'] . number_format($convertedAmount, 2) . ' ' . $geo['code'] . ' equivalent)';
 }
 
 /** Fetch organisation billing row or null. */
@@ -85,17 +136,22 @@ function paystack_initialize(PDO $pdo, int $orgId, string $tier, string $email):
     }
     $plans = billing_plan_catalog($pdo);
     if (!isset($plans[$tier])) { throw new InvalidArgumentException('Invalid plan.'); }
-    $amount = $plans[$tier]['amount'];
+    
+    // Convert USD cents to NGN kobo for Paystack
+    $rate = (float) get_setting($pdo, 'usd_to_ngn_rate', '1600');
+    $amount_cents = $plans[$tier]['amount'];
+    $amount_kobo = (int) round(($amount_cents / 100) * $rate * 100);
+    
     $reference = 'adrs_' . $orgId . '_' . bin2hex(random_bytes(8));
 
     $pdo->prepare(
         'INSERT INTO payment_transactions (organization_id, reference, amount_kobo, plan_tier, status)
          VALUES (:o,:r,:a,:t,:s)'
-    )->execute(['o' => $orgId, 'r' => $reference, 'a' => $amount, 't' => $tier, 's' => 'pending']);
+    )->execute(['o' => $orgId, 'r' => $reference, 'a' => $amount_kobo, 't' => $tier, 's' => 'pending']);
 
     $payload = json_encode([
         'email'     => $email,
-        'amount'    => $amount,
+        'amount'    => $amount_kobo,
         'reference' => $reference,
         'currency'  => 'NGN',
         'metadata'  => ['organization_id' => $orgId, 'plan_tier' => $tier],
@@ -151,6 +207,8 @@ function paystack_verify_and_activate(PDO $pdo, string $reference): bool {
 
     $orgId = (int) $tx['organization_id'];
     $tier  = $tx['plan_tier'];
+    $actual_tier = 'enterprise';
+
     $pdo->prepare(
         "UPDATE payment_transactions SET status = 'success', completed_at = NOW(), provider_data = :d WHERE id = :id"
     )->execute(['d' => json_encode($data['data']), 'id' => $tx['id']]);
@@ -158,11 +216,10 @@ function paystack_verify_and_activate(PDO $pdo, string $reference): bool {
     $pdo->prepare(
         "UPDATE organizations SET subscription_status = 'active', tier = :t, status = 'active',
                 last_payment_at = NOW(), billing_email = :e WHERE id = :o"
-    )->execute(['t' => $tier, 'e' => $data['data']['customer']['email'] ?? null, 'o' => $orgId]);
+    )->execute(['t' => $actual_tier, 'e' => $data['data']['customer']['email'] ?? null, 'o' => $orgId]);
 
-    set_setting($pdo, 'adrs_tier', $tier, $orgId);
-    if ($tier === 'enterprise') {
-        set_setting($pdo, 'enterprise_api_enabled', '1', $orgId);
-    }
+    set_setting($pdo, 'adrs_tier', $actual_tier, $orgId);
+    set_setting($pdo, 'adrs_billing_plan', $tier, $orgId);
+    set_setting($pdo, 'enterprise_api_enabled', '1', $orgId);
     return true;
 }

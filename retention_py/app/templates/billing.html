@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Billing & Subscription</h1>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-white">
+        <h5 class="card-title mb-0">Current Plan</h5>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div class="me-4">
+            <div class="h2 mb-0 text-primary">
+              <i class="bi bi-shield-lock-fill"></i>
+              ADRS {{ org.tier | upper if org else 'CORE' }}
+            </div>
+          </div>
+          <div>
+            <span class="badge bg-{{ 'success' if org.subscription_status == 'active' else ('warning text-dark' if org.subscription_status == 'trial' else 'danger') }} fs-6">
+              {{ org.subscription_status | upper if org else 'TRIAL' }}
+            </span>
+          </div>
+        </div>
+
+        <dl class="row mb-0">
+          <dt class="col-sm-4 text-muted">Organisation</dt>
+          <dd class="col-sm-8">{{ org.name if org else '—' }}</dd>
+
+          <dt class="col-sm-4 text-muted">Domain</dt>
+          <dd class="col-sm-8">{{ org.primary_domain if org else '—' }}</dd>
+
+          <dt class="col-sm-4 text-muted">Billing Email</dt>
+          <dd class="col-sm-8">{{ org.billing_email or 'Not set' }}</dd>
+
+          <dt class="col-sm-4 text-muted">Last Payment</dt>
+          <dd class="col-sm-8">{{ org.last_payment_at.strftime('%d %b %Y') if org and org.last_payment_at else 'No payments yet' }}</dd>
+
+          <dt class="col-sm-4 text-muted">Account Created</dt>
+          <dd class="col-sm-8">{{ org.created_at.strftime('%d %b %Y') if org and org.created_at else '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm mb-3 border-primary">
+      <div class="card-body text-center">
+        <div class="h5 text-primary mb-1">ADRS Core</div>
+        <div class="display-6 fw-bold mb-1">$399<span class="fs-6 fw-normal text-muted">/year</span></div>
+        <div class="text-muted small mb-3">or $40/month</div>
+        <ul class="list-unstyled text-start small mb-3">
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Unlimited data categories</li>
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Automated retention scheduling</li>
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Dual-approval disposal workflows</li>
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Tamper-evident audit logging</li>
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> REST API access</li>
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Email retention alerts</li>
+          <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Compliance reporting</li>
+        </ul>
+        {% if org and org.subscription_status == 'trial' %}
+        <div class="alert alert-warning py-2 small mb-2">
+          <i class="bi bi-clock me-1"></i> You are on a 14-day free trial.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

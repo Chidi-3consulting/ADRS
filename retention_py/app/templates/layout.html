@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page_title or 'ADRS Solution' }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="wrapper">
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="brand pt-3">
+      <i class="bi bi-shield-lock-fill"></i>
+      <span>{{ wl_name or 'ADRS' }}</span>
+    </div>
+
+    {% if org_name %}
+    <div class="org-context px-3 pt-3 pb-2 border-bottom border-secondary">
+      <div class="org-context-name fw-bold text-white">{{ org_name }}</div>
+      <div class="org-context-meta mt-1">
+        <span class="badge bg-{{ 'success' if org_status == 'active' else 'warning text-dark' }} badge-sm">{{ org_status | upper }}</span>
+        {% if trial_days is not none %}
+          <span class="badge bg-warning text-dark badge-sm">{{ trial_days }}d trial</span>
+        {% endif %}
+      </div>
+      <div class="org-context-domain small mt-1" style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem;">@{{ org_domain }}</div>
+      <div class="org-context-law small mt-2" style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.85); line-height: 1.4;">
+        <i class="bi bi-shield-check text-warning me-1"></i>{{ law_label }}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Navigation Groups -->
+    <div class="nav-group-label">📊 Overview</div>
+    <a href="/dashboard" class="{{ 'active' if active_nav == 'dashboard' else '' }}">
+      <i class="bi bi-house"></i> Dashboard
+    </a>
+    <a href="/help" class="{{ 'active' if active_nav == 'help' else '' }}">
+      <i class="bi bi-book"></i> Solution Manual & Help
+    </a>
+
+    <div class="nav-group-label">📁 Data Life Cycle</div>
+    <a href="/categories" class="{{ 'active' if active_nav == 'categories' else '' }}">
+      <i class="bi bi-collection"></i> Data Categories
+    </a>
+    <a href="/records" class="{{ 'active' if active_nav == 'records' else '' }}">
+      <i class="bi bi-card-list"></i> Retention Register
+    </a>
+    <a href="/import" class="{{ 'active' if active_nav == 'import' else '' }}">
+      <i class="bi bi-upload"></i> Bulk CSV Import
+    </a>
+    <a href="/recalculations" class="{{ 'active' if active_nav == 'recalculations' else '' }}">
+      <i class="bi bi-calculator"></i> Pending Recalculations
+    </a>
+
+    {% if user_role in ['admin', 'dpo'] %}
+      <div class="nav-group-label">🔍 Compliance & Audit</div>
+      <a href="/audit" class="{{ 'active' if active_nav == 'audit' else '' }}">
+        <i class="bi bi-shield-check"></i> Audit Log
+      </a>
+      <a href="/reports" class="{{ 'active' if active_nav == 'reports' else '' }}">
+        <i class="bi bi-graph-up"></i> Analytics & Reports
+      </a>
+      <a href="/attachments" class="{{ 'active' if active_nav == 'attachments' else '' }}">
+        <i class="bi bi-paperclip"></i> Evidence Attachments
+      </a>
+    {% endif %}
+
+    <div class="nav-group-label">🔔 Notifications</div>
+    <a href="/notifications" class="{{ 'active' if active_nav == 'notifications' else '' }}">
+      <i class="bi bi-bell"></i> Inbox
+    </a>
+
+    {% if user_role == 'admin' %}
+      <div class="nav-group-label">🔌 API & Integrations</div>
+      <a href="/integrations" class="{{ 'active' if active_nav == 'integrations' else '' }}">
+        <i class="bi bi-hdd-network"></i> Integrations
+      </a>
+      <div class="nav-group-label">⚙️ Administration</div>
+      <a href="/users" class="{{ 'active' if active_nav == 'users' else '' }}">
+        <i class="bi bi-people"></i> Team Users
+      </a>
+      <a href="/settings" class="{{ 'active' if active_nav == 'settings' else '' }}">
+        <i class="bi bi-gear"></i> Settings
+      </a>
+      <a href="/billing" class="{{ 'active' if active_nav == 'billing' else '' }}">
+        <i class="bi bi-credit-card"></i> Billing & subscription
+      </a>
+    {% endif %}
+
+    {% if is_platform_admin %}
+      <div class="nav-group-label" style="color: #ffc107;">🛡️ Super Admin</div>
+      <a href="/platform" class="{{ 'active' if active_nav == 'platform' else '' }}" style="color: #ffc107 !important;">
+        <i class="bi bi-shield-lock"></i> Platform Admin
+      </a>
+    {% endif %}
+
+    <div class="mt-auto p-3 border-top border-secondary">
+      <div class="small text-light">{{ user_name }}</div>
+      <span class="badge bg-secondary badge-sm mt-1" style="font-size:0.65rem;">{{ user_role | upper }}</span>
+      <a class="d-block mt-2 small text-decoration-none" href="/profile" style="color: rgba(255,255,255,0.75);">My profile</a>
+      <a class="d-block mt-1 text-warning text-decoration-none" href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <div class="topbar d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary d-lg-none py-1 px-2" id="sidebar-toggle">
+          <i class="bi bi-list"></i>
+        </button>
+        <div>
+          <div class="h5 mb-0 fw-semibold">{{ page_title }}</div>
+          {% if org_name %}
+            <div class="small text-muted" style="font-size:0.75rem;">{{ org_name }} · {{ user_name }} · {{ user_role | upper }}</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <a class="position-relative text-dark" href="/notifications">
+          <i class="bi bi-bell fs-5"></i>
+          {% if unread_notifications_count is defined and unread_notifications_count > 0 %}
+            <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">{{ unread_notifications_count }}</span>
+          {% endif %}
+        </a>
+      </div>
+    </div>
+
+    <div class="content-area p-4">
+      <!-- Flash Messages -->
+      {% if flash_success %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          {{ flash_success }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endif %}
+      {% if flash_error %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          {{ flash_error }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<footer class="text-center text-muted small py-3" style="margin-left: 260px;" id="footer">
+  &copy; 2026 {{ wl_footer or '3Consulting Limited' }} · {{ wl_name or 'ADRS' }} v3.0.0
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const toggle = document.getElementById("sidebar-toggle");
+    const sidebar = document.getElementById("sidebar");
+    const footer = document.getElementById("footer");
+    if (toggle && sidebar) {
+        toggle.addEventListener("click", function() {
+            sidebar.classList.toggle("show");
+        });
+    }
+});
+</script>
+</body>
+</html>

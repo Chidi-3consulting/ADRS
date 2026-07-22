@@ -38,7 +38,7 @@ const ORG_SETTING_SECTIONS = [
         'description' => 'How ADRS appears to your team (white-label options).',
         'keys' => [
             'white_label_name'    => ['label' => 'Portal display name', 'type' => 'text'],
-            'white_label_primary' => ['label' => 'Primary colour (hex)', 'type' => 'text', 'placeholder' => '#C85C1A'],
+            'white_label_primary' => ['label' => 'Primary colour (hex)', 'type' => 'text', 'placeholder' => '#ff914d'],
             'white_label_logo_url'=> ['label' => 'Logo URL', 'type' => 'url'],
             'white_label_footer'  => ['label' => 'Footer text', 'type' => 'text'],
         ],
@@ -471,7 +471,7 @@ function get_framework_badge(string $f): string {
     $parts = array_filter(array_map('trim', explode(',', $f)));
     $html = '';
     foreach ($parts as $p) {
-        $cls = ['GDPR' => 'badge-gdpr', 'NDPR' => 'badge-ndpr', 'BOTH' => 'badge-both', 'CCPA' => 'bg-info text-dark', 'LGPD' => 'bg-success', 'POPIA' => 'bg-dark', 'DPA_KE' => 'bg-primary', 'UK_GDPR' => 'bg-primary', 'DPA_GH' => 'bg-success', 'PDPA_SG' => 'bg-info text-dark'][$p] ?? 'bg-secondary';
+        $cls = ['GDPR' => 'badge-gdpr', 'NDPR' => 'badge-ndpr', 'BOTH' => 'badge-both', 'CCPA' => 'bg-info text-dark', 'LGPD' => 'bg-success', 'POPIA' => 'bg-dark', 'DPA_KE' => 'bg-primary', 'UK_GDPR' => 'bg-primary', 'DPA_GH' => 'bg-success', 'PDPA_SG' => 'bg-info text-dark', 'DPDP' => 'badge-dpdp', 'PDPL' => 'badge-pdpl', 'PIPEDA' => 'badge-pipeda', 'APPs' => 'badge-apps', 'EGDPL' => 'badge-egdpl'][$p] ?? 'bg-secondary';
         $html .= '<span class="badge ' . $cls . ' me-1">' . escape_html($p) . '</span>';
     }
     return $html ?: '<span class="badge bg-secondary">—</span>';

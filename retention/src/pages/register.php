@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/public_layout.php';
 $pdo = get_db();
 if (is_logged_in()) { redirect(APP_URL . '/dashboard'); }
 
-$tier = ($_GET['tier'] ?? $_POST['tier'] ?? 'core') === 'enterprise' ? 'enterprise' : 'core';
+$tier = 'enterprise';
 $error = null;
 
 $form = [
@@ -21,7 +21,7 @@ $form = [
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
-    $tier = ($_POST['tier'] ?? 'core') === 'enterprise' ? 'enterprise' : 'core';
+    $tier = 'enterprise';
     $form['org_name']       = trim($_POST['org_name'] ?? '');
     $form['primary_domain'] = trim($_POST['primary_domain'] ?? '');
     $form['country']        = trim($_POST['country'] ?? '');
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$tierLabel = $tier === 'enterprise' ? 'ADRS Enterprise' : 'ADRS Core';
+$tierLabel = 'ADRS Platform';
 public_page_head('Start your free trial', $pdo);
 public_page_nav($pdo);
 ?>
@@ -87,7 +87,7 @@ public_page_nav($pdo);
       </div>
       <div class="card-body p-4">
         <p class="text-muted small">
-          Register your organisation's compliance portal — one company, one account. You become the administrator and can invite your DPO and data owners after sign-up.
+          Register your organisation's compliance portal: one company, one account. You become the administrator and can invite your DPO and data owners after sign-up.
         </p>
         <?php if ($error): ?><div class="alert alert-danger mb-4"><?= escape_html($error) ?></div><?php endif; ?>
         
@@ -116,15 +116,26 @@ public_page_nav($pdo);
               <label class="form-label fw-medium">Operating Country *</label>
               <select name="country" class="form-select text-dark" required>
                 <option value="">— select your country —</option>
-                <option value="NG" <?= $form['country'] === 'NG' ? 'selected' : '' ?>>Nigeria (NDPR)</option>
-                <option value="GB" <?= $form['country'] === 'GB' ? 'selected' : '' ?>>United Kingdom (UK GDPR)</option>
-                <option value="US" <?= $form['country'] === 'US' ? 'selected' : '' ?>>United States (CCPA)</option>
-                <option value="BR" <?= $form['country'] === 'BR' ? 'selected' : '' ?>>Brazil (LGPD)</option>
-                <option value="ZA" <?= $form['country'] === 'ZA' ? 'selected' : '' ?>>South Africa (POPIA)</option>
-                <option value="KE" <?= $form['country'] === 'KE' ? 'selected' : '' ?>>Kenya (DPA)</option>
-                <option value="GH" <?= $form['country'] === 'GH' ? 'selected' : '' ?>>Ghana (DPA)</option>
-                <option value="SG" <?= $form['country'] === 'SG' ? 'selected' : '' ?>>Singapore (PDPA)</option>
-                <option value="EU" <?= $form['country'] === 'EU' ? 'selected' : '' ?>>European Union (GDPR)</option>
+                <optgroup label="Popular Countries">
+                  <?php 
+                  $popular = ['NG', 'GB', 'US', 'EU', 'CA', 'AU', 'IN', 'AE', 'ZA', 'KE', 'GH', 'SG', 'BR', 'EG'];
+                  foreach ($popular as $code) {
+                      if (isset(ADRS_SUPPORTED_COUNTRIES[$code])) {
+                          $sel = $form['country'] === $code ? 'selected' : '';
+                          echo '<option value="' . $code . '" ' . $sel . '>' . escape_html(ADRS_SUPPORTED_COUNTRIES[$code]) . '</option>';
+                      }
+                  }
+                  ?>
+                </optgroup>
+                <optgroup label="All Countries">
+                  <?php 
+                  foreach (ADRS_SUPPORTED_COUNTRIES as $code => $name) {
+                      if (in_array($code, $popular, true)) continue;
+                      $sel = $form['country'] === $code ? 'selected' : '';
+                      echo '<option value="' . $code . '" ' . $sel . '>' . escape_html($name) . '</option>';
+                  }
+                  ?>
+                </optgroup>
               </select>
             </div>
           </div>

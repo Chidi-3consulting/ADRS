@@ -38,7 +38,6 @@ require __DIR__ . '/../../includes/layout_header.php';
   <h1 class="h4 mb-0"><?= escape_html($category['name']) ?> <?= get_framework_badge($category['compliance_framework']) ?></h1>
   <div>
     <?php if (has_role('admin','dpo')): ?><a href="<?= APP_URL ?>/categories/edit?id=<?= $id ?>" class="btn btn-outline-primary">Edit</a><?php endif; ?>
-    <a href="<?= APP_URL ?>/categories" class="btn btn-secondary">Back</a>
   </div>
 </div>
 <div class="row g-3 mb-3">

@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">API Keys</h1>
+    <p class="text-muted small mb-0">Authentication credentials for external systems calling the ADRS REST API.</p>
+  </div>
+  <a href="/integrations/keys/create" class="btn btn-primary btn-sm"><i class="bi bi-key me-1"></i> Generate API Key</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    {% if not keys %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-key fs-2 d-block mb-2"></i>
+        No API keys generated yet. Click "Generate API Key" to authenticate external API integrations.
+      </div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Key Name</th>
+              <th>System</th>
+              <th>Prefix</th>
+              <th>Permissions</th>
+              <th>Rate Limit/min</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for k in keys %}
+              <tr>
+                <td class="fw-semibold">{{ k.key_name }}</td>
+                <td>{{ k.system_id }}</td>
+                <td><code>{{ k.key_prefix }}...</code></td>
+                <td>
+                  {% if k.permissions %}
+                    <span class="badge bg-light text-dark border">{{ k.permissions | join(', ') }}</span>
+                  {% else %}
+                    <span class="text-muted small">None</span>
+                  {% endif %}
+                </td>
+                <td>{{ k.rate_limit_per_min }}</td>
+                <td>
+                  {% if k.is_active and not k.revoked_at %}
+                    <span class="badge bg-success">Active</span>
+                  {% else %}
+                    <span class="badge bg-danger">Revoked</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if k.is_active and not k.revoked_at %}
+                    <form method="post" action="/integrations/keys/revoke/{{ k.id }}" onsubmit="return confirm('Revoke this API Key? Connected system will lose access immediately.');">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

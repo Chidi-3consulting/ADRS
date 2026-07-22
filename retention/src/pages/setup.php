@@ -95,7 +95,7 @@ public_page_head('Initial setup', $pdo);
         </div>
         <div class="form-check mb-3">
           <input class="form-check-input" type="checkbox" name="import_categories" id="import_categories" value="1" checked>
-          <label class="form-check-label" for="import_categories">Import the 30-category GDPR/NDPR library</label>
+          <label class="form-check-label" for="import_categories">Import the regulatory category library</label>
         </div>
         <button class="btn btn-primary w-100">Complete setup</button>
       </form>

@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Analytics & Reports</h1>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-2">
+    <div class="card shadow-sm text-center">
+      <div class="card-body py-3">
+        <div class="h3 mb-0">{{ total_records }}</div>
+        <div class="text-muted small">Total Records</div>
+      </div>
+    </div>
+  </div>
+  {% for status, count in status_counts.items() %}
+  <div class="col-md-2">
+    <div class="card shadow-sm text-center">
+      <div class="card-body py-3">
+        <div class="h3 mb-0 text-{{ 'success' if status == 'active' else ('warning' if status == 'due_review' else ('danger' if status in ['disposal_requested','legal_hold'] else 'secondary')) }}">
+          {{ count }}
+        </div>
+        <div class="text-muted small">{{ status | replace('_', ' ') | title }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Status Distribution Bar -->
+{% if total_records > 0 %}
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white"><h5 class="card-title mb-0">Status Distribution</h5></div>
+  <div class="card-body">
+    <div class="progress" style="height: 28px;">
+      {% set colors = {'active': 'success', 'due_review': 'warning', 'disposal_requested': 'info', 'legal_hold': 'danger', 'disposed': 'secondary'} %}
+      {% for status, count in status_counts.items() %}
+        {% if count > 0 %}
+        <div class="progress-bar bg-{{ colors.get(status, 'secondary') }}"
+             role="progressbar"
+             style="width: {{ (count / total_records * 100) | round(1) }}%"
+             title="{{ status | replace('_', ' ') | title }}: {{ count }}">
+          {{ status | replace('_', ' ') | title }} ({{ count }})
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Category Breakdown -->
+<div class="card shadow-sm">
+  <div class="card-header bg-white"><h5 class="card-title mb-0">Records by Data Category</h5></div>
+  <div class="card-body">
+    {% if cat_stats | length == 0 %}
+    <p class="text-muted mb-0">No data categories defined yet.</p>
+    {% else %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Framework</th>
+            <th>Records</th>
+            <th>Distribution</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for c in cat_stats %}
+          <tr>
+            <td class="fw-semibold">{{ c.name }}</td>
+            <td>
+              {% for f in c.framework.split(',') %}
+              <span class="badge {{ get_framework_badge(f.strip()) }} me-1">{{ f.strip() }}</span>
+              {% endfor %}
+            </td>
+            <td>{{ c.count }}</td>
+            <td style="width:40%;">
+              {% if total_records > 0 %}
+              <div class="progress" style="height:18px;">
+                <div class="progress-bar bg-primary" style="width:{{ (c.count / total_records * 100) | round(1) }}%">
+                  {{ (c.count / total_records * 100) | round(1) }}%
+                </div>
+              </div>
+              {% else %}
+              <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

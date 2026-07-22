@@ -2,8 +2,15 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/analytics_lib.php';
+require_once __DIR__ . '/../../includes/tenant_lib.php';
+require_once __DIR__ . '/../../includes/country_regulation_map.php';
 require_role('admin', 'dpo');
 $pdo = get_db();
+$org = fetch_current_organization($pdo);
+$orgCountry = $org['country'] ?? 'OTHER';
+$regLabels = get_country_regulation_labels($orgCountry);
+$annualReportLabel = $regLabels['audit_label'] ?? 'Annual Compliance Report';
+
 $m = compliance_metrics($pdo);
 $byMonth = disposals_by_month($pdo, 12);
 $byCat = records_by_category($pdo, 8);
@@ -47,6 +54,9 @@ function rcard($label, $val, $icon, $cls = '', $subText = '') {
     <p class="text-muted mb-0">Platform-wide statistics and historical retention reporting.</p>
   </div>
   <div class="d-flex gap-2 no-print">
+    <a href="<?= APP_URL ?>/audit/export" class="btn btn-primary d-inline-flex align-items-center gap-2">
+      <i class="bi bi-file-earmark-spreadsheet"></i> Download <?= escape_html($annualReportLabel) ?>
+    </a>
     <a href="<?= APP_URL ?>/reports?export=csv" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
       <i class="bi bi-download"></i> Export CSV
     </a>
@@ -71,7 +81,7 @@ function rcard($label, $val, $icon, $cls = '', $subText = '') {
     rcard('Due for Review', $m['records_due'], 'bi-bell-fill', $m['records_due'] > 0 ? 'yellow' : '', 'Action required'); 
     rcard('Overdue Retention', $m['overdue'], 'bi-exclamation-octagon-fill', $m['overdue'] > 0 ? 'danger' : '', 'Requires signature'); 
     rcard('Due in 30 Days', $m['upcoming_30d'], 'bi-calendar-event', '', 'Approaching review'); 
-    rcard('On Legal Hold', $m['records_hold'], 'bi-lock-fill', 'teal', 'Writers block enabled'); 
+    rcard('On Legal Hold', $m['records_hold'], 'bi-lock-fill', 'teal', 'Active legal preservation'); 
   ?>
 </div>
 
@@ -124,13 +134,13 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Disposals', 
                 data: Object.values(dm), 
-                borderColor: '#C85C1A', 
-                backgroundColor: 'rgba(200, 92, 26, 0.08)', 
+                borderColor: '#ff914d', 
+                backgroundColor: 'rgba(255, 145, 77, 0.08)', 
                 fill: true, 
                 tension: 0.35,
                 borderWidth: 2.5,
                 pointRadius: 4,
-                pointBackgroundColor: '#C85C1A'
+                pointBackgroundColor: '#ff914d'
             }]
         }, 
         options: {

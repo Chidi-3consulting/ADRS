@@ -12,12 +12,11 @@ require_once __DIR__ . '/records_lib.php';
  * Tier gating: callers must verify get_setting($pdo,'adrs_tier')==='enterprise' first.
  */
 
-/** UI gate: redirect to the dashboard unless the deployment is on the Enterprise tier. */
+/** UI gate: no-op — ADRS is now Enterprise-only SaaS; all features are always available. */
 function require_enterprise(PDO $pdo): void {
-    if (get_setting($pdo, 'adrs_tier', 'core') !== 'enterprise') {
-        if (function_exists('flash')) { flash('warning', 'That feature requires the ADRS Enterprise tier.'); }
-        redirect(APP_URL . '/dashboard');
-    }
+    // Enterprise-only SaaS: every organisation is provisioned as enterprise.
+    // This function is retained for backward compatibility with integration pages.
+    return;
 }
 
 /* ----------------------------- API keys (E1) ----------------------------- */
@@ -370,12 +369,13 @@ function run_enterprise_engine_steps(PDO $pdo): array {
 }
 
 /** Real webhook sender via cURL (used in production; tests inject a stub). Returns [http_code, body]. */
-function enterprise_http_post(string $url, array $payload): array {
+function enterprise_http_post(string $url, array $payload, array $headers = []): array {
     $ch = curl_init($url);
+    $httpHeaders = array_merge(['Content-Type: application/json'], $headers);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_HTTPHEADER => $httpHeaders,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 15,
         CURLOPT_CONNECTTIMEOUT => 8,
@@ -383,6 +383,5 @@ function enterprise_http_post(string $url, array $payload): array {
     $body = curl_exec($ch);
     $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     if ($body === false) { $body = curl_error($ch); $code = 0; }
-    return [$code, $body]; // curl_close() is a no-op since PHP 8.0 and deprecated in 8.5
-
+    return [$code, $body];
 }

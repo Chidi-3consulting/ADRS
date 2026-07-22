@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h4 mb-0">Field Mappings</h1>
+    <p class="text-muted small mb-0">Map external system fields to ADRS Data Categories and fields.</p>
+  </div>
+  <a href="/integrations/mappings/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> Create Mapping</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    {% if not mappings %}
+      <div class="p-4 text-center text-muted">
+        <i class="bi bi-diagram-3 fs-2 d-block mb-2"></i>
+        No field mappings configured yet. Click "Create Mapping" to map external API schemas to ADRS categories.
+      </div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>System ID</th>
+              <th>Object Type</th>
+              <th>External Field</th>
+              <th>ADRS Field</th>
+              <th>Category ID</th>
+              <th>Required</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in mappings %}
+              <tr>
+                <td>{{ m.system_id }}</td>
+                <td><span class="badge bg-light text-dark border">{{ m.external_object_type }}</span></td>
+                <td><code>{{ m.external_field }}</code></td>
+                <td><code>{{ m.adrs_field }}</code></td>
+                <td>Category #{{ m.category_id }}</td>
+                <td>{{ 'Yes' if m.is_required else 'No' }}</td>
+                <td>
+                  <form method="post" action="/integrations/mappings/delete/{{ m.id }}" onsubmit="return confirm('Delete this mapping?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -36,7 +36,7 @@ require __DIR__ . '/_nav.php';
 echo settings_nav('general');
 ?>
 <div class="d-flex flex-wrap gap-2 mb-3">
-  <a href="<?= APP_URL ?>/integrations/tier" class="btn btn-outline-secondary btn-sm"><i class="bi bi-layers"></i> Tier &amp; licence</a>
+  <a href="<?= APP_URL ?>/integrations/tier" class="btn btn-outline-secondary btn-sm"><i class="bi bi-key"></i> Licence &amp; API</a>
   <a href="<?= APP_URL ?>/audit?verify=1" class="btn btn-outline-secondary btn-sm"><i class="bi bi-shield-check"></i> Verify audit integrity</a>
   <a href="<?= APP_URL ?>/webhooks" class="btn btn-outline-secondary btn-sm"><i class="bi bi-broadcast"></i> Ops webhooks</a>
 </div>

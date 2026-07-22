@@ -17,9 +17,9 @@ $k = $pdo->query(
        SUM(dr.status != 'disposed') AS active,
        SUM(dr.status = 'due_review') AS due_review,
        SUM(dr.retention_end_date < CURDATE() AND dr.status != 'disposed') AS overdue,
-       SUM(dr.escalation_sent_at IS NOT NULL AND dr.status='due_review') AS escalated,
        SUM(dr.legal_hold = 1) AS on_hold,
-       SUM(dr.status = 'disposed' AND MONTH(dr.disposed_at)=MONTH(CURDATE()) AND YEAR(dr.disposed_at)=YEAR(CURDATE())) AS disposed_month
+       SUM(dr.status = 'disposal_requested') AS disposal_requested,
+       SUM(dr.status = 'disposed') AS disposed
      FROM data_records dr JOIN data_categories dc ON dc.id = dr.category_id AND dc.deleted_at IS NULL
      WHERE dr.organization_id = {$orgId} AND dr.deleted_at IS NULL{$ownerScope}"
 )->fetch();
@@ -42,7 +42,7 @@ function dash_card(string $label, int $val, string $cls, string $icon, string $h
         <div class="fs-3 text-secondary opacity-50"><i class="bi ' . $icon . '"></i></div>
       </div>
     </div>';
-    return '<div class="col-sm-6 col-md-3 mb-4">' . ($href ? '<a class="text-decoration-none" href="' . $href . '">' . $inner . '</a>' : $inner) . '</div>';
+    return '<div class="col-sm-6 col-md-4 mb-4">' . ($href ? '<a class="text-decoration-none" href="' . $href . '">' . $inner . '</a>' : $inner) . '</div>';
 }
 ?>
 
@@ -52,16 +52,17 @@ function dash_card(string $label, int $val, string $cls, string $icon, string $h
     <p class="text-muted mb-0">
       <?php
       $__dashOrg = fetch_current_organization($pdo);
-      if ($__dashOrg): ?>
-        <span class="fw-semibold text-dark"><?= escape_html($__dashOrg['name']) ?></span> ·
+      if ($__dashOrg): 
+        require_once __DIR__ . '/../includes/country_regulation_map.php';
+        $__labels = get_country_regulation_labels($__dashOrg['country'] ?? 'OTHER');
+      ?>
+        <span class="fw-semibold text-dark"><?= escape_html($__dashOrg['name']) ?></span>
+        <span class="badge bg-light text-dark border ms-1 me-2 px-2 py-1 font-monospace" style="font-size: 0.72rem;">
+          <i class="bi bi-shield-check text-success me-1"></i><?= escape_html($__labels['law']) ?> · <?= escape_html($__labels['authority']) ?>
+        </span>
       <?php endif; ?>
       Welcome back, <?= escape_html($__user['name']) ?> (<?= get_role_badge($__user['role']) ?>)
     </p>
-  </div>
-  <div class="no-print">
-    <a href="<?= APP_URL ?>/records?action=create" class="btn btn-primary d-inline-flex align-items-center gap-2">
-      <i class="bi bi-plus-circle"></i> Register Record
-    </a>
   </div>
 </div>
 
@@ -77,10 +78,12 @@ function dash_card(string $label, int $val, string $cls, string $icon, string $h
 
 <!-- Stat Widgets Row -->
 <div class="row">
-  <?= dash_card('Active records', (int)$k['active'], '', 'bi-card-list', APP_URL.'/records') ?>
+  <?= dash_card('Active records', (int)$k['active'], 'orange', 'bi-card-list', APP_URL.'/records') ?>
   <?= dash_card('Due for review', (int)$k['due_review'], 'yellow', 'bi-bell-fill', APP_URL.'/records?status=due_review') ?>
-  <?= dash_card('Overdue retention', (int)$k['overdue'], 'danger', 'bi-exclamation-octagon-fill', APP_URL.'/records') ?>
-  <?= dash_card('On legal hold', (int)$k['on_hold'], 'teal', 'bi-lock-fill', APP_URL.'/records') ?>
+  <?= dash_card('Overdue retention', (int)$k['overdue'], 'danger', 'bi-exclamation-octagon-fill', APP_URL.'/records?status=overdue') ?>
+  <?= dash_card('On legal hold', (int)$k['on_hold'], 'teal', 'bi-lock-fill', APP_URL.'/records?status=legal_hold') ?>
+  <?= dash_card('Pending approval', (int)$k['disposal_requested'], 'yellow', 'bi-shield-check', APP_URL.'/records?status=disposal_requested') ?>
+  <?= dash_card('Total disposed', (int)$k['disposed'], 'secondary', 'bi-trash-fill', APP_URL.'/records?status=disposed') ?>
 </div>
 
 <div class="row g-4 mb-4">

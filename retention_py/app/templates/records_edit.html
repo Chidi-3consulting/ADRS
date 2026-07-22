@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card shadow-sm mx-auto" style="max-width: 680px;">
+  <div class="card-header bg-white py-3">
+    <h1 class="h4 mb-0 fw-bold text-dark">Edit Record</h1>
+    <p class="text-muted small mb-0">Category: <strong>{{ record.category.name }}</strong></p>
+  </div>
+  <div class="card-body">
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/records/edit/{{ record.id }}">
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Record Reference / Unique ID *</label>
+        <input type="text" name="record_reference" class="form-control" value="{{ record.record_reference }}" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Data Subject Type</label>
+        <input type="text" name="data_subject_type" class="form-control" value="{{ record.data_subject_type or '' }}" placeholder="e.g. Customer, Employee">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Collection Date *</label>
+        <input type="date" name="collection_date" class="form-control" value="{{ record.collection_date }}" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Notes</label>
+        <textarea name="notes" class="form-control" rows="3">{{ record.notes or '' }}</textarea>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary fw-bold px-4">Save Changes</button>
+        <a href="/records/view/{{ record.id }}" class="btn btn-secondary px-4">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
