@@ -1,5 +1,12 @@
-# Prompt 09 — DSAR Tracking Module (C1)
+﻿# Prompt 09 — DSAR Tracking Module (C1)
 
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 ## Context
 Data Subject Access Request management. Access: Admin + DPO only.
 GDPR Art. 12: respond within 30 days. NDPR: same standard applies.

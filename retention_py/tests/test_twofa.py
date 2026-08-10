@@ -1,5 +1,5 @@
-"""
-Test 2FA (TOTP) — ported from PHP twofa_test.php.
+﻿"""
+Test 2FA (TOTP).
 Tests TOTP generation, verification, recovery codes, and URI generation.
 """
 import pytest

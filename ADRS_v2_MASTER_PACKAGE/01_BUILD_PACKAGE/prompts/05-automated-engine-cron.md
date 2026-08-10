@@ -1,5 +1,12 @@
-# Prompt 05 — Automated Retention Engine v3 (All Decisions Applied)
+﻿# Prompt 05 — Automated Retention Engine v3 (All Decisions Applied)
 
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 ## Context
 CLI-only script. Runs via cPanel Cron (production) or Windows Task Scheduler (local).
 Refer to `.github/copilot-instructions.md` for all business rules before writing code.

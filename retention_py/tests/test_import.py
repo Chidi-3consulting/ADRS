@@ -1,5 +1,5 @@
-"""
-Test import records — ported from PHP import_test.php.
+﻿"""
+Test import records.
 Tests CSV import validation + processing.
 """
 import pytest

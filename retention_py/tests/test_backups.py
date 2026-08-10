@@ -1,5 +1,5 @@
-"""
-Test backups — ported from PHP backups_test.php.
+﻿"""
+Test backups.
 Tests database backup and pruning.
 """
 import pytest

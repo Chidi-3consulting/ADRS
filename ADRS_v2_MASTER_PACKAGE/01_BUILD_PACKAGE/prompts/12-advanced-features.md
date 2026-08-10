@@ -1,5 +1,12 @@
-# Prompt 12 — Advanced Features: Settings, Recalculations Queue & System Tools
+﻿# Prompt 12 — Advanced Features: Settings, Recalculations Queue & System Tools
 
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 ## Context
 These are the "gap-closing" pages identified in the pre-build review.
 All reference `.github/copilot-instructions.md` for base rules.

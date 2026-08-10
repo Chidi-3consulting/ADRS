@@ -1,5 +1,12 @@
-# Prompt 04 — Retention Schedule Manager v4 (BUG-05 FIXED)
+﻿# Prompt 04 — Retention Schedule Manager v4 (BUG-05 FIXED)
 # BUG-05 FIX: api/get_category.php endpoint defined here
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 
 ## Context
 Decisions B1, B3, B4, B5 apply. Refer to copilot-instructions.md.

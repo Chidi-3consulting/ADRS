@@ -1,5 +1,5 @@
-"""
-Test setup wizard — ported from PHP setup_test.php.
+﻿"""
+Test setup wizard.
 Tests setup_is_complete, and the POST /setup flow.
 """
 import pytest

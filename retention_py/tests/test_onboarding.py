@@ -1,5 +1,5 @@
-"""
-Test onboarding — ported from PHP onboarding_test.php.
+﻿"""
+Test onboarding.
 Tests category seeding per country.
 """
 import pytest

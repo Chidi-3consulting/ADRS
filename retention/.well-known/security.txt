@@ -1,9 +1,0 @@
-# ADRS — Automated Data Retention System (3Consulting)
-# Responsible disclosure policy (RFC 9116).
-Contact: mailto:security@3consult-ng.com
-Expires: 2027-12-31T23:59:59Z
-Preferred-Languages: en
-Canonical: https://retention.3consult-ng.com/.well-known/security.txt
-Policy: https://retention.3consult-ng.com/.well-known/security.txt
-# Please report vulnerabilities privately to the contact above. We aim to acknowledge
-# within 3 business days. Do not access, modify, or exfiltrate data that is not yours.

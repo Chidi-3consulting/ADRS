@@ -1,5 +1,5 @@
-"""
-Test password policy — ported from PHP password_policy_test.php.
+﻿"""
+Test password policy.
 Tests password strength enforcement.
 """
 import pytest

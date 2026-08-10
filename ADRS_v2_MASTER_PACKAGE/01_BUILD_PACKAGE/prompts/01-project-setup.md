@@ -1,5 +1,12 @@
-# Prompt 01 — Project Setup, Config, Helpers & Layout (v3)
+﻿# Prompt 01 — Project Setup, Config, Helpers & Layout (v3)
 
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 ## Pre-requisites
 - Laragon running on Windows, PHP 8.2 active
 - Database `data_retention_local` created with schema.sql + seed imported

@@ -1,5 +1,12 @@
-# Prompt 07 — Email Notification System v3
+﻿# Prompt 07 — Email Notification System v3
 
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 ## Context
 PHPMailer — 3 files manually included (no Composer). Mailpit on local.
 All SMTP config from `database.php` constants (not the DB settings table).

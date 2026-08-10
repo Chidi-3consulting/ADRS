@@ -1,5 +1,12 @@
-# Prompt 03 — Data Category Register v3 (All Decisions Applied)
+﻿# Prompt 03 — Data Category Register v3 (All Decisions Applied)
 
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 ## Context
 Refer to `.github/copilot-instructions.md`. Decisions B1, B2, B5 directly affect this module.
 Foundation (Prompt 01) and Auth (Prompt 02) are complete.

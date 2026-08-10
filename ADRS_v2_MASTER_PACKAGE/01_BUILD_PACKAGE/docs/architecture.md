@@ -4,125 +4,145 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              InMotion Shared Hosting (cPanel)            │
+│                  Deployment Server                       │
 │                                                          │
 │  ┌──────────────┐    ┌──────────────┐                   │
-│  │  Browser UI  │    │  cPanel Cron │                   │
-│  │ (Bootstrap5) │    │  (Daily 1AM) │                   │
+│  │  Browser UI  │    │  APScheduler │                   │
+│  │ (Bootstrap5) │    │  (Background │                   │
+│  │   + Jinja2   │    │   Tasks)     │                   │
 │  └──────┬───────┘    └──────┬───────┘                   │
 │         │                   │                            │
 │         ▼                   ▼                            │
 │  ┌──────────────────────────────────────┐               │
-│  │         Pure PHP 8.2 Layer           │               │
+│  │     FastAPI + Uvicorn (Python)      │               │
 │  │                                      │               │
-│  │  pages/     engine/    includes/     │               │
-│  │  ├ login    retention  ├ db.php      │               │
-│  │  ├ dashboard _cron.php ├ auth.php    │               │
-│  │  ├ categories          ├ helpers.php │               │
-│  │  ├ schedule            ├ mailer.php  │               │
-│  │  ├ audit               └ templates  │               │
-│  │  └ notifications                     │               │
+│  │  routes/     engine.py   app/       │               │
+│  │  ├ public     retention   ├ config  │               │
+│  │  ├ dashboard  engine      ├ auth    │               │
+│  │  ├ categories enterprise  ├ helpers │               │
+│  │  ├ records    backups     ├ models  │               │
+│  │  ├ app_pages              └ middle  │               │
+│  │  └ api_v1                  ware     │               │
 │  └──────────────────┬───────────────────┘               │
 │                     │                                    │
 │         ┌───────────▼────────────┐                      │
-│         │     MySQL 8.0          │                      │
+│         │  SQLAlchemy ORM        │                      │
 │         │  ┌─────────────────┐  │                      │
+│         │  │ SQLite (dev)    │  │                      │
+│         │  │ MySQL (prod)    │  │                      │
+│         │  │                 │  │                      │
+│         │  │ organizations   │  │                      │
 │         │  │ users           │  │                      │
 │         │  │ data_categories │  │                      │
 │         │  │ data_records    │  │                      │
 │         │  │ audit_log       │  │                      │
 │         │  │ notifications   │  │                      │
-│         │  │ schedule_reviews│  │                      │
 │         │  │ system_settings │  │                      │
 │         │  └─────────────────┘  │                      │
 │         └────────────────────────┘                      │
 │                                                          │
 │  ┌─────────────────────────────────────┐                │
-│  │     cPanel Email (SMTP/SSL :465)    │                │
-│  │     PHPMailer → Notification emails │                │
+│  │     SMTP (smtplib)                  │                │
+│  │     Mailer → Notification emails    │                │
 │  └─────────────────────────────────────┘                │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Deployment Steps (InMotion Shared Hosting)
+## Local Development Setup
 
-### Step 1: Upload files
+### Prerequisites
+- Python 3.10 or later
+- pip (Python package manager)
+
+### Step 1: Install dependencies
 ```bash
-# Via cPanel File Manager or FTP:
-# Upload project to: /home/username/public_html/data-retention/
+cd retention_py
+pip install -r requirements.txt
 ```
 
-### Step 2: Create MySQL database in cPanel
-1. Login to cPanel → MySQL Databases
-2. Create database: `username_retention`
-3. Create user: `username_retapp` with strong password
-4. Add user to database with ALL PRIVILEGES (except GRANT OPTION)
-5. Then in phpMyAdmin, restrict audit_log:
+### Step 2: Start the development server
+```powershell
+# Windows (PowerShell) — auto-detects LAN IP, runs on port 8200
+.\dev-start.ps1
+
+# Or directly:
+python main.py
+```
+
+The application uses SQLite by default for local development (`retention.db`).
+
+### Step 3: Register your organisation
+Navigate to `http://localhost:8200/register` and create your first organisation.
+Default seeded credentials (if using seed data): `admin@3consult-ng.com` / `password`.
+
+---
+
+## Production Deployment
+
+### Step 1: Provision the server
+Any Linux/Windows server with Python 3.10+ and pip. Examples:
+- Ubuntu VPS (DigitalOcean, AWS, Azure)
+- Docker container
+- PaaS (Railway, Render, Fly.io)
+
+### Step 2: Install dependencies
+```bash
+cd retention_py
+pip install -r requirements.txt
+```
+
+### Step 3: Configure environment variables
+Set the following environment variables (or use a `.env` file):
+
+```bash
+APP_ENV=production
+APP_URL=https://retention.3consult-ng.com
+SECRET_KEY=your_strong_random_secret_key_here
+DATABASE_URL=mysql+pymysql://user:pass@host:3306/adrs_db
+ALLOWED_HOSTS=retention.3consult-ng.com
+```
+
+### Step 4: Run database migrations
+```bash
+alembic upgrade head
+```
+
+### Step 5: Start the application
+```bash
+# Production — use a process manager (systemd, supervisor, or Docker)
+uvicorn main:app --host 0.0.0.0 --port 8200 --workers 4
+```
+
+For MySQL production, restrict the audit_log table:
 ```sql
-REVOKE UPDATE, DELETE ON username_retention.audit_log FROM 'username_retapp'@'localhost';
+REVOKE UPDATE, DELETE ON adrs_db.audit_log FROM 'adrs_user'@'%';
 ```
 
-### Step 3: Import schema and seed data
-Via phpMyAdmin:
-1. Select your database
-2. Import `sql/schema.sql`
-3. Import `sql/seed_gdpr_ndpr.sql`
+### Step 6: Reverse proxy (recommended)
+Put Nginx or Caddy in front of Uvicorn for TLS termination:
 
-### Step 4: Configure the application
-Edit `src/config/database.php`:
-```php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'username_retention');
-define('DB_USER', 'username_retapp');
-define('DB_PASS', 'your_strong_password');
-define('APP_URL', 'https://yourdomain.com/data-retention');
-define('APP_ENV', 'production');
+```nginx
+server {
+    listen 443 ssl;
+    server_name retention.3consult-ng.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8200;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
-Update SMTP settings via the application's admin panel (system settings page) after first login.
-
-### Step 5: Set up cPanel Cron Jobs
-Navigate to cPanel → Cron Jobs:
-
-```
-# Daily retention engine (01:00 AM)
-Minute: 0  Hour: 1  Day: *  Month: *  Weekday: *
-Command: /usr/local/bin/php /home/username/public_html/data-retention/src/engine/retention_cron.php >> /home/username/logs/retention_cron.log 2>&1
-
-# Quarterly review emails (08:00 AM on 1st of Jan, Apr, Jul, Oct)
-Minute: 0  Hour: 8  Day: 1  Month: 1,4,7,10  Weekday: *
-Command: /usr/local/bin/php /home/username/public_html/data-retention/src/engine/retention_cron.php --task=quarterly_review >> /home/username/logs/quarterly_review.log 2>&1
-```
-
-> To find your PHP path on InMotion: run `which php` in cPanel Terminal, or use `/usr/local/bin/php`
-
-### Step 6: Create log directories
-Via cPanel File Manager:
-```
-/home/username/logs/retention_cron.log    (create empty file, chmod 644)
-/home/username/logs/quarterly_review.log  (create empty file, chmod 644)
-/home/username/logs/cron_errors.log       (create empty file, chmod 644)
-/home/username/logs/mail_errors.log       (create empty file, chmod 644)
-/home/username/logs/db_error.log          (create empty file, chmod 644)
-```
-
-> ⚠️ Logs are stored OUTSIDE public_html for security
-
-### Step 7: Set file permissions
-```
-chmod 755 src/engine/retention_cron.php
-chmod 644 src/config/database.php
-chmod 644 .htaccess
-```
-
-### Step 8: First login
-- URL: `https://yourdomain.com/data-retention/`
-- Email: `admin@3consult-ng.com`
-- Password: `password` ← **CHANGE IMMEDIATELY**
-- Go to Users → Edit Admin → Set new secure password
-- Go to System Settings → Configure SMTP email
+### Step 7: First login
+- URL: `https://retention.3consult-ng.com/`
+- Register a new organisation, or use seeded credentials
+- Go to Settings → Configure SMTP email
+- **Change default passwords immediately**
 
 ---
 
@@ -130,12 +150,13 @@ chmod 644 .htaccess
 
 - [ ] Changed default admin password
 - [ ] Configured SMTP with a real email account
-- [ ] Verified `.htaccess` blocks direct access to `src/config/`
-- [ ] Confirmed cron jobs are running (check log files after 01:00 AM)
+- [ ] Set `APP_ENV=production` in environment
+- [ ] Set a strong, random `SECRET_KEY`
+- [ ] Confirmed background tasks are running (check logs)
 - [ ] Revoked UPDATE/DELETE on `audit_log` table for app DB user
 - [ ] SSL certificate active on domain (HTTPS enforced)
-- [ ] Logs directory is outside `public_html`
-- [ ] `APP_ENV` set to `production` in config
+- [ ] Logs directory is outside public web root
+- [ ] `DATABASE_URL` uses MySQL/PostgreSQL (not SQLite) in production
 
 ---
 
@@ -143,9 +164,10 @@ chmod 644 .htaccess
 
 | Task | Frequency | How |
 |---|---|---|
-| Check cron logs | Weekly | View `/home/username/logs/retention_cron.log` |
+| Check application logs | Weekly | View `storage/logs/` directory |
 | Review audit log | Monthly | Dashboard → Audit Log |
-| Quarterly retention review | Every 3 months | Dashboard → Run Schedule Review |
+| Quarterly retention review | Every 3 months | Triggered automatically by scheduler |
 | Export NDPR Annual Report | Annually (January) | Audit Log → Export NDPR Annual Report |
 | Update retention periods | As regulations change | Categories → Edit |
-| Backup database | Weekly | cPanel → Backup Wizard |
+| Backup database | Daily (automated) | Runs via APScheduler at 02:00 AM |
+| Apply migrations | On updates | `alembic upgrade head` |

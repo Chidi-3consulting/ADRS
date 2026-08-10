@@ -1,6 +1,6 @@
-"""
+﻿"""
 ADRS ROPA (Record of Processing Activities) Routes
-Ported from PHP — provides full CRUD for ROPA entries with
+Ported from legacy — provides full CRUD for ROPA entries with
 controller/processor support and processor sub-entries.
 """
 import csv

@@ -1,5 +1,5 @@
-"""
-ADRS Retention Engine — ported from PHP retention/src/engine/engine_lib.php.
+﻿"""
+ADRS Retention Engine
 
 Provides: the full daily retention engine (flag reviews, consent disposal,
 auto-dispose with B5 dual-approval safeguard, escalation, notifications,
@@ -33,7 +33,7 @@ def get_setting(db: Session, key: str, default: str = "") -> str:
 def get_org_setting(db: Session, org_id: int, key: str, default: str = "") -> str:
     """
     Read a setting: check organization_settings first, fall back to
-    system_settings, then to the provided default. Matches PHP get_setting()
+    system_settings, then to the provided default. 
     with org/platform split.
     """
     row = db.query(OrganizationSetting).filter(
@@ -47,7 +47,7 @@ def get_org_setting(db: Session, org_id: int, key: str, default: str = "") -> st
     return sys_row.setting_value if sys_row else default
 
 
-# ── Notification Helpers (matches PHP notifications_lib.php) ──
+# ── Notification Helpers  ──
 
 def create_notification(
     db: Session, org_id: int, recipient_id: int, notif_type: str,
@@ -150,7 +150,7 @@ def execute_disposal(db: Session, record_id: int, actor_id: int = None, ip_addre
     """
     Execute disposal of a single record. Transactional, idempotent, legal-hold-safe.
     Uses a nested savepoint (SAVEPOINT) for atomicity and re-reads the record fresh
-    to avoid race conditions — matching PHP's beginTransaction() + FOR UPDATE pattern.
+    to avoid race conditions — ) + FOR UPDATE pattern.
     Returns True if disposed now, False if skipped.
     """
     try:
@@ -216,7 +216,7 @@ def execute_disposal(db: Session, record_id: int, actor_id: int = None, ip_addre
 def run_retention_checks(db: Session, org_id: int) -> dict:
     """
     Orchestrate the full daily retention engine for one organisation.
-    Returns a summary of counts. Matches PHP run_retention_engine().
+    Returns a summary of counts. 
     """
     results = {
         "flagged": 0,
@@ -378,7 +378,7 @@ def run_retention_checks(db: Session, org_id: int) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Follow-Up Notifications (Step 6 — ported from PHP)
+#   Follow-Up Notifications (Step 6 — ported from legacy)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def engine_send_follow_ups(db: Session, org_id: int) -> int:
@@ -386,7 +386,7 @@ def engine_send_follow_ups(db: Session, org_id: int) -> int:
     Send follow-ups for unread review/escalation notifications > 3 days old.
     Creates a new notification row for each follow-up and marks the original
     with follow_up_sent_at. Uses the follow_up_sent_at column for dedup
-    (matching PHP behaviour). Returns count sent.
+    . Returns count sent.
     """
     try:
         three_days_ago = datetime.utcnow() - timedelta(days=3)
@@ -422,13 +422,13 @@ def engine_send_follow_ups(db: Session, org_id: int) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Housekeeping (prune stale data — ported from PHP)
+#   Housekeeping (prune stale data — ported from legacy)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def run_housekeeping(db: Session) -> dict:
     """
     Daily housekeeping: prune rows that would otherwise grow unbounded.
-    Returns counts of rows deleted. Matches PHP run_housekeeping().
+    Returns counts of rows deleted. 
     """
     results = {"login_attempts": 0, "password_resets": 0, "read_notifications": 0}
 
@@ -466,13 +466,13 @@ def run_housekeeping(db: Session) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Quarterly Compliance Review (ported from PHP)
+#   Quarterly Compliance Review (ported from legacy)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def run_quarterly_review(db: Session, org_id: int) -> dict:
     """
     Quarterly review task: summarise compliance posture and notify Admins + DPOs.
-    Returns the summary dict. Matches PHP run_quarterly_review().
+    Returns the summary dict. 
     """
     from app.models import DataCategory as DC, DataRecord as DR
 
@@ -514,11 +514,11 @@ def run_quarterly_review(db: Session, org_id: int) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Audit Chain Verification (ported from PHP verify_audit_chain)
+#   Audit Chain Verification 
 # ═══════════════════════════════════════════════════════════════════════════
 
 def audit_norm_details(details) -> str:
-    """Normalise details to a canonical, key-sorted JSON string (matching PHP audit_norm_details)."""
+    """Normalise details to a canonical, key-sorted JSON string ."""
     if details is None:
         return ""
     if isinstance(details, str):
@@ -533,7 +533,7 @@ def verify_audit_chain(db: Session, org_id: int = None) -> dict:
     """
     Walk the audit_log hash chain and verify integrity.
     Returns {'ok': bool, 'checked': int, 'broken_at': int|None}.
-    Uses PHP-compatible canonical format for hash verification.
+    Uses legacy-compatible canonical format for hash verification.
     """
     query = db.query(AuditLog).order_by(AuditLog.id.asc())
     if org_id:
@@ -549,7 +549,7 @@ def verify_audit_chain(db: Session, org_id: int = None) -> dict:
         if prev_hash != expected_prev:
             return {"ok": False, "checked": checked, "broken_at": r.id}
 
-        # Recompute row_hash using PHP-compatible canonical format
+        # Recompute row_hash using legacy-compatible canonical format
         details_str = audit_norm_details(r.details)
         created_at_str = r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else ""
         payload = "|".join([
@@ -571,7 +571,7 @@ def verify_audit_chain(db: Session, org_id: int = None) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Outbound Webhook Dispatch (ported from PHP webhooks_lib.php)
+#   Outbound Webhook Dispatch 
 # ═══════════════════════════════════════════════════════════════════════════
 
 def webhook_matches(event_types: str, event: str) -> bool:
@@ -586,7 +586,7 @@ def fire_ops_event(db: Session, org_id: int, event: str, payload: dict,
                    sender=None) -> int:
     """
     Fire an ops event to every active, subscribed webhook.
-    Returns count fired. Matches PHP fire_ops_event().
+    Returns count fired. 
     $sender(url, payload) -> [code, body] can be injected for tests.
     """
     if get_org_setting(db, org_id, "ops_webhooks_enabled", "0") != "1":
@@ -619,7 +619,7 @@ def fire_ops_event(db: Session, org_id: int, event: str, payload: dict,
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Lifecycle Library (ported from PHP lifecycle_lib.php)
+#   Lifecycle Library 
 #   Legal hold, consent withdrawal, disposal workflow with B5 dual-approval.
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -784,7 +784,7 @@ def reject_disposal(db: Session, org_id: int, record_id: int,
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Analytics Library (ported from PHP analytics_lib.php)
+#   Analytics Library 
 # ═══════════════════════════════════════════════════════════════════════════
 
 def compliance_metrics(db: Session, org_id: int) -> dict:
@@ -947,14 +947,14 @@ def upcoming_deadlines(db: Session, org_id: int, limit: int = 15) -> list:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Reports Library (ported from PHP reports_lib.php)
+#   Reports Library 
 # ═══════════════════════════════════════════════════════════════════════════
 
 def build_compliance_report(db: Session, org_id: int, year: int) -> dict:
     """
     Annual Compliance Report builder. Summarises the compliance posture for a
     year: categories, records by status, disposals by method, and audit volume.
-    Matches PHP build_compliance_report().
+    
     """
     DC = DataCategory
     DR = DataRecord
@@ -1025,7 +1025,7 @@ def compliance_report_to_csv_rows(report: dict, title: str = "Annual Compliance 
     return rows
 
 
-# Backward-compatibility aliases (PHP parity)
+# Backward-compatibility aliases 
 def build_ndpr_report(db: Session, org_id: int, year: int) -> dict:
     return build_compliance_report(db, org_id, year)
 
@@ -1035,7 +1035,7 @@ def ndpr_report_to_csv_rows(report: dict, title: str = "NDPR Annual Compliance R
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Onboarding Checklist (ported from PHP onboarding_lib.php)
+#   Onboarding Checklist 
 # ═══════════════════════════════════════════════════════════════════════════
 
 def org_onboarding_checklist(db: Session, org_id: int) -> list:

@@ -1,4 +1,4 @@
-"""
+﻿"""
 ADRS Public Routes — landing, login, register, password reset, logout.
 
 Security integrations:
@@ -460,7 +460,7 @@ def handle_logout(response: Response):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Email Verification (Gap 2 — ported from PHP verify_email.php)
+#   Email Verification (Gap 2
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/verify_email", response_class=HTMLResponse)
@@ -514,7 +514,7 @@ def resend_verification(request: Request, db: Session = Depends(get_db)):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Setup Wizard (Gap 3 — ported from PHP setup.php)
+#   Setup Wizard (Gap 3
 # ═══════════════════════════════════════════════════════════════════════════
 
 @router.get("/setup", response_class=HTMLResponse)

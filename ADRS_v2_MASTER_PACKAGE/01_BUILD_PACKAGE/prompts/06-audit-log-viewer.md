@@ -1,5 +1,12 @@
-# Prompt 06 — Audit Log Viewer
+﻿# Prompt 06 — Audit Log Viewer
 
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 ## Context
 Refer to `.github/copilot-instructions.md`. The `audit_log` table is append-only and is populated by all previous modules.
 

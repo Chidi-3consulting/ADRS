@@ -1,5 +1,5 @@
-"""
-Test billing — ported from PHP billing_test.php.
+﻿"""
+Test billing.
 Tests organization access + trial expiry logic.
 """
 import pytest

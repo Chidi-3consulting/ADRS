@@ -1,5 +1,5 @@
-"""
-Test login throttle — ported from PHP login_throttle_test.php.
+﻿"""
+Test login throttle.
 Tests brute-force login prevention.
 """
 import pytest

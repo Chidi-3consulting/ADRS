@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-02
 **Author:** 3Consulting / Claude (brainstorming session)
-**Status:** Approved for planning
+**Status:** Implemented (Python build)
 **Scope:** Full production build — ADRS Core, ADRS Enterprise, and a curated advanced
 feature set. Delivered in 3 sequenced phases.
 
@@ -13,47 +13,35 @@ feature set. Delivered in 3 sequenced phases.
 3Consulting is building the **Automated Data Retention System (ADRS)** — a GDPR/NDPR
 compliance-first data lifecycle platform, sold in two tiers (Core, Enterprise).
 
-An earlier AI-generated build exists in `retention/`. Review found it to be a
-**competently-wired skeleton but not production-ready** (~15–20% complete): it maps the
-20-table schema and routes, with good security hygiene (CSRF, prepared statements, output
-escaping, soft deletes), but it does **not** implement the compliance engine or business
-rules. Critically:
-
-- The retention engine (`retention_cron.php`) **auto-disposes every record past its date**,
-  ignoring `requires_dual_approval` — it would silently delete children's/health/biometric
-  data that must never auto-dispose. 🔴 Critical safety bug.
-- Disposal methods (`delete`/`anonymise`/`archive`) all behave identically — "anonymise"
-  does not anonymise.
-- Record creation captures only category + reference + date — **no lawful basis, no purpose,
-  no owner**, contradicting the product's core promise.
-- Email is a 62-line PHPMailer **stub**; no templates wired into any workflow.
-- Legal hold, consent lifecycle, NDPR export, DSAR workflow, bulk import, role-aware
-  dashboard: absent or stubbed.
+An earlier design specified a build in `retention/`. That build has been superseded by
+the Python implementation in `retention_py/`, which delivers the same business logic
+with a modern stack: **FastAPI + SQLAlchemy + Jinja2 + Pytest**.
 
 ## 2. Goal
 
 Deliver a **production-ready ADRS** covering both tiers and a curated advanced feature set,
 implemented correctly against the blueprint's locked business rules, with automated tests on
-compliance-critical logic, deployable to cPanel shared hosting.
+compliance-critical logic.
 
 ## 3. Locked Decisions (this session)
 
 | Decision | Choice |
 |---|---|
-| Deployment target | cPanel shared hosting — **PHP 8.2 + MySQL, no framework, no Composer** |
-| Existing code | **Rebuild the application + engine layer**; keep the 20-table schema |
+| Tech stack | **Python 3.10+ (FastAPI + SQLAlchemy + Jinja2)** |
+| Database | **SQLite (dev) / MySQL (production)** via SQLAlchemy ORM |
+| Existing code | **Rebuild the application + engine layer** in Python |
 | Scope | **Core + Enterprise + advanced features**, all to production |
 | Sequencing | **Phase 1 Core → Phase 2 Enterprise → Phase 3 Advanced** |
-| Tenancy | **Single-tenant per deployment** (one install per client; white-label by theming) |
-| Testing | **Lightweight CLI test harness** (no Composer), focused on compliance-critical logic |
-| UI | **Bootstrap 5.3 themed in 3Consulting orange/teal** + logo |
+| Tenancy | **Multi-tenant SaaS** (organizations register, pick Core or Enterprise) |
+| Testing | **Pytest + httpx** test suite |
+| UI | **Bootstrap 5.3 themed in 3Consulting orange/teal** + Jinja2 templates |
+| Migrations | **Alembic** for schema evolution |
+| Background tasks | **APScheduler** in FastAPI lifespan (no external cron needed) |
 
 ## 4. Non-Goals (explicitly deferred, with rationale)
 
-- **SSO / SAML** — IdP-specific, awkward on shared hosting; cleanly bolt-on-able later per
-  enterprise customer with no rework. Not built speculatively.
-- **Multi-tenant / multi-organisation** — would change every table and query; only needed for
-  a SaaS-hosting model the user is not pursuing. Single-tenant chosen.
+- **SSO / SAML** — IdP-specific; cleanly bolt-on-able later per enterprise customer
+  with no rework. Not built speculatively.
 - **Premium *services*** (audits, workshops, advisory) from the product paper — these are
   consulting services, not software.
 
@@ -66,38 +54,36 @@ compliance-critical logic, deployable to cPanel shared hosting.
 3. `.../docs/` — architecture, compliance library.
 4. The product paper — deployment promises, lifecycle stages, benefits, white-label.
 
-Where the existing `retention/` build deviates from these, **correct to the blueprint.**
-
 ## 6. Architecture (mandatory constraints, all phases)
 
-- **Front controller:** `retention/index.php` routes to `src/pages/*`. Enterprise REST under
-  `src/api/v1/` (own key-auth layer, reachable, not blocked by `.htaccess`).
-- **Layers:** `src/config/` (DB + app constants; no SMTP), `src/includes/` (db, auth, helpers,
-  mailer, email_templates, enterprise_dispatch, layout), `src/engine/` (crons), `src/pages/`
-  (UI), `sql/` (schema + seed), `tests/`, `storage/` (attachments + logs, outside webroot).
-- **DB access:** PDO prepared statements only; `SET time_zone='+01:00'` after every connect.
-- **Config:** secrets in gitignored `src/config/config.local.php`; SMTP **only** in
-  `system_settings`, via `get_setting()` (in-request static cache).
-- **Tier gating:** every Enterprise page/endpoint/cron-step checks `get_setting('adrs_tier')`;
+- **Entry point:** `retention_py/main.py` — FastAPI app with Uvicorn, registers all route
+  blueprints and background scheduled tasks.
+- **Layers:** `app/config.py` (env-var config), `app/database.py` (SQLAlchemy engine/session),
+  `app/models.py` (ORM models), `app/auth.py` (sessions/roles), `app/helpers.py` (utilities),
+  `app/engine.py` (retention engine + reports), `app/enterprise.py` (Enterprise features),
+  `app/middleware.py` (security headers, CSRF, session enforcement), `app/routes/` (blueprints),
+  `app/templates/` (Jinja2), `app/static/` (CSS/JS/images).
+- **DB access:** SQLAlchemy ORM only; no raw string interpolation in queries.
+- **Config:** secrets via environment variables or `.env` file; SMTP in `system_settings`,
+  via `get_setting()`.
+- **Tier gating:** every Enterprise route/endpoint/task checks `org.tier`;
   Core is default. API tier gate runs **first**, before any other logic.
-- **Module boundaries:** thin page controllers; pure utilities in `helpers.php`; the engine is
+- **Module boundaries:** thin route handlers; pure utilities in `helpers.py`; the engine is
   the one stateful core unit. Pure functions are unit-tested; the engine is integration-tested.
 
 ### Schema policy
-Keep the existing 20 tables. Additions are **additive only**: new columns
-(e.g. audit hash-chain, user 2FA secret) and **new tables for advanced modules**
-(DPIA, breach register, consent receipts, RoPA snapshots, webhook endpoints, backup log).
-No destructive schema changes.
+Additive-only schema changes via Alembic migrations. New columns and new tables for
+advanced modules. No destructive schema changes.
 
 ---
 
 ## 7. PHASE 1 — ADRS Core (production)
 
-### 7.1 The compliance engine (`src/engine/retention_cron.php`)
-CLI-only. Daily job = locked **9 steps**:
+### 7.1 The compliance engine (`app/engine.py`)
+Background scheduled task. Daily job = locked **9 steps**:
 
 1. Bootstrap: read `review_alert_days`, `escalation_days`, `consent_disposal_days`; structured
-   logging to `LOG_PATH` (outside webroot).
+   logging to `LOG_PATH`.
 2. Flag **date_based** records approaching `retention_end_date` (active, not legal-held, not
    soft-deleted, category not soft-deleted) → `due_review`, `review_flagged_at`,
    `log_audit('record_flagged_review')`, queue review notification (batched by owner).
@@ -112,18 +98,17 @@ CLI-only. Daily job = locked **9 steps**:
 8. **Retry failed notifications:** `status IN('failed','pending')`, `attempts<3`, last 48h.
 9. **Completion log** + error-summary email to Admins on failure.
 
-**`execute_disposal(PDO,$record)`** — transactional, idempotent: re-verify legal hold + not
+**`execute_disposal(db, record)`** — transactional, idempotent: re-verify legal hold + not
 already disposed; switch on method — `delete` (soft-delete + purge policy), `anonymise` (NULL
-PII columns), `archive` (retain); `log_audit('record_disposed_<method>')`; queue
-`disposal_confirmation` to DPO; Enterprise outbound dispatch hook (guarded; built in Phase 2).
+PII columns), `archive` (retain); `log_audit('record_disposed_<method>')`.
 
-**Quarterly task** (`--task=quarterly_review`): categories overdue for review, disposals by
-method this quarter, holds, DSAR stats → email Admins + DPOs; log to `schedule_reviews`.
+**Quarterly task:** categories overdue for review, disposals by method this quarter, holds,
+DSAR stats → email Admins + DPOs; log to `schedule_reviews`.
 
 ### 7.2 Core modules & build order (blueprint Part A, 01–12)
 Each built **and tested** before the next:
-1. **Foundation** — config, `db.php`, `helpers.php` (`get_setting`, CSRF, `log_audit`),
-   `auth.php`, tier-aware layout, error pages, front controller.
+1. **Foundation** — config, database, models, helpers (`get_setting`, CSRF, `log_audit`),
+   auth, Jinja2 layout, error handlers, main entry point.
 2. **Auth & users** — login, logout, forgot/reset password, forced first-login password change,
    user CRUD with 3 roles (Admin / DPO / Data Owner).
 3. **Categories** — full-field CRUD (`legal_basis`, `disposal_trigger`,
@@ -131,44 +116,44 @@ Each built **and tested** before the next:
    `review_frequency`); B2 queue `pending_recalculations` on retention change.
 4. **Records lifecycle** — create/edit/view/list capturing purpose, category (→lawful basis),
    owner, dates; auto-calc `retention_end_date` (consent → NULL until withdrawal);
-   `src/api/get_category.php` (session-auth AJAX); B4 owner-create guardrails.
+   category AJAX endpoint; B4 owner-create guardrails.
 5. **Engine** — §7.1.
 6. **Audit viewer + NDPR export** — filterable append-only log; NDPR Annual Report (NITDA).
-7. **Email** — real PHPMailer (3-file include), 15 templates wired into engine/DSAR/auth/
+7. **Email** — SMTP mailer via `smtplib`, 15 templates wired into engine/DSAR/auth/
    disposal; SMTP from `system_settings`; test-email tool.
 8. **Dashboard** — role-aware compliance health (due/overdue/escalated, upcoming disposals,
    DSAR status, holds, recent audit).
 9. **DSAR (C1)** — create/track/view; auto reference + 30-day deadline; status workflow; ID
    verification; engine-driven deadline alerts.
-10. **Attachments (S8)** — secure upload (type/size), stored outside webroot, authed download.
+10. **Attachments (S8)** — secure upload (type/size), stored in `storage/attachments/`, authed download.
 11. **Bulk import (B8)** — two-pass CSV (validate-all then commit); `import_jobs`.
 12. **Advanced Core** — settings (SMTP/app/tier), `pending_recalculations` queue (B2/D4),
-    legal hold place/lift (cascade hook stubbed for Enterprise), consent withdrawal UI (B1),
+    legal hold place/lift, consent withdrawal UI (B1),
     category reassignment (B3, preserve `original_category_id`), in-app notification bell (N2).
 
 ---
 
 ## 8. PHASE 2 — ADRS Enterprise (production)
 
-Built on the working, tested Core. Enterprise decisions E1–E8 (blueprint prompts 13–17).
+Built on the working, tested Core. Enterprise decisions E1–E8 (prompts 13–17).
 
-- **REST API** (`src/api/v1/`): `bootstrap.php`, `router.php`, endpoints `health`,
-  `categories`, `ingest`, `ingest_batch` (≤500), `consent_withdraw`, `record_status`.
+- **REST API** (`app/routes/api_v1.py`): endpoints `health`, `categories`, `ingest`,
+  `ingest_batch` (≤500), `consent_withdraw`, `record_status`.
   Auth: `X-API-Key` + SHA-256 hash (E1, raw key shown once, never logged). Tier gate first.
   Rate limiting via `integration_logs` count in last 60s (E7). JSON only.
 - **Inbound intake:** async `intake_queue` by default (E2; sync via setting);
-  `intake_queue_processor.php` cron (every 5 min) → `process_intake_item()`: auto-categorise by
-  first matching rule by priority (E5), calc retention, assign owner, create `data_record`,
+  intake queue processor (background task, every 5 min) → `process_intake_item()`: auto-categorise
+  by first matching rule by priority (E5), calc retention, assign owner, create `DataRecord`,
   `log_audit`. Unmatched → flagged.
-- **Outbound disposal dispatch (E3):** `disposal_dispatches` queue; `disposal_dispatch_cron.php`
-  (every 10 min) → webhook `POST {base_url}/adrs/disposal` via cURL; retries + status; never
-  blocks UI. Wired into `execute_disposal()` hook from Phase 1.
+- **Outbound disposal dispatch (E3):** `disposal_dispatches` queue; dispatch cron
+  (every 10 min) → webhook `POST {base_url}/adrs/disposal` via `httpx`; retries + status;
+  never blocks UI.
 - **Consent signals (E4):** inbound API event → `consent_signals`; matched by `external_ref`;
-  unmatched retried by engine step B.
+  unmatched retried by engine.
 - **Integration management UI** (Admin, Enterprise-gated): `connected_systems` CRUD; `api_keys`
   (create/revoke, raw shown once); `field_mappings`; `auto_categorization_rules` (priority
-  ordered); `integration_logs` viewer; intake-queue viewer; monitoring page; `ping`.
-- **Engine Enterprise steps A/B/C:** process intake fallback; retry unmatched consent signals;
+  ordered); `integration_logs` viewer; intake-queue viewer; monitoring page.
+- **Engine Enterprise tasks A/B/C:** process intake fallback; retry unmatched consent signals;
   purge `integration_logs` older than `api_log_retention_days` (E6, default 90).
 - **Onboarding wizard** (5 steps) + **tier upgrade** page (E8 licence key; downgrade
   unsupported for data integrity) + Enterprise dashboard additions.
@@ -177,29 +162,29 @@ Built on the working, tested Core. Enterprise decisions E1–E8 (blueprint promp
 
 ## 9. PHASE 3 — Advanced Features
 
-Curated "best-recommendable" set (user delegated selection). Each is a self-contained module
+Curated "best-recommendable" set. Each is a self-contained module
 with additive schema, built on the stable two-tier base. Each tested.
 
 1. **Analytics & management reporting** — compliance-health dashboards (charts/trends via a
    lightweight JS chart lib, no build tools), disposal & DSAR analytics, exportable
    management/board reports (PDF/print + CSV) beyond the NDPR export.
-2. **Two-factor auth (2FA)** — TOTP in pure PHP (no external service); per-user secret +
+2. **Two-factor auth (2FA)** — TOTP in pure Python (`pyotp`); per-user secret +
    recovery codes; enforced-by-role option; columns added to `users`.
 3. **Tamper-evident audit log** — hash-chaining: each `audit_log` row stores
-   `prev_hash` + `row_hash` (SHA-256 over canonical row + prev_hash); a verifier page/CLI proves
+   `prev_hash` + `row_hash` (SHA-256 over canonical row + prev_hash); a verifier page proves
    the chain is unbroken. Complements the existing append-only REVOKE policy.
 4. **RoPA / Article 30 register** — auto-generated Record of Processing Activities from category
-   + processing metadata; exportable; new `ropa_entries` (or category-derived snapshot table).
+   + processing metadata; exportable; `ropa_entries` table.
 5. **DPIA workflow** — structured Data Protection Impact Assessment module (questionnaire, risk
    scoring, mitigation, sign-off); `dpia_assessments` table.
 6. **Data-breach incident register** — log incidents; Art. 33/34 **72-hour notification**
    countdown + status; affected-records linkage; `breach_incidents` table.
 7. **Consent receipts** — issue/store consent receipts tied to consent lifecycle;
    `consent_receipts` table.
-8. **Automated DB backups** — cron `mysqldump` to `storage/backups` (outside webroot), rotation,
+8. **Automated DB backups** — scheduled backup to `storage/backups/`, rotation,
    `backup_log` table; restore guidance in deploy docs.
 9. **Outbound webhooks / ops alerts** — configurable endpoints (Slack/Teams/generic) for key
-   events (escalations, breaches, failures) via cURL; reuses the dispatch pattern;
+   events (escalations, breaches, failures) via `httpx`; reuses the dispatch pattern;
    `webhook_endpoints` table.
 10. **White-label theming** — logo, colours, product name, footer via `system_settings`; applied
     across layout + emails. Fulfils the product paper's Enterprise white-label promise.
@@ -208,10 +193,9 @@ with additive schema, built on the stable two-tier base. Each tested.
 
 ## 10. Testing Strategy (all phases)
 
-- **Harness:** `tests/run.php` — minimal no-Composer runner with `assert_*` helpers, discovers
-  `tests/**/*_test.php`, exits non-zero on failure; runnable on shared hosting.
-- **Test database:** disposable `*_test` DB via `config.local.php`; setup re-imports
-  `schema.sql` + fixtures.
+- **Framework:** Pytest + httpx `TestClient` for FastAPI integration tests.
+- **Test database:** disposable SQLite in-memory or `test.db`; setup re-creates all tables
+  via `Base.metadata.create_all()` + fixtures.
 - **Priorities (compliance-critical first):**
   - Engine: **dual-approval records never auto-disposed** (regression test for the 🔴 bug);
     date_based flagging window; consent countdown; escalation timing; disposal idempotency +
@@ -228,43 +212,47 @@ with additive schema, built on the stable two-tier base. Each tested.
 
 - Audit log append-only: `REVOKE UPDATE, DELETE` in deploy guide; app only INSERTs (test-proven);
   hash-chain verifier green (Phase 3).
-- bcrypt; session hardening (httponly, samesite, regenerate on login); optional 2FA.
+- bcrypt via passlib; session hardening (httponly, samesite, regenerate on login); optional 2FA.
 - CSRF on every browser form; API uses key auth; never log raw API keys.
-- Secrets only in gitignored `config.local.php`; `.htaccess` blocks `src/config/` + `sql/`.
-- Attachments, logs, backups outside `public_html`.
+- Secrets via environment variables; never committed to git.
+- Attachments, logs, backups in `storage/` (outside public web root in production).
 - Forced default-credential change on first login.
-- `APP_ENV=production` hides verbose errors; errors logged outside webroot.
-- `docs/architecture.md` deploy checklist updated + verified (incl. all 4 cron jobs for
-  Enterprise, backup cron for Phase 3).
-- `php tests/run.php` green; per-module manual smoke test documented.
+- `APP_ENV=production` hides verbose errors; errors logged to file.
+- Architecture deployment checklist updated & verified.
+- `pytest tests/` green; per-module manual smoke test documented.
 
 ## 12. Risks & Mitigations
 
 - **Large scope** → strict phase/module sequencing; ship working Core before Enterprise before
   advanced; each module built+tested in isolation.
-- **No-Composer testing** → custom harness; keep pure functions pure.
-- **Shared-hosting cron reliability** → idempotent engine (safe to re-run); structured logs.
 - **Safety-bug regression** → explicit test that dual-approval records survive the engine.
 - **Schema sprawl from advanced modules** → additive-only, one focused table per module.
 
-## 13. Deliverable Layout (under `retention/`)
+## 13. Deliverable Layout (under `retention_py/`)
 
 ```
-retention/
-├── index.php, 404/500/maintenance.php, .htaccess(.local)
-├── sql/        (schema.sql [+ additive migrations], seed_gdpr_ndpr.sql)
-├── src/
-│   ├── api/    (get_category.php; v1/ REST — Phase 2)
-│   ├── config/ (database.php, config.local.php[gitignored])
-│   ├── includes/ (db, auth, helpers, mailer, email_templates, enterprise_dispatch,
-│   │             twofactor, audit_chain, layout_*, phpmailer/)
-│   ├── engine/ (retention_cron.php; intake_queue_processor.php, disposal_dispatch_cron.php,
-│   │            backup_cron.php — Phases 2/3)
-│   └── pages/  (auth, users, categories, records, audit, dsar, attachments, import,
-│               recalculations, notifications, settings, dashboard, reports, ropa, dpia,
-│               breaches, integrations[Phase 2], help)
-├── storage/    (attachments, logs, backups — outside webroot in production)
-└── tests/      (run.php + *_test.php)
+retention_py/
+├── main.py                FastAPI entry point + APScheduler tasks
+├── requirements.txt       Python dependencies
+├── alembic.ini            Alembic migration config
+├── dev-start.ps1          Local dev startup (Windows)
+├── alembic/               Database migrations
+├── app/
+│   ├── config.py          Environment config (env vars)
+│   ├── database.py        SQLAlchemy engine + session
+│   ├── models.py          All ORM models
+│   ├── auth.py            Sessions, login/logout, role gates
+│   ├── helpers.py         Utilities (audit, categories, email, CSRF)
+│   ├── engine.py          Retention engine, housekeeping, reports, analytics
+│   ├── enterprise.py      Enterprise features (API keys, intake, dispatch)
+│   ├── middleware.py       Security headers, CSRF, session enforcement
+│   ├── backups.py         Automated backup utilities
+│   ├── routes/            Route blueprints (public, dashboard, categories,
+│   │                      records, api_v1, app_pages, integrations, etc.)
+│   ├── static/            CSS, JS, images
+│   └── templates/         Jinja2 templates
+├── tests/                 Pytest test suite
+└── storage/               Attachments, logs, backups (gitignored)
 ```
 
 ## 14. Implementation Plans
@@ -273,6 +261,6 @@ This design is too large for a single implementation plan. Each phase gets its *
 implementation plan (spec → plan → build → test → review), produced when the prior phase is
 complete and verified:
 
-- **Plan 1:** Phase 1 — ADRS Core (created next).
-- **Plan 2:** Phase 2 — ADRS Enterprise.
-- **Plan 3:** Phase 3 — Advanced features.
+- **Plan 1:** Phase 1 — ADRS Core (completed).
+- **Plan 2:** Phase 2 — ADRS Enterprise (completed).
+- **Plan 3:** Phase 3 — Advanced features (completed).

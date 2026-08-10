@@ -1,5 +1,12 @@
-# Prompt 17 — Enterprise Onboarding Wizard & Tier Management
+﻿# Prompt 17 — Enterprise Onboarding Wizard & Tier Management
 # ENTERPRISE TIER ONLY
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 
 ## Context
 The onboarding wizard guides Admins through activating Enterprise, connecting

@@ -1,5 +1,5 @@
-"""
-Test attachments — ported from PHP attachments_test.php.
+﻿"""
+Test attachments.
 Tests attachment model operations.
 """
 import pytest

@@ -1,5 +1,5 @@
-"""
-Test invitations — ported from PHP invitations_test.php.
+﻿"""
+Test invitations.
 Tests invite create, accept, and revoke.
 """
 import pytest

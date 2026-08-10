@@ -1,5 +1,5 @@
-"""
-Test records CRUD — ported from PHP records_test.php.
+﻿"""
+Test records CRUD.
 Tests record creation, editing, listing, and filtering.
 """
 import pytest

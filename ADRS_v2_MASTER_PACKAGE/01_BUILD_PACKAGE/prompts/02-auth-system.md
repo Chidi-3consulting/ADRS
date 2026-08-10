@@ -1,5 +1,12 @@
-# Prompt 02 — Authentication System v4 (BUG-04 FIXED)
+﻿# Prompt 02 — Authentication System v4 (BUG-04 FIXED)
 # Adds: forgot_password.php + reset_password.php (were missing entirely)
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 
 ## Pre-requisites
 Prompt 01 complete. `src/includes/auth.php`, `db.php`, `helpers.php`,

@@ -1,5 +1,5 @@
-"""
-Test settings — ported from PHP helpers_settings_test.php.
+﻿"""
+Test settings.
 Tests settings read/write and org-scoped settings.
 """
 import pytest

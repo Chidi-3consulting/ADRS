@@ -1,5 +1,5 @@
-"""
-ADRS Security Middleware — ported from PHP retention (auth.php + helpers.php).
+﻿"""
+ADRS Security Middleware
 
 Provides:
   1. Security response headers (CSP with nonce-based script-src, HSTS, etc.)
@@ -33,8 +33,8 @@ from app.auth import get_session, set_session
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
-    Emit hardening headers on every response. Matches PHP send_security_headers().
-    Uses per-request nonce for script-src (matching PHP's nonce-based CSP),
+    Emit hardening headers on every response. 
+    Uses per-request nonce for script-src ,
     replacing the weaker 'unsafe-inline' policy.
     """
 
@@ -59,7 +59,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "max-age=31536000; includeSubDomains"
             )
 
-        # CSP — nonce-based script-src (matching PHP's nonce approach)
+        # CSP — nonce-based script-src 
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             f"script-src 'self' 'nonce-{csp_nonce}' https://cdn.jsdelivr.net; "
@@ -94,7 +94,7 @@ CSRF_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 def _generate_csrf_token() -> str:
-    """64-hex-char token, matching PHP csrf_token() length."""
+    """64-hex-char token, matching legacy csrf_token() length."""
     return secrets.token_hex(CSRF_TOKEN_LENGTH)
 
 

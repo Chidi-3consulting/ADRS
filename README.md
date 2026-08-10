@@ -4,8 +4,8 @@ A compliance-first, **GDPR/NDPR** data-lifecycle management platform by 3Consult
 governs personal data from collection to compliant disposal: a documented retention register,
 an automated enforcement engine, immutable evidence, and data-subject-rights workflows.
 
-Built as **pure PHP 8.2 + MySQL 8.0** — no framework, no Composer — to deploy on ordinary
-cPanel shared hosting. The application lives in [`retention/`](retention/).
+Built with **Python (Flask) + SQLite/SQLAlchemy** — lightweight, portable, and easy to deploy.
+The application lives in [`retention_py/`](retention_py/).
 
 ## Two tiers
 
@@ -34,51 +34,61 @@ ops webhooks · automated DB backups.
 ## Layout
 
 ```
-retention/
-├── index.php              front controller (clean URLs) + /api/v1 routing
-├── sql/                   schema.sql, seed_gdpr_ndpr.sql, migrations/
-├── src/
-│   ├── api/v1/            Enterprise REST API
-│   ├── config/            database.php (+ gitignored config.local.php)
-│   ├── includes/          db, auth, helpers, libs (records, engine, enterprise, compliance,
-│   │                      analytics, twofa, webhooks, backups…), mailer, layout
-│   ├── engine/            retention_cron, intake_queue_processor, disposal_dispatch_cron, backup_cron
-│   └── pages/             UI (categories, records, audit, integrations,
-│                          reports, settings, …)
-├── tests/                 no-Composer CLI harness (run.php) + integration/unit tests
-└── DEPLOYMENT.md          cPanel go-live runbook
+retention_py/
+├── main.py                Flask application entry point
+├── requirements.txt       Python dependencies
+├── alembic/               Database migrations (Alembic)
+├── alembic.ini            Alembic configuration
+├── app/
+│   ├── config.py          Application configuration
+│   ├── database.py        SQLAlchemy database setup
+│   ├── models.py          ORM models
+│   ├── auth.py            Sessions, login/logout, role gates
+│   ├── helpers.py         Utilities (audit, categories, email, CSRF, etc.)
+│   ├── engine.py          Retention engine, housekeeping, quarterly review
+│   ├── enterprise.py      Enterprise features (API keys, intake, dispatch)
+│   ├── middleware.py       Security headers, CSRF, auth middleware
+│   ├── backups.py         Automated backup utilities
+│   ├── routes/            Route blueprints (admin, records, reports, etc.)
+│   ├── static/            CSS, JS, images
+│   └── templates/         Jinja2 templates
+├── tests/                 Pytest test suite
+└── storage/               Attachments, logs, backups (gitignored)
 ```
 
 ## Develop & test
 
 ```bash
-cd retention
-php tests/run.php          # 254 assertions (needs a MySQL test DB)
+cd retention_py
+pip install -r requirements.txt
+python -m pytest tests/          # run the full test suite
 ```
 
-Tests run against a disposable `adrs_test` database (auto-imported from `schema.sql` each run).
-Configure DB access in `src/config/config.test.php` (gitignored); see the harness in
-[`tests/run.php`](retention/tests/run.php). Pure-logic tests run without a DB; DB-backed tests
-skip cleanly when none is reachable.
+To start the development server:
+
+```bash
+cd retention_py
+.\dev-start.ps1                  # Windows (PowerShell)
+# or
+python main.py                   # direct
+```
 
 ## Deploy
 
-See **[retention/DEPLOYMENT.md](retention/DEPLOYMENT.md)** — fresh install, the five cron jobs,
-the `audit_log` append-only REVOKE, Enterprise activation, security hardening, and upgrades
-(including the additive `sql/migrations/` files).
+Configure environment variables or a `.env` file for production settings (database URL,
+SMTP credentials, secret key). Run database migrations with Alembic:
 
-**SaaS (default):** import `schema.sql`, publish the site — customers land on the marketing
+```bash
+alembic upgrade head
+```
+
+**SaaS (default):** run migrations, start the server — customers land on the marketing
 page, pick **Core** or **Enterprise**, and register their organisation (14-day trial).
-**Dev shortcut:** also import `seed_gdpr_ndpr.sql` → `admin@3consult-ng.com` / `password`
-(single-tenant demo mode; forced password change on first login).
 
 ## Security
 
-See **[retention/SECURITY.md](retention/SECURITY.md)** — the controls the software implements
-(OWASP Top 10, RBAC, 2FA, login throttle, CSP/headers, SRI, hash-chained audit, session
-timeouts), what the operating organisation must run (TLS, patching, SIEM, IR, pen-test, backups
-off-site, certifications), and what is genuinely N/A (no AI/LLM, no card data). Report issues to
-`security@3consult-ng.com` (`/.well-known/security.txt`).
+OWASP Top 10 controls, RBAC, 2FA (TOTP), login throttle, CSP/headers, SRI, hash-chained audit,
+session timeouts. Report issues to `security@3consult-ng.com` (`/.well-known/security.txt`).
 
 ## Design docs
 

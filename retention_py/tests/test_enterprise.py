@@ -1,5 +1,5 @@
-"""
-Test enterprise engine — ported from PHP enterprise_test.php.
+﻿"""
+Test enterprise engine.
 Tests API keys, intake queue, auto-categorisation, consent signals, and disposal dispatch.
 """
 import pytest

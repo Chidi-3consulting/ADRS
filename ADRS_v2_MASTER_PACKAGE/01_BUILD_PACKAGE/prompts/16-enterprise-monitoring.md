@@ -1,5 +1,12 @@
-# Prompt 16 — Enterprise Dashboard & Monitoring
+﻿# Prompt 16 — Enterprise Dashboard & Monitoring
 # ENTERPRISE TIER ONLY — enhances the standard dashboard from Prompt 08
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 
 ## Context
 When `adrs_tier = 'enterprise'`, the dashboard gets an additional section showing

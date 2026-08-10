@@ -1,5 +1,5 @@
-"""
-Test audit chain integrity — ported from PHP audit_chain_test.php.
+﻿"""
+Test audit chain integrity.
 Tests the SHA-256 hash chain write + verification.
 """
 import pytest

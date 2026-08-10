@@ -350,7 +350,7 @@ CREATE TABLE IF NOT EXISTS `import_jobs` (
 
 -- ----------------------------------------------------------
 -- 12. SYSTEM SETTINGS
---     BUG-08 FIX: SMTP lives HERE (DB) — mailer.php reads
+--     BUG-08 FIX: SMTP lives HERE (DB) — the mailer reads
 --     from this table at runtime, NOT from config constants.
 --     Config constants are ONLY for DB connection and app identity.
 --     System settings page updates this table.
@@ -365,8 +365,8 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
 
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
 -- BUG-08 FIX: SMTP is source of truth in this table.
--- mailer.php reads these via get_setting($pdo, 'smtp_host') etc.
--- config.php ONLY defines DB credentials + APP_URL + APP_ENV.
+-- The mailer reads these via get_setting(db, 'smtp_host') etc.
+-- config.py ONLY defines DB connection + APP_URL + APP_ENV.
 ('smtp_host',             'mail.yourdomain.com',               'SMTP host — set after creating cPanel email account'),
 ('smtp_port',             '465',                               'SMTP port (465=SSL, 587=TLS)'),
 ('smtp_user',             'noreply@retention.3consult-ng.com', 'SMTP username / From address'),
@@ -467,7 +467,7 @@ CREATE TABLE IF NOT EXISTS `field_mappings` (
   `category_id`          INT UNSIGNED  NOT NULL COMMENT 'Maps to this ADRS data category',
   `external_field`       VARCHAR(255)  NOT NULL COMMENT 'Field name in external system e.g. "customer_name"',
   `adrs_field`           VARCHAR(100)  NOT NULL COMMENT 'ADRS field to map to e.g. "record_reference"',
-  `transform`            VARCHAR(255)  NULL COMMENT 'Optional PHP expression e.g. "strtoupper({value})"',
+  `transform`            VARCHAR(255)  NULL COMMENT 'Optional Python expression e.g. "{value}.upper()"',
   `is_required`          TINYINT(1)    NOT NULL DEFAULT 0,
   `created_at`           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

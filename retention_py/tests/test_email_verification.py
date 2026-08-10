@@ -1,5 +1,5 @@
-"""
-Test email verification — ported from PHP verify_email_test.php.
+﻿"""
+Test email verification.
 Tests token generation, verification, and expiry.
 """
 import pytest

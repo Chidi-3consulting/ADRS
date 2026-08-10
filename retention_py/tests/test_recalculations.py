@@ -1,5 +1,5 @@
-"""
-Test recalculations — ported from PHP recalc_test.php.
+﻿"""
+Test recalculations.
 Tests pending recalculation workflow.
 """
 import pytest

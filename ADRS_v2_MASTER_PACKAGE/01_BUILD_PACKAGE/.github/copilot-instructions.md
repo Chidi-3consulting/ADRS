@@ -5,7 +5,7 @@
 ## Product Identity
 Product:    Automated Data Retention System (ADRS)
 Company:    3Consulting Limited (Lagos, Nigeria & Oakham, UK)
-Version:    2.0 — Two-Tier Edition
+Version:    2.0 — Two-Tier Edition (Python)
 Website:    https://www.3consult-ng.com
 Compliance: GDPR (EU/UK) + Nigeria NDPR 2019 + Global equivalents
 
@@ -16,10 +16,10 @@ Compliance: GDPR (EU/UK) + Nigeria NDPR 2019 + Global equivalents
 ### ADRS Core (Entry Level)
 - Standalone compliance portal — no external system connections
 - Manual data intake: compliance team registers records via the UI
-- Automated enforcement AFTER intake: daily cron flags, reviews, disposes
+- Automated enforcement AFTER intake: background scheduler flags, reviews, disposes
 - Deployment: 4–6 weeks, no IT integration required
 - Target: any organisation with zero current governance
-- `adrs_tier = 'core'` in system_settings
+- `tier = 'core'` on the Organization model
 
 ### ADRS Enterprise (Integration Tier)
 - Everything in Core PLUS an API integration layer
@@ -29,121 +29,86 @@ Compliance: GDPR (EU/UK) + Nigeria NDPR 2019 + Global equivalents
 - Consent signal capture: external systems send withdrawal events to ADRS
 - Deployment: 10–14 weeks, requires API integration work
 - Target: fintechs, banks, high-volume data processors
-- `adrs_tier = 'enterprise'` in system_settings
+- `tier = 'enterprise'` on the Organization model
 
 ### Feature Gating
-Every Enterprise-only page, API endpoint, and cron job MUST check:
-```php
-if (get_setting($pdo, 'adrs_tier') !== 'enterprise') {
-    // Return 403 for API endpoints
-    // Redirect to dashboard with flash for UI pages
-    // Skip silently for cron steps
-}
+Every Enterprise-only route and background task MUST check the organization tier:
+```python
+org = db.query(Organization).filter_by(id=session["organization_id"]).first()
+if org.tier != "enterprise":
+    # Return 403 for API endpoints
+    # Redirect to dashboard with flash for UI pages
+    # Skip silently for background tasks
 ```
-Never hard-code tier assumptions. Always read from system_settings.
+Never hard-code tier assumptions. Always read from the Organization model.
 
 ---
 
 ## Tech Stack — ABSOLUTE CONSTRAINTS
-- **Language:** Pure PHP 8.2 — NO framework, NO Composer, NO namespaces
-- **Database:** MySQL 8.0 via PDO prepared statements ONLY
+- **Language:** Python 3.10+
+- **Web Framework:** FastAPI + Uvicorn
+- **ORM / Database:** SQLAlchemy 2.0+ (SQLite locally, MySQL/PostgreSQL in production)
+- **Templating:** Jinja2
 - **Frontend:** Bootstrap 5.3 + Bootstrap Icons + Vanilla JS ES6+
-- **Email:** PHPMailer 3-file manual include
-- **Local dev:** Laragon (Windows) + Mailpit
-- **Production:** InMotion Shared Hosting — retention.3consult-ng.com
-- **Cron:** cPanel (production) / Windows Task Scheduler (local)
-- **HTTP Client:** PHP cURL (for outbound disposal dispatch — built into PHP)
-- **No Docker. No npm. No build tools. No Composer.**
+- **Email:** SMTP via Python `smtplib` / configurable mailer
+- **Local dev:** Windows (PowerShell dev-start.ps1) — port 8200
+- **Migrations:** Alembic
+- **Testing:** Pytest + httpx (TestClient)
+- **Auth:** bcrypt via passlib, itsdangerous for token signing
+- **Background tasks:** APScheduler (built into the FastAPI lifespan)
 
 ---
 
 ## Complete File Structure (Core + Enterprise)
 
 ```
-/retention/
-├── .htaccess                         ← production (RewriteBase /)
-├── .htaccess.local                   ← gitignored (RewriteBase /data-retention/)
-├── index.php                         ← front controller
-├── 404.php / 500.php / maintenance.php
-├── src/
-│   ├── api/
-│   │   ├── get_category.php          ← Core AJAX (authenticated, no API key)
-│   │   └── v1/                       ← ENTERPRISE API (API key auth)
-│   │       ├── bootstrap.php
-│   │       ├── router.php
-│   │       └── endpoints/
-│   │           ├── ingest.php
-│   │           ├── ingest_batch.php
-│   │           ├── consent_withdraw.php
-│   │           ├── categories.php
-│   │           ├── record_status.php
-│   │           └── health.php
-│   ├── config/
-│   │   ├── database.php              ← DB + app constants (NO SMTP)
-│   │   └── config.local.php          ← gitignored local override
-│   ├── includes/
-│   │   ├── db.php                    ← PDO + SET time_zone = +01:00
-│   │   ├── auth.php                  ← login, logout, reset token
-│   │   ├── helpers.php               ← get_setting() + all utilities
-│   │   ├── mailer.php                ← reads SMTP from system_settings
-│   │   ├── email_templates.php       ← 15+ email templates
-│   │   ├── enterprise_dispatch.php   ← ENTERPRISE outbound dispatch helper
-│   │   ├── layout_header.php         ← sidebar (tier-aware nav)
-│   │   └── layout_footer.php         ← APP_URL + csrfToken JS globals
-│   ├── engine/
-│   │   ├── retention_cron.php        ← daily + quarterly (Core + Enterprise steps)
-│   │   ├── intake_queue_processor.php ← ENTERPRISE: processes intake_queue
-│   │   └── disposal_dispatch_cron.php ← ENTERPRISE: sends outbound webhooks
-│   └── pages/
-│       ├── login.php / logout.php / forgot_password.php / reset_password.php
-│       ├── profile.php / dashboard.php
-│       ├── categories/
-│       ├── schedule/
-│       │   ├── index.php / create.php / view.php
-│       │   ├── dispose.php           ← triggers dispatch if Enterprise
-│       │   ├── legal_hold.php / reassign.php
-│       │   ├── consent_withdraw.php / export.php
-│       ├── audit/
-│       ├── notifications/
-│       ├── dsar/
-│       ├── attachments/
-│       ├── import/
-│       ├── recalculations/
-│       ├── users/
-│       ├── settings/
-│       │   ├── index.php / test_email.php
-│       │   └── tier.php              ← tier management + upgrade
-│       ├── integrations/             ← ENTERPRISE ONLY
-│       │   ├── index.php             ← integration dashboard
-│       │   ├── create.php            ← register connected system
-│       │   ├── onboarding/           ← 5-step wizard
-│       │   │   ├── index.php / step2.php / step3.php
-│       │   │   └── step4.php / step5.php
-│       │   ├── api_keys/
-│       │   │   ├── index.php / create.php / revoke.php
-│       │   ├── field_mappings/
-│       │   │   ├── index.php / create.php / delete.php
-│       │   ├── rules/
-│       │   │   ├── index.php / create.php / edit.php / delete.php
-│       │   ├── logs/
-│       │   │   └── index.php
-│       │   ├── queue/
-│       │   │   └── index.php
-│       │   ├── monitoring.php
-│       │   └── ping.php
-│       └── help.php
+/retention_py/
+├── main.py                           ← FastAPI application entry point
+├── requirements.txt                  ← Python dependencies
+├── dev-start.ps1                     ← Local dev startup script
+├── alembic.ini                       ← Alembic migration config
+├── alembic/                          ← Database migrations
+├── app/
+│   ├── config.py                     ← Environment config (env vars)
+│   ├── database.py                   ← SQLAlchemy engine + session
+│   ├── models.py                     ← All ORM models (20+ tables)
+│   ├── auth.py                       ← Sessions, login/logout, role gates
+│   ├── helpers.py                    ← Utilities (audit, categories, email, CSRF)
+│   ├── engine.py                     ← Retention engine, housekeeping, reports
+│   ├── enterprise.py                 ← Enterprise features (API keys, intake, dispatch)
+│   ├── middleware.py                 ← Security headers, CSRF, session enforcement
+│   ├── backups.py                    ← Automated backup utilities
+│   ├── routes/
+│   │   ├── public.py                 ← Login, register, forgot/reset password, setup
+│   │   ├── dashboard.py              ← Role-aware dashboard
+│   │   ├── categories.py             ← Category CRUD
+│   │   ├── records.py                ← Records lifecycle
+│   │   ├── app_pages.py              ← Audit, DSAR, notifications, settings, users
+│   │   ├── api_v1.py                 ← Enterprise REST API endpoints
+│   │   ├── integrations_routes.py    ← Enterprise integration management UI
+│   │   ├── import_records.py         ← Bulk CSV import
+│   │   ├── recalculations.py         ← Pending recalculations queue
+│   │   ├── ropa.py                   ← RoPA (Record of Processing Activities)
+│   │   └── platform.py              ← Platform admin routes
+│   ├── static/                       ← CSS, JS, images
+│   └── templates/                    ← Jinja2 templates
+├── tests/                            ← Pytest test suite
+└── storage/                          ← Attachments, logs, backups (gitignored)
 ```
 
 ---
 
-## Database Tables (20 Total — Core 12 + Enterprise 8)
+## Database Tables (Core + Enterprise)
 
 ### Core Tables (all tiers)
 | Table | Purpose |
 |-------|---------|
+| `organizations` | Multi-tenant org registry |
 | `users` | Auth + roles |
 | `password_resets` | Token-based reset |
+| `regulations` | Regulatory framework registry |
 | `data_categories` | Retention register |
+| `retention_rules` | Category-level retention rules |
 | `data_records` | Data assets lifecycle |
 | `audit_log` | Append-only evidence (31+ actions) |
 | `notifications` | Email + in-app alerts |
@@ -152,9 +117,10 @@ Never hard-code tier assumptions. Always read from system_settings.
 | `pending_recalculations` | B2 DPO queue |
 | `attachments` | File metadata |
 | `import_jobs` | Bulk import history |
-| `system_settings` | Config + SMTP + tier flag |
+| `system_settings` | Config + SMTP + feature flags |
+| `ropa_entries` | Record of Processing Activities |
 
-### Enterprise Tables (adrs_tier = 'enterprise' only)
+### Enterprise Tables (tier = 'enterprise' only)
 | Table | Purpose |
 |-------|---------|
 | `connected_systems` | Registry of integrated external systems |
@@ -169,30 +135,39 @@ Never hard-code tier assumptions. Always read from system_settings.
 ---
 
 ## SMTP Source of Truth — system_settings table
-SMTP lives EXCLUSIVELY in `system_settings`. `database.php` has NO SMTP constants.
-`mailer.php` reads SMTP via `get_setting($pdo, 'smtp_host')` etc.
-`helpers.php` must include `get_setting()` with in-request static cache.
+SMTP lives EXCLUSIVELY in `system_settings`. `config.py` has NO SMTP constants.
+The mailer reads SMTP via `get_setting(db, 'smtp_host')` etc.
+`helpers.py` includes `get_setting()` with in-request caching.
 
 ---
 
 ## API Authentication (Enterprise)
 - External systems authenticate with `X-API-Key: adrs_XXXX` header
 - Raw key shown ONCE at creation. SHA-256 hash stored in `api_keys.key_hash`.
-- Key validation: `hash('sha256', $raw_key)` === `api_keys.key_hash`
+- Key validation: `hashlib.sha256(raw_key.encode()).hexdigest()` == `api_keys.key_hash`
 - Rate limit checked against `integration_logs` count in last 60 seconds
 - All Enterprise API endpoints return JSON only — no HTML ever
 - Tier gate runs FIRST, before any other logic
 
 ---
 
-## Enterprise Cron Jobs (additional to Core crons)
+## Background Tasks (via APScheduler in FastAPI lifespan)
 
-```
-# Intake queue processor — every 5 minutes
-*/5 * * * * /usr/local/bin/php /path/to/intake_queue_processor.php >> /logs/intake_queue.log 2>&1
+The following tasks run as background scheduled jobs:
 
-# Disposal dispatch — every 10 minutes
-*/10 * * * * /usr/local/bin/php /path/to/disposal_dispatch_cron.php >> /logs/dispatch.log 2>&1
+```python
+# Daily retention engine + housekeeping — 01:00 AM WAT
+scheduler.add_job(run_retention_checks, CronTrigger(hour=1, minute=0))
+scheduler.add_job(run_housekeeping, CronTrigger(hour=1, minute=30))
+
+# Intake queue processor — every 5 minutes (Enterprise)
+scheduler.add_job(process_intake_queue, IntervalTrigger(minutes=5))
+
+# Disposal dispatch — every 10 minutes (Enterprise)
+scheduler.add_job(run_disposal_dispatch, IntervalTrigger(minutes=10))
+
+# Database backup — daily at 02:00 AM
+scheduler.add_job(run_backup, CronTrigger(hour=2, minute=0))
 ```
 
 ---
@@ -207,27 +182,26 @@ N1: DPO fallback if no owner | N2: in-app bell
 S8: secure file attachments | C1: DSAR module v1
 
 ## Enterprise Decisions (New)
-E1: API auth via X-API-Key + SHA-256 hash (not OAuth for shared hosting simplicity)
+E1: API auth via X-API-Key + SHA-256 hash
 E2: Async intake queue by default (sync available via system_settings flag)
 E3: Outbound disposal via webhook POST to connected system's base_url/adrs/disposal
-E4: Consent signals matched by external_ref; unmatched signals retried by cron
+E4: Consent signals matched by external_ref; unmatched signals retried by scheduler
 E5: Auto-categorisation: first matching rule by priority wins
 E6: Integration logs purged after api_log_retention_days (default 90)
-E7: Rate limiting via integration_logs count (no Redis — shared hosting)
+E7: Rate limiting via integration_logs count
 E8: Tier upgrade via licence key; downgrade not supported (data integrity)
 
 ---
 
 ## Non-Negotiable Rules (All Versions)
-1. `password_hash($pass, PASSWORD_BCRYPT)` always
-2. PDO prepared statements — zero string interpolation in SQL
+1. `passlib.hash.bcrypt.hash(password)` always for password hashing
+2. SQLAlchemy ORM queries — no raw string interpolation in SQL
 3. CSRF on every browser form; API uses key auth (no CSRF)
-4. `session_start()` + `require_login()` + role check — every protected page
-5. `SET time_zone = '+01:00'` after every PDO connection
-6. SMTP reads from `system_settings` via `get_setting()`
-7. Enterprise tier gate: check `adrs_tier` before every Enterprise feature
-8. API keys: raw key shown once, SHA-256 hash stored — never log raw keys
-9. Disposal dispatch: queue first, send async — never block UI for webhook calls
-10. Audit log: APPEND-ONLY, REVOKE UPDATE/DELETE at DB level post-install
-11. `src/api/v1/` is publicly reachable (API) — own auth layer, no .htaccess block
-12. `src/api/get_category.php` is session-auth (Core AJAX) — separate from v1 API
+4. Session validation + `require_login()` + role check — every protected route
+5. SMTP reads from `system_settings` via `get_setting()`
+6. Enterprise tier gate: check `org.tier` before every Enterprise feature
+7. API keys: raw key shown once, SHA-256 hash stored — never log raw keys
+8. Disposal dispatch: queue first, send async — never block UI for webhook calls
+9. Audit log: APPEND-ONLY, REVOKE UPDATE/DELETE at DB level post-install
+10. API v1 routes use API key auth (no session/CSRF)
+11. All configuration via environment variables or `.env` file

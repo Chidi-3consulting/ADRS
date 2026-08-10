@@ -3,20 +3,27 @@
 ║   TWO-TIER EDITION: CORE + ENTERPRISE  |  2025  |  CONFIDENTIAL    ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║                                                                      ║
-║  STEP 1: Open .github/copilot-instructions.md in VS Code            ║
+║  STEP 1: Open .github/copilot-instructions.md in your IDE           ║
 ║          Pin it as workspace context. Keep it open every session.   ║
 ║                                                                      ║
-║  STEP 2: Follow prompts/00-local-dev-setup.md manually              ║
-║          Install Laragon, Mailpit, create DB, set up .htaccess      ║
+║  STEP 2: Install Python dependencies                                ║
+║          cd retention_py                                            ║
+║          pip install -r requirements.txt                            ║
 ║                                                                      ║
-║  STEP 3: Import SQL (in HeidiSQL or phpMyAdmin):                    ║
-║          1. sql/schema.sql        (20 tables)                       ║
-║          2. sql/seed_gdpr_ndpr.sql (30 categories + 2 users)        ║
+║  STEP 3: Start the development server                               ║
+║          .\dev-start.ps1          (Windows PowerShell)              ║
+║          python main.py           (direct, port 8200)               ║
 ║                                                                      ║
-║  STEP 4: Feed Copilot one prompt at a time in order:                ║
+║  STEP 4: Register your organisation                                 ║
+║          Navigate to http://localhost:8200/register                  ║
+║                                                                      ║
+║  STEP 5: Run the test suite                                         ║
+║          python -m pytest tests/                                    ║
+║                                                                      ║
+║  BUILD PROMPTS (reference specifications):                          ║
 ║                                                                      ║
 ║  ── CORE TIER (build and test first) ───────────────────────────   ║
-║  prompts/01-project-setup.md          Foundation + helpers          ║
+║  prompts/01-project-setup.md          Foundation + config           ║
 ║  prompts/02-auth-system.md            Login + password reset        ║
 ║  prompts/03-data-category-register.md Categories                    ║
 ║  prompts/04-retention-schedule-manager.md Records lifecycle         ║
@@ -36,18 +43,17 @@
 ║  prompts/16-enterprise-monitoring.md  Enterprise dashboard          ║
 ║  prompts/17-enterprise-onboarding-wizard.md Onboarding + upgrade    ║
 ║                                                                      ║
-║  Copilot prompt: "Using the instructions in                         ║
-║  copilot-instructions.md, build everything in this prompt.          ║
-║  Write all files in full. No TODOs."                                ║
-║                                                                      ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  DEFAULT LOGIN (change immediately after first deploy):             ║
 ║  Admin: admin@3consult-ng.com  /  password                         ║
 ║  DPO:   dpo@3consult-ng.com    /  password                         ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  ENTERPRISE API TEST (after activating Enterprise tier):            ║
-║  curl -X GET "https://retention.3consult-ng.com/api/v1/health"     ║
+║  curl -X GET "http://localhost:8200/api/v1/health"                  ║
 ║       -H "X-API-Key: adrs_YOUR_KEY_HERE"                           ║
+╠══════════════════════════════════════════════════════════════════════╣
+║  TECH STACK:  Python 3.10+ · FastAPI · SQLAlchemy · Jinja2         ║
+║               Pytest · Alembic · passlib[bcrypt] · APScheduler     ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  3Consulting Limited  |  projects@3consult-ng.com                  ║
 ║  Lagos, Nigeria  &  Oakham, UK  |  www.3consult-ng.com             ║

@@ -1,5 +1,5 @@
-"""
-Test reports — ported from PHP reports_test.php.
+﻿"""
+Test reports.
 Tests compliance report queries.
 """
 import pytest

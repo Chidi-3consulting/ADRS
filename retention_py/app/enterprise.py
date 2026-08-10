@@ -1,5 +1,5 @@
-"""
-ADRS Enterprise Engine — ported from PHP retention/src/includes/enterprise_lib.php.
+﻿"""
+ADRS Enterprise Engine
 
 Provides: API-key lifecycle (E1, SHA-256 hashed), auto-categorisation (E5 first-match-
 by-priority), async intake queue processing (E2), inbound consent signal matching (E4),
@@ -62,7 +62,7 @@ def _set_setting(db: Session, key: str, value: str, org_id: int = None):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   API Keys (E1) — ported from PHP generate_api_key / create_api_key etc.
+#   API Keys (E1)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def generate_api_key() -> dict:

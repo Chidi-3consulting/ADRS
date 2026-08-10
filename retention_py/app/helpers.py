@@ -1,4 +1,4 @@
-import hashlib
+﻿import hashlib
 import time
 from sqlalchemy.orm import Session
 from app.models import DataCategory, AuditLog
@@ -159,7 +159,7 @@ def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id
     prev_log = db.query(AuditLog).order_by(AuditLog.id.desc()).first()
     prev_hash = prev_log.row_hash if prev_log else "0" * 64
 
-    # Normalise details to canonical, key-sorted JSON (PHP-compatible)
+    # Normalise details to canonical, key-sorted JSON 
     if details is None:
         details_str = ""
     elif isinstance(details, str):
@@ -167,7 +167,7 @@ def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id
     else:
         details_str = _json.dumps(details, sort_keys=True, ensure_ascii=False)
 
-    # Canonical hash payload matches PHP audit_canonical() format
+    # Canonical hash payload  format
     created_at_str = _dt.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     payload = "|".join([
         str(org_id), action, entity_type,
@@ -192,7 +192,7 @@ def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id
     db.commit()
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Dynamic category templates — FULL replica of PHP seed_categories_only.sql
+#   Dynamic category templates — FULL replica of legacy seed_categories_only.sql
 #   Tuple: (name, description, legal_basis, days, label, method, trigger,
 #           dual_approval, review_frequency)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -493,7 +493,7 @@ CATEGORY_SEEDS = {
 def provision_org_categories(db: Session, org_id: int, country_code: str):
     """
     Seed data categories for a new organisation based on country → regulation mapping.
-    Also creates a default retention rule for each seeded category (PHP parity).
+    Also creates a default retention rule for each seeded category .
     """
     from app.models import CategoryRetentionRule
 
@@ -524,7 +524,7 @@ def provision_org_categories(db: Session, org_id: int, country_code: str):
                 db.add(cat)
                 db.flush()  # get cat.id for rule creation
 
-                # Create default retention rule for this category (PHP parity)
+                # Create default retention rule for this category 
                 rule = CategoryRetentionRule(
                     organization_id=org_id,
                     category_id=cat.id,
@@ -711,7 +711,7 @@ def send_system_email(db: Session, to_email: str, subject: str, html_body: str) 
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#   Email Templates (ported from PHP email_templates.php)
+#   Email Templates 
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _escape_html(text: str) -> str:

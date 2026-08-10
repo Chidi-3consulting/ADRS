@@ -1,5 +1,5 @@
-"""
-ADRS Authentication — ported from PHP retention/src/includes/auth.php.
+﻿"""
+ADRS Authentication
 
 Provides: password hashing/verification, session management (signed cookies),
 role-based access, login throttling, and password policy enforcement.
@@ -38,7 +38,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-# ── Password Policy (matches PHP password_policy_error) ──
+# ── Password Policy  ──
 
 def password_policy_error(password: str) -> str | None:
     """
@@ -194,13 +194,13 @@ def login_throttle_seconds(db: Session, email: str, ip: str) -> int:
         return 0  # Fail open — never break login
 
 
-# ── Email Verification (ported from PHP auth.php) ──
+# ── Email Verification  ──
 
 def issue_email_verification_token(db: Session, user_id: int) -> str:
     """
     Generate a random verification token, store its SHA-256 hash
     as a PasswordReset row with type context, and return the raw token.
-    Matches PHP issue_email_verification_token().
+    
     """
     import secrets
     import hashlib

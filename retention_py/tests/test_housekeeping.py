@@ -1,5 +1,5 @@
-"""
-Test housekeeping — ported from PHP housekeeping_test.php.
+﻿"""
+Test housekeeping.
 Tests pruning of stale login_attempts, password_resets, and old notifications.
 """
 import pytest

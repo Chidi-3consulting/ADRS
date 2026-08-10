@@ -1,13 +1,29 @@
-# Ignore local configuration and environment-specific files
-retention/src/config/config.local.php
-retention/src/config/config.test.php
-retention/.htaccess.local
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Environment and local config
+.env
+*.env.local
 
 # Runtime storage (attachments, logs, backups) and log files
-retention/storage/
+retention_py/storage/
 *.log
+
+# SQLite databases (local dev)
+retention_py/*.db
 
 # Test/debug artifacts (Playwright, screenshots)
 .playwright-mcp/
-retention/.playwright-mcp/
 audit-*.png
+
+# IDE
+.vscode/
+.idea/

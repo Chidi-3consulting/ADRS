@@ -1,5 +1,12 @@
-# Prompt 10 — File Attachments Module (S8)
+﻿# Prompt 10 — File Attachments Module (S8)
 
+
+> **Implementation Note:** This specification was originally written with PHP code examples.
+> The ADRS codebase has been fully implemented in **Python (FastAPI + SQLAlchemy + Jinja2)**.
+> The business logic, rules, and requirements documented below remain the authoritative
+> specification. See `retention_py/` for the Python implementation.
+
+---
 ## Context
 Attach documents to data records. Files stored OUTSIDE public_html.
 Served via a PHP proxy. Max 10MB. Allowed: pdf, doc, docx, xls, xlsx, jpg, jpeg, png.
