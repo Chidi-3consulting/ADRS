@@ -561,6 +561,65 @@ def handle_legal_hold(
 
     return RedirectResponse(url=f"/records/view/{id}", status_code=303)
 
+
+@router.post("/records/disposal_approve/{id}")
+def handle_disposal_approve(
+    id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """B5 dual-approval: second approver approves disposal."""
+    session = get_session(request)
+    if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
+        return RedirectResponse(url="/login", status_code=303)
+
+    from app.engine import approve_disposal
+    result = approve_disposal(
+        db, session["org_id"], id, session["user_id"],
+        ip=request.client.host if request.client else None
+    )
+    return RedirectResponse(url=f"/records/view/{id}", status_code=303)
+
+
+@router.post("/records/disposal_reject/{id}")
+def handle_disposal_reject(
+    id: int,
+    request: Request,
+    reason: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    """B5 dual-approval: reject a pending disposal request."""
+    session = get_session(request)
+    if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
+        return RedirectResponse(url="/login", status_code=303)
+
+    from app.engine import reject_disposal
+    reject_disposal(
+        db, session["org_id"], id, session["user_id"],
+        reason=reason or "", ip=request.client.host if request.client else None
+    )
+    return RedirectResponse(url=f"/records/view/{id}", status_code=303)
+
+
+@router.post("/records/consent_withdraw/{id}")
+def handle_consent_withdrawal(
+    id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """B1 consent withdrawal action."""
+    session = get_session(request)
+    if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
+        return RedirectResponse(url="/login", status_code=303)
+
+    from app.engine import log_consent_withdrawal
+    log_consent_withdrawal(
+        db, session["org_id"], id, session["user_id"],
+        ip=request.client.host if request.client else None
+    )
+    return RedirectResponse(url=f"/records/view/{id}", status_code=303)
+
+
 @router.post("/attachments/upload/{record_id}")
 async def handle_attachment_upload(
     record_id: int,

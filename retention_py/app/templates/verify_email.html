@@ -1,0 +1,53 @@
+{% extends "public_layout.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<main class="flex-grow-1 d-flex align-items-center py-5" style="background:var(--3c-light, #f8f9fa);">
+<div class="container" style="max-width:560px;">
+  <div class="card shadow-sm">
+    <div class="card-header text-center" style="background:#ff914d;color:#fff;">
+      <h1 class="h4 mb-0">Email Verification</h1>
+    </div>
+    <div class="card-body text-center">
+      {% if token_provided %}
+        {% if verified %}
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            Your email address has been verified successfully!
+          </div>
+          <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+        {% else %}
+          <div class="alert alert-danger">
+            <i class="bi bi-x-circle-fill me-2"></i>
+            This verification link is invalid or has expired.
+          </div>
+          {% if session and session.user_id %}
+          <form method="post" action="/verify_email/resend">
+            {{ csrf_field | safe }}
+            <button type="submit" class="btn btn-outline-primary">Resend verification email</button>
+          </form>
+          {% else %}
+          <a href="/login" class="btn btn-outline-primary">Log in to resend</a>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <p class="text-muted mb-3">
+          We've sent a verification email to your registered address.
+          Please check your inbox (and spam folder) and click the verification link.
+        </p>
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          You must verify your email before you can access the full application.
+        </div>
+        {% if session and session.user_id %}
+        <form method="post" action="/verify_email/resend">
+          {{ csrf_field | safe }}
+          <button type="submit" class="btn btn-primary">Resend verification email</button>
+        </form>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+</main>
+{% endblock %}

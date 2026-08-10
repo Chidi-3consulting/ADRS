@@ -1,0 +1,50 @@
+{% extends "public_layout.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<main class="flex-grow-1 d-flex align-items-center py-5" style="background:var(--3c-light, #f8f9fa);">
+<div class="container" style="max-width:560px;">
+  <div class="card shadow-sm">
+    <div class="card-header text-center" style="background:#ff914d;color:#fff;">
+      <h1 class="h4 mb-0">Set up your ADRS portal</h1>
+    </div>
+    <div class="card-body">
+      <p class="text-muted small">Create the first administrator account for this organisation. This step runs once per deployment.</p>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+      <form method="post" novalidate>
+        {{ csrf_field | safe }}
+        <div class="mb-3">
+          <label class="form-label">Organisation name *</label>
+          <input name="org_name" class="form-control" required autofocus placeholder="e.g. Acme Bank Ltd">
+          <div class="form-text">Shown in the portal header and emails.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Your name *</label>
+          <input name="name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Administrator email *</label>
+          <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password *</label>
+          <input type="password" name="password" class="form-control" required minlength="10">
+          <div class="form-text">At least 10 characters, including letters and numbers.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirm password *</label>
+          <input type="password" name="password_confirm" class="form-control" required minlength="10">
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="import_categories" id="import_categories" value="1" checked>
+          <label class="form-check-label" for="import_categories">Import the regulatory category library</label>
+        </div>
+        <button class="btn btn-primary w-100">Complete setup</button>
+      </form>
+    </div>
+  </div>
+</div>
+</main>
+{% endblock %}

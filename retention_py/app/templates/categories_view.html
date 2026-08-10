@@ -110,6 +110,7 @@
 
 {% if user_role == 'admin' %}
   <form method="post" action="/categories/delete/{{ category.id }}" class="mt-4" onsubmit="return confirm('Soft-delete this category? Blocked if active records exist.');">
+    {{ csrf_field | safe }}
     <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i> Delete Category</button>
   </form>
 {% endif %}

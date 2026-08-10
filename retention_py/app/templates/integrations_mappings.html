@@ -41,6 +41,7 @@
                 <td>{{ 'Yes' if m.is_required else 'No' }}</td>
                 <td>
                   <form method="post" action="/integrations/mappings/delete/{{ m.id }}" onsubmit="return confirm('Delete this mapping?');">
+                    {{ csrf_field | safe }}
                     <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                   </form>
                 </td>

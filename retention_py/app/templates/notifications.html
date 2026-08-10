@@ -35,6 +35,7 @@
         <small class="text-muted">{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}</small>
         {% if not n.read_at %}
         <form method="post" action="/notifications/{{ n.id }}/read" class="d-inline ms-2">
+          {{ csrf_field | safe }}
           <button class="btn btn-outline-secondary btn-sm py-0 px-1" title="Mark read">
             <i class="bi bi-check2"></i>
           </button>

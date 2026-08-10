@@ -141,14 +141,14 @@ def handle_create_category(
     request: Request,
     name: str = Form(...),
     description: str = Form(""),
-    retention_reason: str = Form(...),
-    legal_basis: str = Form(...),
-    disposal_trigger: str = Form(...),
-    retention_period_days: int = Form(0),
-    retention_period_label: str = Form(""),
-    disposal_method: str = Form(...),
-    review_frequency: str = Form(...),
-    requires_dual_approval: bool = Form(False),
+    retention_reason: str = Form("Compliance retention"),
+    legal_basis: str = Form("legitimate_interest"),
+    disposal_trigger: str = Form("date_based"),
+    retention_period_days: int = Form(365),
+    retention_period_label: str = Form("1 year"),
+    disposal_method: str = Form("delete"),
+    review_frequency: str = Form("quarterly"),
+    requires_dual_approval: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     session = get_session(request)
@@ -161,6 +161,8 @@ def handle_create_category(
     frameworks = get_country_regulations(country)
     framework_string = ",".join(frameworks)
 
+    dual_bool = bool(requires_dual_approval and str(requires_dual_approval).lower() in ("on", "true", "1"))
+
     new_cat = DataCategory(
         organization_id=org_id,
         name=name,
@@ -172,7 +174,7 @@ def handle_create_category(
         retention_period_label=retention_period_label,
         disposal_method=disposal_method,
         disposal_trigger=disposal_trigger,
-        requires_dual_approval=requires_dual_approval,
+        requires_dual_approval=dual_bool,
         review_frequency=review_frequency,
         source="custom"
     )

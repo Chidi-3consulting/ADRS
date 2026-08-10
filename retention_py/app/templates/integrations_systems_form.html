@@ -9,6 +9,7 @@
 <div class="card shadow-sm" style="max-width: 650px;">
   <div class="card-body">
     <form method="post" action="{{ '/integrations/systems/edit/' ~ system.id if system else '/integrations/systems/create' }}">
+      {{ csrf_field | safe }}
       <div class="mb-3">
         <label class="form-label fw-semibold">System Name <span class="text-danger">*</span></label>
         <input type="text" name="name" class="form-control" value="{{ system.name if system else '' }}" required placeholder="e.g. Salesforce CRM / Core Banking">

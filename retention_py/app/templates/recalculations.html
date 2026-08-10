@@ -50,10 +50,12 @@
                   {% if r.status == 'pending' %}
                     <div class="d-flex gap-1">
                       <form method="post" action="/recalculations/{{ r.id }}/action">
+                        {{ csrf_field | safe }}
                         <input type="hidden" name="decision" value="recalculate">
                         <button type="submit" class="btn btn-sm btn-success py-0 px-2" title="Apply New Date">Apply</button>
                       </form>
                       <form method="post" action="/recalculations/{{ r.id }}/action">
+                        {{ csrf_field | safe }}
                         <input type="hidden" name="decision" value="keep_original">
                         <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Keep Original Date">Keep</button>
                       </form>

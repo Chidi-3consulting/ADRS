@@ -20,6 +20,7 @@ class Organization(Base):
     last_payment_at = Column(DateTime, nullable=True)
     paystack_customer_code = Column(String(100), nullable=True)
     enterprise_licence_key = Column(String(64), nullable=True)
+    trial_ends_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -66,9 +67,9 @@ class DataCategory(Base):
     description = Column(Text, nullable=True)
     retention_reason = Column(Text, nullable=True)
     compliance_framework = Column(String(50), default="GDPR", nullable=False)
-    legal_basis = Column(Enum("legal_obligation", "contract", "consent", "legitimate_interest", "vital_interest", "public_task"), nullable=False)
+    legal_basis = Column(Enum("legal_obligation", "contract", "consent", "legitimate_interest", "vital_interest", "public_task"), default="legitimate_interest", nullable=False)
     retention_period_days = Column(Integer, default=0, nullable=False)
-    retention_period_label = Column(String(100), nullable=False)
+    retention_period_label = Column(String(100), default="1 year", nullable=False)
     disposal_method = Column(Enum("delete", "anonymise", "archive"), default="delete", nullable=False)
     disposal_trigger = Column(Enum("date_based", "consent_withdrawal", "account_closure"), default="date_based", nullable=False)
     requires_dual_approval = Column(Boolean, default=False, nullable=False)
@@ -117,7 +118,7 @@ class DataRecord(Base):
     original_category_id = Column(Integer, ForeignKey("data_categories.id", ondelete="SET NULL"), nullable=True)
     record_reference = Column(String(255), nullable=False)
     data_subject_type = Column(String(100), nullable=True)
-    collection_date = Column(Date, nullable=False)
+    collection_date = Column(Date, default=func.current_date(), nullable=False)
     retention_end_date = Column(Date, nullable=True)
     status = Column(Enum("active", "due_review", "disposal_requested", "legal_hold", "disposed"), default="active", nullable=False)
     created_by_owner = Column(Boolean, default=False, nullable=False)
@@ -180,6 +181,7 @@ class Notification(Base):
     read_at = Column(DateTime, nullable=True)
     sent_at = Column(DateTime, nullable=True)
     attempts = Column(Integer, default=0, nullable=False)
+    follow_up_sent_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)
 
 class DsarRequest(Base):
@@ -285,7 +287,7 @@ class AutoCategorizationRule(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), default=1, nullable=False)
     system_id = Column(Integer, ForeignKey("connected_systems.id"), nullable=False)
-    rule_name = Column(String(255), nullable=False)
+    rule_name = Column(String(255), default="Auto Rule", nullable=False)
     object_type = Column(String(100), nullable=False)
     condition_field = Column(String(255), nullable=True)
     condition_value = Column(String(255), nullable=True)
@@ -373,8 +375,11 @@ class RopaEntry(Base):
     organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), default=1, nullable=False)
     category_id = Column(Integer, ForeignKey("data_categories.id", ondelete="SET NULL"), nullable=True)
     activity_name = Column(String(255), nullable=False)
+    role_type = Column(Enum("controller", "processor"), default="controller", nullable=False)
     controller_name = Column(String(255), nullable=True)
     controller_contact = Column(String(255), nullable=True)
+    processor_name = Column(String(255), nullable=True)
+    processor_contact = Column(String(255), nullable=True)
     dpo_contact = Column(String(255), nullable=True)
     purpose = Column(Text, nullable=True)
     lawful_basis = Column(String(100), nullable=True)
@@ -387,6 +392,31 @@ class RopaEntry(Base):
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    category = relationship("DataCategory")
+    processors = relationship("RopaProcessor", back_populates="ropa_entry", cascade="all, delete-orphan")
+    organization = relationship("Organization")
+
+
+class RopaProcessor(Base):
+    """Linked processor sub-entries for a ROPA entry (third-party processors)."""
+    __tablename__ = "ropa_processors"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ropa_entry_id = Column(Integer, ForeignKey("ropa_entries.id", ondelete="CASCADE"), nullable=False)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), default=1, nullable=False)
+    processor_name = Column(String(255), nullable=False)
+    processor_contact = Column(String(255), nullable=True)
+    processing_purpose = Column(Text, nullable=True)
+    data_categories_handled = Column(Text, nullable=True)
+    security_measures = Column(Text, nullable=True)
+    sub_processors = Column(Text, nullable=True)
+    contract_reference = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+
+    ropa_entry = relationship("RopaEntry", back_populates="processors")
+
 
 class DpiaAssessment(Base):
     __tablename__ = "dpia_assessments"

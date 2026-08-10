@@ -9,6 +9,11 @@ from app.database import get_db
 from app.models import DataRecord, SystemSetting
 from app.auth import get_session
 from app.helpers import get_country_regulation_labels, get_framework_badge
+from app.engine import (
+    compliance_metrics, compliance_score, upcoming_deadlines,
+    disposals_by_month, org_onboarding_checklist,
+    sync_onboarding_notifications,
+)
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
 templates = Jinja2Templates(directory=templates_path)
@@ -24,36 +29,24 @@ def view_dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/login", status_code=303)
 
     org_id = session["org_id"]
-    today = date.today()
+    user_id = session["user_id"]
+    user_role = session["role"]
 
-    # Query KPI counts
-    active_count = db.query(DataRecord).filter(DataRecord.organization_id == org_id, DataRecord.status == "active").count()
-    due_review_count = db.query(DataRecord).filter(DataRecord.organization_id == org_id, DataRecord.status == "due_review").count()
-    overdue_count = db.query(DataRecord).filter(
-        DataRecord.organization_id == org_id,
-        DataRecord.status == "due_review",
-        DataRecord.retention_end_date != None,
-        DataRecord.retention_end_date < today
-    ).count()
-    hold_count = db.query(DataRecord).filter(DataRecord.organization_id == org_id, DataRecord.status == "legal_hold").count()
-    pending_approval_count = db.query(DataRecord).filter(DataRecord.organization_id == org_id, DataRecord.status == "disposal_requested").count()
-    disposed_count = db.query(DataRecord).filter(DataRecord.organization_id == org_id, DataRecord.status == "disposed").count()
+    # ── Analytics (replaces inline queries) ──
+    metrics = compliance_metrics(db, org_id)
+    score = compliance_score(db, org_id)
+    deadlines = upcoming_deadlines(db, org_id, limit=10)
+    disposal_chart = disposals_by_month(db, org_id, months=6)
 
-    # Calculate compliance score
-    total_active_lifecycle = active_count + due_review_count
-    health_score = 100
-    if total_active_lifecycle > 0 and overdue_count > 0:
-        health_score = max(0, int(((total_active_lifecycle - overdue_count) / total_active_lifecycle) * 100))
-
-    metrics = {
-        "active": active_count,
-        "due_review": due_review_count,
-        "overdue": overdue_count,
-        "legal_hold": hold_count,
-        "pending_approval": pending_approval_count,
-        "disposed": disposed_count,
-        "health_score": health_score
-    }
+    # ── Onboarding (admin only, sync idempotent) ──
+    checklist = None
+    if user_role == "admin":
+        checklist = org_onboarding_checklist(db, org_id)
+        all_done = all(step["completed"] for step in checklist)
+        if not all_done:
+            sync_onboarding_notifications(db, org_id, user_id)
+        else:
+            checklist = None  # hide when fully completed
 
     # Fetch SMTP status warnings
     smtp_host = db.query(SystemSetting).filter(SystemSetting.setting_key == "smtp_host").first()
@@ -65,15 +58,20 @@ def view_dashboard(request: Request, db: Session = Depends(get_db)):
         "page_title": "Compliance Dashboard",
         "active_nav": "dashboard",
         "user_name": session["user_name"],
-        "user_role": session["role"],
+        "user_role": user_role,
         "org_name": session["org_name"],
         "org_status": session["org_status"],
         "org_domain": session["org_domain"],
         "trial_days": 14,
         "law_label": labels["law"],
         "metrics": metrics,
+        "health_score": score,
+        "upcoming_deadlines": deadlines,
+        "disposal_chart": disposal_chart,
+        "onboarding": checklist,
         "smtp_warning": smtp_warning
     })
+
 
 @router.get("/help", response_class=HTMLResponse)
 def view_help(request: Request, db: Session = Depends(get_db)):

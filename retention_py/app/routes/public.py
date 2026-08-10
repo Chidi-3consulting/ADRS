@@ -1,3 +1,12 @@
+"""
+ADRS Public Routes — landing, login, register, password reset, logout.
+
+Security integrations:
+  - Login brute-force throttling
+  - Login attempt recording (success + failure)
+  - Password policy enforcement on registration and password reset
+  - Session timestamps for timeout enforcement
+"""
 import os
 from datetime import datetime, timedelta
 from typing import Optional
@@ -11,11 +20,15 @@ import hashlib
 
 from app.database import get_db
 from app.models import User, Organization, DataCategory, PasswordReset
-from app.auth import hash_password, verify_password, set_session, clear_session, get_session
+from app.auth import (
+    hash_password, verify_password, set_session, clear_session, get_session,
+    build_session_data, record_login_attempt, login_throttle_seconds,
+    password_policy_error,
+)
 from app.helpers import (
     ADRS_SUPPORTED_COUNTRIES, detect_visitor_currency, get_country_regulation_labels,
     provision_org_categories, get_framework_badge, totp_verify, consume_recovery_code,
-    send_system_email
+    send_system_email, log_audit,
 )
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
@@ -24,6 +37,7 @@ templates.env.globals['get_framework_badge'] = get_framework_badge
 templates.env.globals['unread_notifications_count'] = 0
 
 router = APIRouter()
+
 
 @router.get("/", response_class=HTMLResponse)
 def view_landing(request: Request, db: Session = Depends(get_db)):
@@ -44,6 +58,7 @@ def view_landing(request: Request, db: Session = Depends(get_db)):
         "geo_rate_monthly": "{:,.2f}".format(40 * geo["rate"]),
     })
 
+
 @router.get("/login", response_class=HTMLResponse)
 def view_login(request: Request):
     session = get_session(request)
@@ -56,6 +71,7 @@ def view_login(request: Request):
         "wl_footer": "3Consulting Limited"
     })
 
+
 @router.post("/login")
 def handle_login(
     response: Response,
@@ -64,14 +80,32 @@ def handle_login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    email = email.strip().lower()
+    ip = request.client.host if request.client else "127.0.0.1"
+
+    # ── Brute-force throttle check ──
+    wait = login_throttle_seconds(db, email, ip)
+    if wait > 0:
+        return templates.TemplateResponse(request=request, name="login.html", context={
+            "page_title": "Sign In — ADRS",
+            "wl_name": "ADRS",
+            "wl_footer": "3Consulting Limited",
+            "flash_error": f"Too many failed attempts. Try again in {wait} seconds."
+        })
+
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
     if not user or not verify_password(password, user.password_hash):
+        # Record failed attempt
+        record_login_attempt(db, email, ip, success=False)
         return templates.TemplateResponse(request=request, name="login.html", context={
             "page_title": "Sign In — ADRS",
             "wl_name": "ADRS",
             "wl_footer": "3Consulting Limited",
             "flash_error": "Invalid email credentials or inactive account."
         })
+
+    # Record successful attempt
+    record_login_attempt(db, email, ip, success=True)
 
     # Check 2FA
     if user.twofa_enabled:
@@ -80,26 +114,15 @@ def handle_login(
         return redir
 
     org = db.query(Organization).filter(Organization.id == user.organization_id).first()
-    
-    session_data = {
-        "user_id": user.id,
-        "user_name": user.name,
-        "email": user.email,
-        "role": user.role,
-        "org_id": org.id,
-        "org_name": org.name,
-        "org_domain": org.primary_domain,
-        "org_status": org.status,
-        "country": org.country or "OTHER",
-        "is_platform_admin": user.is_platform_admin
-    }
-    
+    session_data = build_session_data(user, org)
+
     user.last_login_at = datetime.utcnow()
     db.commit()
 
     redir = RedirectResponse(url="/dashboard", status_code=303)
     set_session(redir, session_data)
     return redir
+
 
 @router.get("/login/2fa", response_class=HTMLResponse)
 def view_2fa(request: Request):
@@ -111,6 +134,7 @@ def view_2fa(request: Request):
         "page_title": "Two-Factor Authentication — ADRS",
         "wl_name": "ADRS"
     })
+
 
 @router.post("/login/2fa")
 def handle_2fa(
@@ -140,7 +164,7 @@ def handle_2fa(
             recovery_list = json.loads(user.twofa_recovery or "[]")
         except Exception:
             recovery_list = []
-        
+
         remaining = consume_recovery_code(recovery_list, code)
         if remaining is not None:
             user.twofa_recovery = json.dumps(remaining)
@@ -149,18 +173,7 @@ def handle_2fa(
 
     if ok:
         org = db.query(Organization).filter(Organization.id == user.organization_id).first()
-        session_data = {
-            "user_id": user.id,
-            "user_name": user.name,
-            "email": user.email,
-            "role": user.role,
-            "org_id": org.id,
-            "org_name": org.name,
-            "org_domain": org.primary_domain,
-            "org_status": org.status,
-            "country": org.country or "OTHER",
-            "is_platform_admin": user.is_platform_admin
-        }
+        session_data = build_session_data(user, org)
         user.last_login_at = datetime.utcnow()
         db.commit()
 
@@ -174,12 +187,14 @@ def handle_2fa(
         "error": "Invalid verification code or recovery code."
     })
 
+
 @router.get("/forgot_password", response_class=HTMLResponse)
 def view_forgot_password(request: Request):
     return templates.TemplateResponse(request=request, name="forgot_password.html", context={
         "page_title": "Forgot Password — ADRS",
         "wl_name": "ADRS"
     })
+
 
 @router.post("/forgot_password")
 def handle_forgot_password(
@@ -192,7 +207,7 @@ def handle_forgot_password(
     if user:
         raw_token = secrets.token_hex(32)
         token_hash = hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
-        
+
         reset_row = PasswordReset(
             email=email,
             token_hash=token_hash,
@@ -219,6 +234,7 @@ def handle_forgot_password(
         "done": True
     })
 
+
 @router.get("/reset_password", response_class=HTMLResponse)
 def view_reset_password(
     request: Request,
@@ -241,6 +257,7 @@ def view_reset_password(
         "email": email,
         "token": token
     })
+
 
 @router.post("/reset_password")
 def handle_reset_password(
@@ -276,9 +293,22 @@ def handle_reset_password(
             "error": "Passwords do not match."
         })
 
+    # ── Password policy enforcement ──
+    policy_err = password_policy_error(password)
+    if policy_err:
+        return templates.TemplateResponse(request=request, name="reset_password.html", context={
+            "page_title": "Set New Password — ADRS",
+            "wl_name": "ADRS",
+            "valid_token": True,
+            "email": email,
+            "token": token,
+            "error": policy_err,
+        })
+
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
     if user:
         user.password_hash = hash_password(password)
+        user.must_change_password = False  # Clear enforcement flag
         reset.used = True
         db.commit()
 
@@ -287,6 +317,7 @@ def handle_reset_password(
         "wl_name": "ADRS",
         "ok": True
     })
+
 
 @router.get("/register", response_class=HTMLResponse)
 def view_register(request: Request):
@@ -301,6 +332,7 @@ def view_register(request: Request):
         "wl_footer": "3Consulting Limited"
     })
 
+
 @router.post("/register")
 def handle_register(
     response: Response,
@@ -310,25 +342,79 @@ def handle_register(
     user_name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
+    password_confirm: str = Form(...),
     country: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    domain_exists = db.query(Organization).filter(Organization.primary_domain == domain).first()
-    email_exists = db.query(User).filter(User.email == email).first()
+    import re
 
-    if domain_exists or email_exists:
-        err = "Domain already registered." if domain_exists else "Email address already registered."
+    # Normalise inputs
+    org_name = org_name.strip()
+    domain = domain.strip().lower()
+    user_name = user_name.strip()
+    email = email.strip().lower()
+
+    # Strip leading http(s):// or www. from domain input (common user mistake)
+    domain = re.sub(r'^https?://', '', domain)
+    domain = re.sub(r'^www\.', '', domain)
+    domain = domain.rstrip('/')
+
+    # Helper: return to form with error + retained values
+    def _error(msg: str):
         return templates.TemplateResponse(request=request, name="register.html", context={
             "page_title": "Start Free Trial — ADRS",
             "countries": ADRS_SUPPORTED_COUNTRIES,
             "wl_name": "ADRS",
             "wl_footer": "3Consulting Limited",
-            "flash_error": err
+            "flash_error": msg,
+            "form_org_name": org_name,
+            "form_domain": domain,
+            "form_user_name": user_name,
+            "form_email": email,
+            "form_country": country,
         })
 
+    # ── Domain format validation ──
+    # Supports any valid TLD: .com, .co.uk, .org, .ng, .io, .tech, .edu, etc.
+    # Pattern: one or more labels separated by dots, each label is 1-63 alphanum/hyphens,
+    # and the TLD must be at least 2 chars (letters only).
+    domain_regex = r'^(?!-)[a-z0-9-]{1,63}(?<!-)(\.[a-z0-9-]{1,63})*\.[a-z]{2,}$'
+    if not re.match(domain_regex, domain):
+        return _error(
+            "Invalid domain format. Enter your company domain without http:// "
+            "(e.g. company.com, firm.co.uk, org.ng)."
+        )
+
+    # ── Password confirmation ──
+    if password != password_confirm:
+        return _error("Passwords do not match. Please re-enter.")
+
+    # ── Password policy enforcement ──
+    policy_err = password_policy_error(password)
+    if policy_err:
+        return _error(policy_err)
+
+    # ── Email must belong to the declared domain ──
+    email_domain = email.split("@")[-1] if "@" in email else ""
+    if email_domain != domain:
+        return _error(
+            f"Your email must use the domain you registered ({domain}). "
+            f"Got @{email_domain} instead."
+        )
+
+    # ── Uniqueness checks ──
+    domain_exists = db.query(Organization).filter(Organization.primary_domain == domain).first()
+    email_exists = db.query(User).filter(User.email == email).first()
+
+    if domain_exists:
+        return _error("This domain is already registered on ADRS.")
+    if email_exists:
+        return _error("This email address is already registered.")
+
+    # ── Create organisation ──
     org = Organization(
         name=org_name,
-        slug=org_name.lower().replace(" ", "-"),
+        slug=re.sub(r'[^a-z0-9]+', '-', org_name.lower()).strip('-')[:50],
         primary_domain=domain,
         country=country,
         tier="core",
@@ -355,25 +441,188 @@ def handle_register(
     db.commit()
     db.refresh(user)
 
-    session_data = {
-        "user_id": user.id,
-        "user_name": user.name,
-        "email": user.email,
-        "role": user.role,
-        "org_id": org.id,
-        "org_name": org.name,
-        "org_domain": org.primary_domain,
-        "org_status": org.status,
-        "country": org.country or "OTHER",
-        "is_platform_admin": user.is_platform_admin
-    }
+    ip = request.client.host if request.client else "127.0.0.1"
+    record_login_attempt(db, email, ip, success=True)
+    log_audit(db, org.id, "user_registered", "user", user.id, user.id, {"email": email}, ip)
+
+    session_data = build_session_data(user, org)
 
     redir = RedirectResponse(url="/dashboard", status_code=303)
     set_session(redir, session_data)
     return redir
 
+
 @router.get("/logout")
 def handle_logout(response: Response):
     redir = RedirectResponse(url="/", status_code=303)
     clear_session(redir)
+    return redir
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#   Email Verification (Gap 2 — ported from PHP verify_email.php)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/verify_email", response_class=HTMLResponse)
+def view_verify_email(request: Request, token: str = "", db: Session = Depends(get_db)):
+    session = get_session(request)
+
+    # If token provided, verify it immediately
+    if token:
+        from app.auth import verify_email_token
+        success = verify_email_token(db, token)
+        return templates.TemplateResponse(request=request, name="verify_email.html", context={
+            "page_title": "Email Verification — ADRS",
+            "wl_name": "ADRS",
+            "wl_footer": "3Consulting Limited",
+            "verified": success,
+            "token_provided": True,
+            "session": session,
+        })
+
+    return templates.TemplateResponse(request=request, name="verify_email.html", context={
+        "page_title": "Verify Your Email — ADRS",
+        "wl_name": "ADRS",
+        "wl_footer": "3Consulting Limited",
+        "verified": False,
+        "token_provided": False,
+        "session": session,
+    })
+
+
+@router.post("/verify_email/resend", response_class=HTMLResponse)
+def resend_verification(request: Request, db: Session = Depends(get_db)):
+    """Resend verification email to the currently logged-in user."""
+    session = get_session(request)
+    if not session or "user_id" not in session:
+        return RedirectResponse(url="/login", status_code=303)
+
+    from app.auth import issue_email_verification_token
+    from app.helpers import email_verification, send_system_email
+    from app.models import User
+    from app.config import APP_URL
+
+    user = db.query(User).filter(User.id == session["user_id"]).first()
+    if user and not user.email_verified_at:
+        raw_token = issue_email_verification_token(db, user.id)
+        if raw_token:
+            verify_link = f"{APP_URL}/verify_email?token={raw_token}"
+            subject, html = email_verification(user.name, verify_link)
+            send_system_email(db, user.email, subject, html)
+
+    return RedirectResponse(url="/verify_email?resent=1", status_code=303)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#   Setup Wizard (Gap 3 — ported from PHP setup.php)
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/setup", response_class=HTMLResponse)
+def view_setup(request: Request, db: Session = Depends(get_db)):
+    from app.auth import setup_is_complete
+
+    if setup_is_complete(db):
+        session = get_session(request)
+        if session and "user_id" in session:
+            return RedirectResponse(url="/dashboard", status_code=303)
+        return RedirectResponse(url="/login", status_code=303)
+
+    return templates.TemplateResponse(request=request, name="setup.html", context={
+        "page_title": "Initial Setup — ADRS",
+        "wl_name": "ADRS",
+        "wl_footer": "3Consulting Limited",
+        "error": None,
+    })
+
+
+@router.post("/setup", response_class=HTMLResponse)
+def handle_setup(
+    request: Request,
+    org_name: str = Form(""),
+    name: str = Form(""),
+    email: str = Form(""),
+    password: str = Form(""),
+    password_confirm: str = Form(""),
+    import_categories: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    from app.auth import setup_is_complete
+    from app.models import SystemSetting
+
+    if setup_is_complete(db):
+        return RedirectResponse(url="/login", status_code=303)
+
+    error = None
+    org_name = org_name.strip()
+    name = name.strip()
+    email = email.strip().lower()
+
+    if not org_name or not name or not email:
+        error = "Organisation name, your name, and email are required."
+    elif "@" not in email or "." not in email:
+        error = "A valid email address is required."
+    else:
+        pw_err = password_policy_error(password)
+        if pw_err:
+            error = pw_err
+        elif password != password_confirm:
+            error = "Passwords do not match."
+        else:
+            existing = db.query(User).filter(User.email == email).first()
+            if existing:
+                error = "A user with that email already exists."
+
+    if error:
+        return templates.TemplateResponse(request=request, name="setup.html", context={
+            "page_title": "Initial Setup — ADRS",
+            "wl_name": "ADRS",
+            "wl_footer": "3Consulting Limited",
+            "error": error,
+        })
+
+    # Create organization
+    import secrets as _secrets
+    org = Organization(
+        name=org_name,
+        slug=org_name.lower().replace(" ", "-")[:50],
+        primary_domain=f"{org_name.lower().replace(' ', '-')}.adrs.local",
+        country="NG",
+        tier="core",
+        status="active",
+        subscription_status="trial",
+    )
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+
+    # Create admin user
+    admin = User(
+        organization_id=org.id,
+        name=name,
+        email=email,
+        password_hash=hash_password(password),
+        role="admin",
+        is_active=True,
+        must_change_password=False,
+    )
+    db.add(admin)
+    db.commit()
+    db.refresh(admin)
+
+    # System settings
+    db.add(SystemSetting(setting_key="white_label_name", setting_value=org_name))
+    db.add(SystemSetting(setting_key="app_name", setting_value=org_name))
+    db.add(SystemSetting(setting_key="setup_complete", setting_value="1"))
+    db.commit()
+
+    # Seed categories if requested
+    if import_categories == "1":
+        provision_org_categories(db, org.id, org.country or "NG")
+
+    ip = request.client.host if request.client else "127.0.0.1"
+    log_audit(db, org.id, "setup_completed", "system", org.id, admin.id, {"org": org_name}, ip)
+
+    session_data = build_session_data(admin, org)
+    redir = RedirectResponse(url="/dashboard", status_code=303)
+    set_session(redir, session_data)
     return redir

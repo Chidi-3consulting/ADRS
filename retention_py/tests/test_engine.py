@@ -17,7 +17,7 @@ def test_retention_end_date_calculation(db):
     db.add(cat)
     db.commit()
     db.refresh(cat)
-    
+
     # Register active record
     coll_date = date(2025, 1, 1)
     record = DataRecord(
@@ -30,7 +30,7 @@ def test_retention_end_date_calculation(db):
     calculate_retention_end_date(db, record)
     db.add(record)
     db.commit()
-    
+
     # Assert end date is exactly 1 year after collection
     assert record.retention_end_date == date(2026, 1, 1)
 
@@ -50,9 +50,9 @@ def test_engine_skips_dual_approval_records(db):
     db.add(cat)
     db.commit()
     db.refresh(cat)
-    
+
     # Register overdue record (flagged for review)
-    coll_date = date(2026, 1, 1) # way in the past
+    coll_date = date(2026, 1, 1)
     record = DataRecord(
         organization_id=1,
         category_id=cat.id,
@@ -63,14 +63,14 @@ def test_engine_skips_dual_approval_records(db):
     calculate_retention_end_date(db, record)
     db.add(record)
     db.commit()
-    
+
     # Execute engine checks
     results = run_retention_checks(db, 1)
-    
+
     # Assert overdue record was skipped from auto-disposal (safeguard)
     assert results["skipped_dual"] == 1
-    assert results["disposed"] == 0
-    
+    assert results["auto_disposed"] == 0
+
     # Re-read status
     db.refresh(record)
     assert record.status == "due_review"

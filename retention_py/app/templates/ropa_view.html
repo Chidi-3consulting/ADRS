@@ -1,0 +1,229 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h4 mb-0 fw-bold text-dark">{{ entry.activity_name }}</h1>
+  <div class="d-flex gap-2">
+    {% if user_role in ['admin', 'dpo'] %}
+      <a href="/ropa/{{ entry.id }}/edit" class="btn btn-outline-primary"><i class="bi bi-pencil-square"></i> Edit</a>
+    {% endif %}
+    <a href="/ropa" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Main Detail Card -->
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 bg-white mb-4">
+      <div class="card-body">
+        <h5 class="card-title fw-bold mb-3"><i class="bi bi-clipboard-data"></i> Processing Activity Details</h5>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="small text-muted">Activity Name</div>
+            <div class="fw-semibold">{{ entry.activity_name }}</div>
+          </div>
+          <div class="col-md-3">
+            <div class="small text-muted">Role Type</div>
+            <span class="badge {% if entry.role_type == 'controller' %}bg-primary{% else %}bg-warning text-dark{% endif %} text-uppercase">
+              {{ entry.role_type }}
+            </span>
+          </div>
+          <div class="col-md-3">
+            <div class="small text-muted">Lawful Basis</div>
+            <code>{{ entry.lawful_basis or '—' }}</code>
+          </div>
+        </div>
+
+        {% if entry.category %}
+        <div class="mb-3">
+          <div class="small text-muted">Linked Data Category</div>
+          <span class="badge {{ get_framework_badge(entry.category.compliance_framework) }} badge-sm text-uppercase">
+            {{ entry.category.compliance_framework }}
+          </span>
+          <span class="fw-semibold ms-1">{{ entry.category.name }}</span>
+        </div>
+        {% endif %}
+
+        <div class="mb-3">
+          <div class="small text-muted">Purpose of Processing</div>
+          <div>{{ entry.purpose or '—' }}</div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="small text-muted">Categories of Data Subjects</div>
+            <div>{{ entry.data_subjects or '—' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">Categories of Personal Data</div>
+            <div>{{ entry.data_categories or '—' }}</div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="small text-muted">Recipients</div>
+            <div>{{ entry.recipients or '—' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">Retention Summary</div>
+            <div>{{ entry.retention_summary or '—' }}</div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="small text-muted">Third Country Transfers</div>
+            <div>{{ entry.third_country_transfers or '—' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-muted">Security Measures</div>
+            <div>{{ entry.security_measures or '—' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processors Section -->
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title fw-bold mb-0"><i class="bi bi-building"></i> Third-Party Processors</h5>
+        </div>
+
+        {% if processors %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Processor Name</th>
+                  <th>Contact</th>
+                  <th>Purpose</th>
+                  <th>Contract Ref</th>
+                  {% if user_role in ['admin', 'dpo'] %}
+                    <th class="text-end">Actions</th>
+                  {% endif %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for proc in processors %}
+                <tr>
+                  <td class="fw-semibold">{{ proc.processor_name }}</td>
+                  <td class="small text-muted">{{ proc.processor_contact or '—' }}</td>
+                  <td class="small" style="max-width:200px;">{{ (proc.processing_purpose or '—')[:80] }}</td>
+                  <td class="small"><code>{{ proc.contract_reference or '—' }}</code></td>
+                  {% if user_role in ['admin', 'dpo'] %}
+                    <td class="text-end">
+                      <form method="POST" action="/ropa/{{ entry.id }}/processors/{{ proc.id }}/delete"
+                            onsubmit="return confirm('Remove this processor?')" style="display:inline;">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                      </form>
+                    </td>
+                  {% endif %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center py-3 text-muted">
+            <i class="bi bi-building fs-3 d-block mb-2 opacity-50"></i>
+            No third-party processors recorded for this activity.
+          </div>
+        {% endif %}
+
+        <!-- Add Processor Form -->
+        {% if user_role in ['admin', 'dpo'] %}
+        <hr>
+        <h6 class="fw-bold mb-3">Add Processor</h6>
+        <form method="POST" action="/ropa/{{ entry.id }}/processors/add">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <input type="text" name="processor_name" class="form-control form-control-sm"
+                     placeholder="Processor name" required>
+            </div>
+            <div class="col-md-3">
+              <input type="text" name="processor_contact" class="form-control form-control-sm"
+                     placeholder="Contact email">
+            </div>
+            <div class="col-md-3">
+              <input type="text" name="contract_reference" class="form-control form-control-sm"
+                     placeholder="Contract ref">
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg"></i> Add</button>
+            </div>
+          </div>
+          <div class="row g-2 mt-2">
+            <div class="col-md-4">
+              <textarea name="processing_purpose" class="form-control form-control-sm" rows="1"
+                        placeholder="Processing purpose"></textarea>
+            </div>
+            <div class="col-md-4">
+              <textarea name="data_categories_handled" class="form-control form-control-sm" rows="1"
+                        placeholder="Data categories handled"></textarea>
+            </div>
+            <div class="col-md-4">
+              <textarea name="security_measures" class="form-control form-control-sm" rows="1"
+                        placeholder="Security measures"></textarea>
+            </div>
+          </div>
+          <input type="hidden" name="sub_processors" value="">
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Contact Info -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 bg-white mb-4">
+      <div class="card-body">
+        <h5 class="card-title fw-bold mb-3"><i class="bi bi-person-badge"></i> Controller</h5>
+        <div class="mb-2">
+          <div class="small text-muted">Name</div>
+          <div>{{ entry.controller_name or '—' }}</div>
+        </div>
+        <div class="mb-2">
+          <div class="small text-muted">Contact</div>
+          <div>{{ entry.controller_contact or '—' }}</div>
+        </div>
+        <div>
+          <div class="small text-muted">DPO Contact</div>
+          <div>{{ entry.dpo_contact or '—' }}</div>
+        </div>
+      </div>
+    </div>
+
+    {% if entry.processor_name %}
+    <div class="card shadow-sm border-0 bg-white mb-4">
+      <div class="card-body">
+        <h5 class="card-title fw-bold mb-3"><i class="bi bi-building"></i> Processor (This Org)</h5>
+        <div class="mb-2">
+          <div class="small text-muted">Name</div>
+          <div>{{ entry.processor_name or '—' }}</div>
+        </div>
+        <div>
+          <div class="small text-muted">Contact</div>
+          <div>{{ entry.processor_contact or '—' }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm border-0 bg-white">
+      <div class="card-body">
+        <h5 class="card-title fw-bold mb-3"><i class="bi bi-clock-history"></i> Metadata</h5>
+        <div class="mb-2">
+          <div class="small text-muted">Created</div>
+          <div>{{ entry.created_at.strftime('%Y-%m-%d %H:%M') if entry.created_at else '—' }}</div>
+        </div>
+        <div>
+          <div class="small text-muted">Last Updated</div>
+          <div>{{ entry.updated_at.strftime('%Y-%m-%d %H:%M') if entry.updated_at else '—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

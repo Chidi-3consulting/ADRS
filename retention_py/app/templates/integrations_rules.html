@@ -45,6 +45,7 @@
                 <td>Category #{{ r.category_id }}</td>
                 <td>
                   <form method="post" action="/integrations/rules/delete/{{ r.id }}" onsubmit="return confirm('Delete this rule?');">
+                    {{ csrf_field | safe }}
                     <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                   </form>
                 </td>

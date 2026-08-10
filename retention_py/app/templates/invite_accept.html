@@ -15,6 +15,7 @@
       </div>
     {% else %}
       <form method="post" action="/invite/accept">
+        {{ csrf_field | safe }}
         <input type="hidden" name="token" value="{{ token }}">
 
         <div class="mb-3">

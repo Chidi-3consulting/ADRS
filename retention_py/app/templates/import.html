@@ -37,6 +37,7 @@
       <div class="card-header bg-light fw-bold py-3">Upload CSV File</div>
       <div class="card-body">
         <form method="post" action="/import" enctype="multipart/form-data">
+          {{ csrf_field | safe }}
           <div class="mb-3">
             <label class="form-label fw-semibold">Select CSV File <span class="text-danger">*</span></label>
             <input type="file" name="file" class="form-control" accept=".csv" required>

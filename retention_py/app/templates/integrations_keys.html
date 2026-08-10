@@ -54,6 +54,7 @@
                 <td>
                   {% if k.is_active and not k.revoked_at %}
                     <form method="post" action="/integrations/keys/revoke/{{ k.id }}" onsubmit="return confirm('Revoke this API Key? Connected system will lose access immediately.');">
+                      {{ csrf_field | safe }}
                       <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
                     </form>
                   {% endif %}

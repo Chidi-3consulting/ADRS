@@ -122,6 +122,7 @@
       <div class="card-header bg-white"><h5 class="card-title mb-0 fw-semibold">Reassign Category (B3)</h5></div>
       <div class="card-body">
         <form method="post" action="/records/reassign/{{ record.id }}">
+          {{ csrf_field | safe }}
           <div class="row g-2 align-items-end">
             <div class="col-md-6">
               <label class="form-label small">New Data Category</label>
@@ -158,17 +159,20 @@
             ⏳ Awaiting secondary approval. A <strong>different</strong> authorized compliance team member must confirm.
           </div>
           <div class="d-flex gap-2">
-            <form method="post" action="/records/approve/{{ record.id }}" class="flex-grow-1">
+            <form method="post" action="/records/disposal_approve/{{ record.id }}" class="flex-grow-1">
+              {{ csrf_field | safe }}
               <input type="hidden" name="decision" value="approve">
               <button class="btn btn-danger btn-sm w-100" onclick="return confirm('Confirm disposal of this record?')">Approve Disposal</button>
             </form>
-            <form method="post" action="/records/approve/{{ record.id }}" class="flex-grow-1">
+            <form method="post" action="/records/disposal_reject/{{ record.id }}" class="flex-grow-1">
+              {{ csrf_field | safe }}
               <input type="hidden" name="decision" value="reject">
               <button class="btn btn-outline-secondary btn-sm w-100">Reject Request</button>
             </form>
           </div>
         {% elif not record.legal_hold %}
           <form method="post" action="/records/dispose/{{ record.id }}">
+            {{ csrf_field | safe }}
             <button class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('{{ 'This sensitive record requires dual approval. Submit a disposal request?' if record.category.requires_dual_approval else 'Are you sure you want to dispose this record now?' }}')">
               {{ 'Request Disposal (dual approval)' if record.category.requires_dual_approval else 'Purge/Dispose Record Now' }}
             </button>
@@ -176,18 +180,21 @@
         {% endif %}
 
         {% if record.category.disposal_trigger == 'consent_withdrawal' and not record.consent_withdrawn_at %}
-          <form method="post" action="/records/consent/{{ record.id }}">
+          <form method="post" action="/records/consent_withdraw/{{ record.id }}">
+            {{ csrf_field | safe }}
             <button class="btn btn-outline-warning btn-sm w-100">Log Consent Withdrawal</button>
           </form>
         {% endif %}
 
         {% if record.legal_hold %}
           <form method="post" action="/records/legal_hold/{{ record.id }}">
+            {{ csrf_field | safe }}
             <input type="hidden" name="action" value="lift">
             <button class="btn btn-outline-success btn-sm w-100">Lift Legal Hold</button>
           </form>
         {% else %}
           <form method="post" action="/records/legal_hold/{{ record.id }}" class="mt-1">
+            {{ csrf_field | safe }}
             <div class="input-group input-group-sm">
               <input name="reason" class="form-control" placeholder="Reason for hold..." required>
               <button class="btn btn-outline-danger"><i class="bi bi-lock-fill"></i> Hold</button>
@@ -221,6 +228,7 @@
 
         {% if record.status != 'disposed' %}
         <form method="post" action="/attachments/upload/{{ record.id }}" enctype="multipart/form-data" class="mt-2">
+          {{ csrf_field | safe }}
           <div class="input-group input-group-sm">
             <input type="file" name="file" class="form-control" required>
             <button class="btn btn-primary">Upload</button>

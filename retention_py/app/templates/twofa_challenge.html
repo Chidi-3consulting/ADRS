@@ -14,6 +14,7 @@
         {% endif %}
 
         <form method="POST" action="/login/2fa">
+          {{ csrf_field | safe }}
           <div class="mb-3">
             <input type="text" name="code" class="form-control form-control-lg text-center font-monospace" placeholder="123456" required autocomplete="one-time-code" autofocus>
           </div>

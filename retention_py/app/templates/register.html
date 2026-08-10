@@ -7,30 +7,41 @@
       <p class="text-muted small" style="color: #94a3b8 !important;">14 days free trial · no credit card · cancel anytime</p>
     </div>
 
+    {% if flash_error %}
+    <div class="alert alert-danger small py-2 mb-3" role="alert">{{ flash_error }}</div>
+    {% endif %}
+
     <form method="POST" action="/register">
+      {{ csrf_field | safe }}
       <div class="mb-3">
         <label class="form-label small fw-semibold">Organisation Name</label>
-        <input type="text" name="org_name" class="form-control bg-dark border-secondary text-white py-2" required placeholder="Abc Ltd" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+        <input type="text" name="org_name" class="form-control bg-dark border-secondary text-white py-2" required placeholder="Abc Ltd" value="{{ form_org_name | default('', true) }}" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
       </div>
 
       <div class="mb-3">
         <label class="form-label small fw-semibold">Primary Domain</label>
-        <input type="text" name="domain" class="form-control bg-dark border-secondary text-white py-2" required placeholder="abc.com" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+        <input type="text" name="domain" class="form-control bg-dark border-secondary text-white py-2" required placeholder="company.com" value="{{ form_domain | default('', true) }}" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+        <div class="form-text small" style="color: #64748b; font-size: 0.7rem;">Your company domain (e.g. company.com, firm.co.uk, org.ng, startup.io). All TLDs supported.</div>
       </div>
 
       <div class="mb-3">
         <label class="form-label small fw-semibold">Your Name</label>
-        <input type="text" name="user_name" class="form-control bg-dark border-secondary text-white py-2" required placeholder="Chidi Precious" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+        <input type="text" name="user_name" class="form-control bg-dark border-secondary text-white py-2" required placeholder="Chidi Precious" value="{{ form_user_name | default('', true) }}" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
       </div>
 
       <div class="mb-3">
         <label class="form-label small fw-semibold">Email address</label>
-        <input type="email" name="email" class="form-control bg-dark border-secondary text-white py-2" required placeholder="chidi@abc.com" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+        <input type="email" name="email" class="form-control bg-dark border-secondary text-white py-2" required placeholder="chidi@company.com" value="{{ form_email | default('', true) }}" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
       </div>
 
       <div class="mb-3">
         <label class="form-label small fw-semibold">Password</label>
-        <input type="password" name="password" class="form-control bg-dark border-secondary text-white py-2" required placeholder="At least 8 characters" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+        <input type="password" name="password" class="form-control bg-dark border-secondary text-white py-2" required placeholder="At least 10 characters" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Confirm Password</label>
+        <input type="password" name="password_confirm" class="form-control bg-dark border-secondary text-white py-2" required placeholder="Re-enter your password" style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
       </div>
 
       <div class="mb-4">
@@ -38,13 +49,13 @@
         <select name="country" class="form-select bg-dark border-secondary text-white py-2" required style="background-color: rgba(15,15,27,0.8) !important; border-color: rgba(255,255,255,0.15) !important;">
           <optgroup label="Popular Countries">
             {% for code in ['NG', 'GB', 'US', 'EU', 'CA', 'AU', 'IN', 'AE', 'ZA', 'KE', 'GH', 'SG', 'BR', 'EG'] %}
-              <option value="{{ code }}">{{ countries[code] }}</option>
+              <option value="{{ code }}" {{ 'selected' if form_country == code else '' }}>{{ countries[code] }}</option>
             {% endfor %}
           </optgroup>
           <optgroup label="All Countries">
             {% for code, name in countries.items() %}
               {% if code not in ['NG', 'GB', 'US', 'EU', 'CA', 'AU', 'IN', 'AE', 'ZA', 'KE', 'GH', 'SG', 'BR', 'EG'] %}
-                <option value="{{ code }}">{{ name }}</option>
+                <option value="{{ code }}" {{ 'selected' if form_country == code else '' }}>{{ name }}</option>
               {% endif %}
             {% endfor %}
           </optgroup>

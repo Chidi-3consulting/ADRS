@@ -44,6 +44,7 @@
           Each company has one ADRS tenant. Your registered domain is fixed at sign-up and defines which work emails may join your team.
         </p>
         <form method="post" action="/settings/save">
+          {{ csrf_field | safe }}
           <input type="hidden" name="tab" value="organization">
           <div class="mb-3">
             <label class="form-label small fw-semibold">Organisation Name *</label>
@@ -105,6 +106,7 @@
   </div>
   <div class="card-body">
     <form method="post" action="/settings/save">
+      {{ csrf_field | safe }}
       <input type="hidden" name="tab" value="general">
       <input type="hidden" name="sub_tab" value="{{ sub_tab }}">
       <div class="row">
@@ -156,6 +158,7 @@
     {% elif user.twofa_enabled %}
       <p class="text-success fw-semibold"><i class="bi bi-check-circle-fill"></i> Two-factor authentication is active on your account.</p>
       <form method="post" action="/settings/save" onsubmit="return confirm('Disable 2FA? Your account will be protected by password only.');">
+        {{ csrf_field | safe }}
         <input type="hidden" name="tab" value="twofa">
         <input type="hidden" name="action" value="disable">
         <div class="mb-3" style="max-width: 320px;">
@@ -170,8 +173,9 @@
       <div class="text-center mb-3">
         <canvas id="qr"></canvas>
       </div>
-      <p class="small text-muted text-center">Can't scan? Enter this key manually: <code class="font-monospace text-primary fw-bold">{{ setup_secret }}</code></p>
+      <p class="small text-muted text-center">Can'scan? Enter this key manually: <code class="font-monospace text-primary fw-bold">{{ setup_secret }}</code></p>
       <form method="post" action="/settings/save">
+        {{ csrf_field | safe }}
         <input type="hidden" name="tab" value="twofa">
         <input type="hidden" name="action" value="enable">
         <div class="mb-3 mx-auto" style="max-width: 240px;">
@@ -181,7 +185,7 @@
         <button class="btn btn-primary w-100 fw-bold btn-sm">Enable 2FA</button>
       </form>
       <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js" integrity="sha384-HGmnkDZJy7mRkoARekrrj0VjEFSh9a0Z8qxGri/kTTAJkgR8hqD1lHsYSh3JdzRi" crossorigin="anonymous"></script>
-      <script>
+      <script nonce="{{ csp_nonce }}">
         window.addEventListener('DOMContentLoaded', () => {
           if (typeof QRCode !== 'undefined') {
             QRCode.toCanvas(document.getElementById('qr'), "{{ totp_uri }}", { width: 200 });

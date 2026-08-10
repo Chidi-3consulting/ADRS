@@ -11,6 +11,7 @@
     {% endif %}
 
     <form method="post" action="/records/edit/{{ record.id }}">
+      {{ csrf_field | safe }}
       <div class="mb-3">
         <label class="form-label small fw-semibold">Record Reference / Unique ID *</label>
         <input type="text" name="record_reference" class="form-control" value="{{ record.record_reference }}" required>

@@ -689,11 +689,19 @@ def update_profile(
         if not existing:
             user.email = email
 
-    if password and len(password) >= 8:
+    if password:
+        from app.auth import password_policy_error
+        policy_err = password_policy_error(password)
+        if policy_err:
+            return RedirectResponse(url=f"/profile?error={policy_err}", status_code=303)
         user.password_hash = hash_password(password)
+        user.must_change_password = False
+        session["must_change_password"] = False
 
     db.commit()
-    return RedirectResponse(url="/profile?saved=1", status_code=303)
+    res = RedirectResponse(url="/profile?saved=1", status_code=303)
+    set_session(res, session)
+    return res
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -775,16 +783,25 @@ def view_reports(request: Request, db: Session = Depends(get_db)):
     org_id = session["org_id"]
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
 
-    # Category breakdown
+    from app.engine import (
+        records_by_category, compliance_score as calc_score,
+        build_compliance_report, disposals_by_month,
+    )
+    from datetime import date as _date
+
+    # Category breakdown (uses analytics library)
+    cat_stats_raw = records_by_category(db, org_id, limit=50)
+    cat_stats = []
     cats = db.query(DataCategory).filter(
         DataCategory.organization_id == org_id, DataCategory.deleted_at == None
     ).all()
-    cat_stats = []
-    for c in cats:
-        count = db.query(func.count(DataRecord.id)).filter(
-            DataRecord.category_id == c.id, DataRecord.deleted_at == None
-        ).scalar() or 0
-        cat_stats.append({"name": c.name, "framework": c.compliance_framework, "count": count})
+    cat_fw_map = {c.name: c.compliance_framework for c in cats}
+    for item in cat_stats_raw:
+        cat_stats.append({
+            "name": item["category"],
+            "framework": cat_fw_map.get(item["category"], ""),
+            "count": item["count"],
+        })
 
     # Status breakdown
     status_counts = {}
@@ -796,6 +813,14 @@ def view_reports(request: Request, db: Session = Depends(get_db)):
         ).scalar() or 0
 
     total_records = sum(status_counts.values())
+    score = calc_score(db, org_id)
+
+    # Annual report data
+    current_year = _date.today().year
+    annual_report = build_compliance_report(db, org_id, current_year)
+
+    # Disposal chart data
+    disposal_chart = disposals_by_month(db, org_id, months=12)
 
     return templates.TemplateResponse(request=request, name="reports.html", context=_ctx(session, labels, {
         "page_title": "Analytics & Reports",
@@ -803,7 +828,45 @@ def view_reports(request: Request, db: Session = Depends(get_db)):
         "cat_stats": cat_stats,
         "status_counts": status_counts,
         "total_records": total_records,
+        "compliance_score": score,
+        "annual_report": annual_report,
+        "disposal_chart": disposal_chart,
     }))
+
+
+@router.get("/reports/csv")
+def export_reports_csv(request: Request, db: Session = Depends(get_db)):
+    """Export annual compliance report as CSV."""
+    session = get_session(request)
+    if not session or "user_id" not in session:
+        return RedirectResponse(url="/login", status_code=303)
+    if session["role"] not in ("admin", "dpo"):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    from app.engine import build_compliance_report, compliance_report_to_csv_rows
+    from datetime import date as _date
+    import csv, io
+
+    org_id = session["org_id"]
+    labels = get_country_regulation_labels(session.get("country", "OTHER"))
+    year = _date.today().year
+    report = build_compliance_report(db, org_id, year)
+    title = f"{labels['law']} Annual Compliance Report"
+    rows = compliance_report_to_csv_rows(report, title)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    for row in rows:
+        writer.writerow(row)
+    output.seek(0)
+
+    from fastapi.responses import StreamingResponse
+    filename = f"compliance_report_{year}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════

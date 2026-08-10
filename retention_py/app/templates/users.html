@@ -50,6 +50,7 @@
             </td>
             <td>
               <form method="post" action="/users/{{ u.id }}/toggle" class="d-inline">
+                {{ csrf_field | safe }}
                 <button class="btn btn-outline-{{ 'danger' if u.is_active else 'success' }} btn-sm py-0 px-2"
                         title="{{ 'Disable' if u.is_active else 'Enable' }}">
                   <i class="bi bi-{{ 'x-circle' if u.is_active else 'check-circle' }}"></i>
@@ -70,6 +71,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post" action="/users/create">
+        {{ csrf_field | safe }}
         <div class="modal-header">
           <h5 class="modal-title">Add Team Member</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h4 mb-0 fw-bold text-dark">Record of Processing Activities (ROPA)</h1>
+  <div class="d-flex gap-2">
+    <a href="/ropa/export/csv" class="btn btn-outline-secondary"><i class="bi bi-download"></i> Export CSV</a>
+    {% if user_role in ['admin', 'dpo'] %}
+      <a href="/ropa/create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Entry</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 bg-white">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Activity Name</th>
+            <th>Role</th>
+            <th>Lawful Basis</th>
+            <th>Purpose</th>
+            <th>Data Subjects</th>
+            <th>Created</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+          <tr>
+            <td>
+              <div class="fw-semibold text-dark">{{ entry.activity_name }}</div>
+              {% if entry.category %}
+                <div class="small text-muted" style="font-size:0.75rem;">
+                  <span class="badge {{ get_framework_badge(entry.category.compliance_framework) }} badge-sm text-uppercase">
+                    {{ entry.category.compliance_framework }}
+                  </span>
+                  {{ entry.category.name }}
+                </div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {% if entry.role_type == 'controller' %}bg-primary{% else %}bg-warning text-dark{% endif %} badge-sm text-uppercase">
+                {{ entry.role_type }}
+              </span>
+            </td>
+            <td><code>{{ entry.lawful_basis or '—' }}</code></td>
+            <td class="small text-muted" style="max-width: 240px;">{{ (entry.purpose or '—')[:100] }}</td>
+            <td class="small">{{ (entry.data_subjects or '—')[:60] }}</td>
+            <td class="small text-muted">{{ entry.created_at.strftime('%Y-%m-%d') if entry.created_at else '—' }}</td>
+            <td class="text-end">
+              <a href="/ropa/{{ entry.id }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye"></i> View</a>
+              {% if user_role in ['admin', 'dpo'] %}
+                <a href="/ropa/{{ entry.id }}/edit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil-square"></i></a>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-clipboard-data fs-1 d-block mb-3 opacity-50"></i>
+              No ROPA entries yet. Create your first processing activity record.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
