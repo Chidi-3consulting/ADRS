@@ -75,6 +75,11 @@ class DataCategory(Base):
     requires_dual_approval = Column(Boolean, default=False, nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     review_frequency = Column(Enum("monthly", "quarterly", "annually"), default="quarterly", nullable=False)
+    processing_role = Column(Enum("controller", "processor", "joint_controller"), default="controller", nullable=False)
+    processor_name = Column(String(255), nullable=True)
+    processor_contact = Column(String(255), nullable=True)
+    dpa_reference = Column(String(255), nullable=True)
+    processor_retention_status = Column(String(50), default="compliant", nullable=True)
     source = Column(Enum("seeded", "custom"), default="custom", nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=func.now(), nullable=False)
@@ -118,6 +123,8 @@ class DataRecord(Base):
     original_category_id = Column(Integer, ForeignKey("data_categories.id", ondelete="SET NULL"), nullable=True)
     record_reference = Column(String(255), nullable=False)
     data_subject_type = Column(String(100), nullable=True)
+    processor_name = Column(String(255), nullable=True)
+    processor_sync_status = Column(String(50), default="synced", nullable=True)
     collection_date = Column(Date, default=func.current_date(), nullable=False)
     retention_end_date = Column(Date, nullable=True)
     status = Column(Enum("active", "due_review", "disposal_requested", "legal_hold", "disposed"), default="active", nullable=False)
@@ -276,7 +283,7 @@ class FieldMapping(Base):
     external_object_type = Column(String(100), nullable=False)
     category_id = Column(Integer, ForeignKey("data_categories.id"), nullable=False)
     external_field = Column(String(255), nullable=False)
-    adrs_field = Column(String(100), nullable=False)
+    SafeData_field = Column(String(100), nullable=False)
     transform = Column(String(255), nullable=True)
     is_required = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=func.now(), nullable=False)
@@ -556,6 +563,18 @@ class PasswordReset(Base):
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=func.now(), nullable=False)
+
+
+class PasswordHistory(Base):
+    """Gap 3: Track password hashes to prevent reuse of recent passwords."""
+    __tablename__ = "password_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    user = relationship("User")
 
 class ScheduleReview(Base):
     __tablename__ = "schedule_reviews"

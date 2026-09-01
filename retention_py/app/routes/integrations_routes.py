@@ -202,7 +202,7 @@ def handle_create_key(
         return RedirectResponse(url="/login", status_code=303)
 
     org_id = session["org_id"]
-    raw_key = f"adrs_k1_{secrets.token_hex(24)}"
+    raw_key = f"SafeData_k1_{secrets.token_hex(24)}"
     key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
     key_prefix = raw_key[:12]
 
@@ -291,7 +291,7 @@ def handle_create_mapping(
     external_object_type: str = Form(...),
     category_id: int = Form(...),
     external_field: str = Form(...),
-    adrs_field: str = Form("record_reference"),
+    SafeData_field: str = Form("record_reference"),
     transform: Optional[str] = Form(None),
     is_required: bool = Form(False),
     db: Session = Depends(get_db)
@@ -307,7 +307,7 @@ def handle_create_mapping(
         external_object_type=external_object_type.strip(),
         category_id=category_id,
         external_field=external_field.strip(),
-        adrs_field=adrs_field.strip(),
+        SafeData_field=SafeData_field.strip(),
         transform=transform.strip() if transform else None,
         is_required=is_required
     )

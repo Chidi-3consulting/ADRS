@@ -2,7 +2,7 @@ import sys
 import os
 
 # Set DATABASE_URL to MySQL
-# os.environ["DATABASE_URL"] = "mysql+pymysql://adrs_user:adrs_pass@localhost:3306/adrs_db"
+# os.environ["DATABASE_URL"] = "mysql+pymysql://SafeData_user:SafeData_pass@localhost:3306/SafeData_db"
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

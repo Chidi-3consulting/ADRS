@@ -1,87 +1,179 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h1 class="h4 mb-0">Audit Log</h1>
-    <p class="text-muted mb-0 small">Immutable, append-only compliance evidence — tamper-evident hash chain.</p>
-  </div>
-</div>
+<div class="container-fluid px-0">
 
-<!-- Filters -->
-<form class="card shadow-sm mb-3" method="get" action="/audit">
-  <div class="card-body row g-2 align-items-end">
-    <div class="col-md-3">
-      <label class="form-label small">Action</label>
-      <select name="action" class="form-select form-select-sm">
-        <option value="">All</option>
-        {% for a in actions %}
-        <option value="{{ a }}" {{ 'selected' if a == filter_action else '' }}>{{ a }}</option>
-        {% endfor %}
-      </select>
+  <!-- Header & Chain Status -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h3 mb-0 fw-bold text-dark">Cryptographic Audit Ledger</h1>
+      </div>
+      <p class="text-muted mb-0 small mt-1">Immutable, append-only SHA-256 Merkle hash chain proving statutory data compliance</p>
     </div>
-    <div class="col-md-3">
-      <label class="form-label small">Entity Type</label>
-      <select name="entity_type" class="form-select form-select-sm">
-        <option value="">All</option>
-        {% for e in ['data_record','data_category','user','notification','system'] %}
-        <option value="{{ e }}" {{ 'selected' if e == filter_entity else '' }}>{{ e }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <button class="btn btn-primary btn-sm w-100">Filter</button>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      {% if chain_valid %}
+        <span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill small">
+          <i class="bi bi-shield-check me-1"></i> Hash Chain Verified (100% Immutable)
+        </span>
+      {% else %}
+        <span class="badge bg-danger text-white px-3 py-2 rounded-pill small">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i> Integrity Warning: Tamper Detected
+        </span>
+      {% endif %}
+      <a href="/audit/export" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-download"></i> Export Audit Log (CSV)
+      </a>
     </div>
   </div>
-</form>
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <span class="text-muted small">{{ total }} entr{{ 'y' if total == 1 else 'ies' }}</span>
+  <!-- Filters Toolbar -->
+  <div class="card shadow-sm border-0 rounded-4 bg-white mb-4">
+    <div class="card-body p-4">
+      <form class="row g-3 align-items-end" method="get" action="/audit">
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">Action</label>
+          <select name="action" class="form-select form-select-sm">
+            <option value="">All Actions</option>
+            {% for a in actions %}
+              <option value="{{ a }}" {{ 'selected' if a == filter_action else '' }}>{{ a }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">Entity Type</label>
+          <select name="entity_type" class="form-select form-select-sm">
+            <option value="">All Entities</option>
+            {% for e in ['data_record', 'data_category', 'user', 'notification', 'report', 'audit_log', 'system'] %}
+              <option value="{{ e }}" {{ 'selected' if e == filter_entity else '' }}>{{ e | replace('_', ' ') | title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">Search Keyword</label>
+          <input type="text" name="q_search" class="form-control form-control-sm" placeholder="Action or keyword..." value="{{ filter_search or '' }}">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">Start Date</label>
+          <input type="date" name="start_date" class="form-control form-control-sm" value="{{ filter_start_date or '' }}">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">End Date</label>
+          <input type="date" name="end_date" class="form-control form-control-sm" value="{{ filter_end_date or '' }}">
+        </div>
+
+        <div class="col-md-auto d-flex gap-2">
+          <button type="submit" class="btn btn-dark btn-sm px-3">
+            <i class="bi bi-funnel"></i> Filter
+          </button>
+          <a href="/audit" class="btn btn-outline-secondary btn-sm px-2" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Audit Log Ledger Table -->
+  <div class="card shadow-sm border-0 rounded-4 bg-white">
+    <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
+      <span class="text-muted small fw-semibold">Showing {{ rows | length }} of {{ total }} audit ledger entries</span>
       {% if total_pages > 1 %}
-      <nav>
-        <ul class="pagination pagination-sm mb-0">
-          <li class="page-item {{ 'disabled' if page_num <= 1 }}">
-            <a class="page-link" href="/audit?page={{ page_num - 1 }}&action={{ filter_action }}&entity_type={{ filter_entity }}">Prev</a>
-          </li>
-          {% for p in range(1, total_pages + 1) %}
-            {% if p >= page_num - 2 and p <= page_num + 2 %}
-            <li class="page-item {{ 'active' if p == page_num }}">
-              <a class="page-link" href="/audit?page={{ p }}&action={{ filter_action }}&entity_type={{ filter_entity }}">{{ p }}</a>
-            </li>
-            {% endif %}
-          {% endfor %}
-          <li class="page-item {{ 'disabled' if page_num >= total_pages }}">
-            <a class="page-link" href="/audit?page={{ page_num + 1 }}&action={{ filter_action }}&entity_type={{ filter_entity }}">Next</a>
-          </li>
-        </ul>
-      </nav>
+        <span class="small text-muted">Page {{ page_num }} of {{ total_pages }}</span>
       {% endif %}
     </div>
 
-    {% if rows | length == 0 %}
-    <p class="text-muted mb-0">No matching audit entries.</p>
-    {% else %}
-    <div class="table-responsive">
-      <table class="table table-hover align-middle small">
-        <thead>
-          <tr><th>When</th><th>Action</th><th>Entity</th><th>By</th><th>IP</th><th>Details</th></tr>
-        </thead>
-        <tbody>
-        {% for r in rows %}
-          <tr>
-            <td class="text-nowrap">{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '—' }}</td>
-            <td><code>{{ r.action }}</code></td>
-            <td>{{ r.entity_type }}{{ ' #' ~ r.entity_id if r.entity_id else '' }}</td>
-            <td>{{ user_map.get(r.performed_by, 'Automated') if r.performed_by else 'Automated' }}</td>
-            <td>{{ r.ip_address or '—' }}</td>
-            <td>{% if r.details %}<code class="small">{{ r.details }}</code>{% else %}—{% endif %}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+    <div class="card-body p-4 pt-2">
+      {% if rows | length == 0 %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-search fs-2 mb-2 d-block opacity-50"></i>
+          <div>No audit log entries match your filter criteria.</div>
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle small mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Log ID</th>
+                <th>Timestamp (UTC)</th>
+                <th>Action</th>
+                <th>Entity</th>
+                <th>Performed By</th>
+                <th>IP Address</th>
+                <th>Details Payload</th>
+                <th>Row Hash</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+                <tr>
+                  <td class="font-monospace text-muted">#{{ r.id }}</td>
+                  <td class="text-nowrap">{{ r.created_at.strftime('%Y-%m-%d %H:%M:%S') if r.created_at else '—' }}</td>
+                  <td>
+                    <span class="badge bg-{{ 'primary' if 'create' in r.action else ('warning text-dark' if 'update' in r.action or 'reassign' in r.action else ('danger' if 'delete' in r.action or 'dispose' in r.action else ('success' if 'login' in r.action or 'approve' in r.action else 'secondary'))) }}">
+                      {{ r.action }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="fw-semibold">{{ r.entity_type | replace('_', ' ') | title }}</span>
+                    {% if r.entity_id %}
+                      <span class="text-muted small font-monospace">#{{ r.entity_id }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.performed_by %}
+                      <span class="fw-semibold text-dark">{{ user_map.get(r.performed_by, 'User #' ~ r.performed_by) }}</span>
+                    {% else %}
+                      <span class="badge bg-light text-muted border">System / Automated</span>
+                    {% endif %}
+                  </td>
+                  <td class="font-monospace small text-muted">{{ r.ip_address or '127.0.0.1' }}</td>
+                  <td style="max-width: 250px;">
+                    {% if r.details %}
+                      <div class="font-monospace small text-truncate" title="{{ r.details }}">
+                        {{ r.details }}
+                      </div>
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.row_hash %}
+                      <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.65rem;" title="{{ r.row_hash }}">
+                        {{ r.row_hash[:12] }}...
+                      </span>
+                    {% else %}
+                      <span class="text-muted small">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        {% if total_pages > 1 %}
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+            <span class="small text-muted">Page {{ page_num }} of {{ total_pages }}</span>
+            <div class="d-flex gap-1">
+              {% if page_num > 1 %}
+                <a href="/audit?page={{ page_num - 1 }}&action={{ filter_action }}&entity_type={{ filter_entity }}&q_search={{ filter_search }}&start_date={{ filter_start_date }}&end_date={{ filter_end_date }}" class="btn btn-outline-secondary btn-sm">Previous</a>
+              {% endif %}
+              {% if page_num < total_pages %}
+                <a href="/audit?page={{ page_num + 1 }}&action={{ filter_action }}&entity_type={{ filter_entity }}&q_search={{ filter_search }}&start_date={{ filter_start_date }}&end_date={{ filter_end_date }}" class="btn btn-outline-secondary btn-sm">Next</a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+
+      {% endif %}
     </div>
-    {% endif %}
   </div>
+
 </div>
 {% endblock %}

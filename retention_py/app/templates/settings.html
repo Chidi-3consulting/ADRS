@@ -1,9 +1,12 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
-    <h1 class="h4 mb-0 fw-bold text-dark">Settings</h1>
-    <p class="text-muted small mb-0">Configure your organization details, retention parameters, and account security.</p>
+    <div class="d-flex align-items-center gap-2">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h1 class="h3 mb-0 fw-bold text-dark">System Settings</h1>
+    </div>
+    <p class="text-muted small mb-0 mt-1">Configure your organization details, retention parameters, email delivery, and account security</p>
   </div>
 </div>
 
@@ -41,7 +44,7 @@
       <div class="card-header bg-white fw-bold">Your Organisation</div>
       <div class="card-body">
         <p class="text-muted small mb-4">
-          Each company has one ADRS tenant. Your registered domain is fixed at sign-up and defines which work emails may join your team.
+          Each company has one SafeData tenant. Your registered domain is fixed at sign-up and defines which work emails may join your team.
         </p>
         <form method="post" action="/settings/save">
           {{ csrf_field | safe }}

@@ -1,36 +1,36 @@
-﻿import hashlib
+import hashlib
 import time
 from sqlalchemy.orm import Session
 from app.models import DataCategory, AuditLog
 
 COUNTRY_REGULATION_MAP = {
-    'NG': ['NDPR', 'BOTH'],
-    'GB': ['UK_GDPR', 'GDPR', 'BOTH'],
-    'EU': ['GDPR', 'BOTH'],
-    'US': ['CCPA', 'BOTH'],
-    'BR': ['LGPD', 'BOTH'],
-    'ZA': ['POPIA', 'BOTH'],
-    'KE': ['DPA_KE', 'BOTH'],
-    'GH': ['DPA_GH', 'BOTH'],
-    'SG': ['PDPA_SG', 'BOTH'],
-    'IN': ['DPDP', 'BOTH'],
-    'AE': ['PDPL', 'BOTH'],
-    'CA': ['PIPEDA', 'BOTH'],
-    'AU': ['APPs', 'BOTH'],
-    'EG': ['EGDPL', 'BOTH'],
+    'NG': ['NDPR'],
+    'GB': ['UK_GDPR', 'GDPR'],
+    'EU': ['GDPR'],
+    'US': ['CCPA'],
+    'BR': ['LGPD'],
+    'ZA': ['POPIA'],
+    'KE': ['DPA_KE'],
+    'GH': ['DPA_GH'],
+    'SG': ['PDPA_SG'],
+    'IN': ['DPDP'],
+    'AE': ['PDPL'],
+    'CA': ['PIPEDA'],
+    'AU': ['APPs'],
+    'EG': ['EGDPL'],
     # EU / EEA member states → GDPR
-    'AT': ['GDPR', 'BOTH'], 'BE': ['GDPR', 'BOTH'], 'BG': ['GDPR', 'BOTH'],
-    'HR': ['GDPR', 'BOTH'], 'CY': ['GDPR', 'BOTH'], 'CZ': ['GDPR', 'BOTH'],
-    'DK': ['GDPR', 'BOTH'], 'EE': ['GDPR', 'BOTH'], 'FI': ['GDPR', 'BOTH'],
-    'FR': ['GDPR', 'BOTH'], 'DE': ['GDPR', 'BOTH'], 'GR': ['GDPR', 'BOTH'],
-    'HU': ['GDPR', 'BOTH'], 'IE': ['GDPR', 'BOTH'], 'IT': ['GDPR', 'BOTH'],
-    'LV': ['GDPR', 'BOTH'], 'LT': ['GDPR', 'BOTH'], 'LU': ['GDPR', 'BOTH'],
-    'MT': ['GDPR', 'BOTH'], 'NL': ['GDPR', 'BOTH'], 'PL': ['GDPR', 'BOTH'],
-    'PT': ['GDPR', 'BOTH'], 'RO': ['GDPR', 'BOTH'], 'SK': ['GDPR', 'BOTH'],
-    'SI': ['GDPR', 'BOTH'], 'ES': ['GDPR', 'BOTH'], 'SE': ['GDPR', 'BOTH'],
-    'IS': ['GDPR', 'BOTH'], 'LI': ['GDPR', 'BOTH'], 'NO': ['GDPR', 'BOTH'],
-    'CH': ['GDPR', 'BOTH'],
-    'OTHER': ['GDPR', 'BOTH'],
+    'AT': ['GDPR'], 'BE': ['GDPR'], 'BG': ['GDPR'],
+    'HR': ['GDPR'], 'CY': ['GDPR'], 'CZ': ['GDPR'],
+    'DK': ['GDPR'], 'EE': ['GDPR'], 'FI': ['GDPR'],
+    'FR': ['GDPR'], 'DE': ['GDPR'], 'GR': ['GDPR'],
+    'HU': ['GDPR'], 'IE': ['GDPR'], 'IT': ['GDPR'],
+    'LV': ['GDPR'], 'LT': ['GDPR'], 'LU': ['GDPR'],
+    'MT': ['GDPR'], 'NL': ['GDPR'], 'PL': ['GDPR'],
+    'PT': ['GDPR'], 'RO': ['GDPR'], 'SK': ['GDPR'],
+    'SI': ['GDPR'], 'ES': ['GDPR'], 'SE': ['GDPR'],
+    'IS': ['GDPR'], 'LI': ['GDPR'], 'NO': ['GDPR'],
+    'CH': ['GDPR'],
+    'OTHER': ['GDPR'],
 }
 
 
@@ -52,7 +52,7 @@ COUNTRY_REGULATION_LABELS = {
     'OTHER': {'authority': 'National Data Authority', 'law': 'General Data Protection (GDPR-aligned)', 'audit_label': 'Annual Compliance Report'},
 }
 
-ADRS_SUPPORTED_COUNTRIES = {
+SafeData_SUPPORTED_COUNTRIES = {
     # ── Countries with explicit regulation mappings ──
     'NG': 'Nigeria', 'GB': 'United Kingdom', 'US': 'United States', 'EU': 'European Union',
     'CA': 'Canada', 'AU': 'Australia', 'IN': 'India', 'AE': 'United Arab Emirates',
@@ -102,10 +102,49 @@ ADRS_SUPPORTED_COUNTRIES = {
     'VE': 'Venezuela', 'VN': 'Vietnam', 'YE': 'Yemen', 'ZM': 'Zambia', 'ZW': 'Zimbabwe',
 }
 
-# Pricing Catalog
+# Pricing Catalog (Base USD)
 PRICING_PLANS = {
     'monthly': {'amount_cents': 4000, 'label': '$40', 'interval': 'month'},
     'yearly': {'amount_cents': 39900, 'label': '$399', 'interval': 'year', 'savings': 'Save $81'},
+}
+
+# Supported Global Jurisdictions & Currency Rates (Relative to 1 USD)
+CURRENCY_DATA = {
+    'USD': {'code': 'USD', 'symbol': '$', 'rate': 1.0, 'name': 'US Dollar'},
+    'NGN': {'code': 'NGN', 'symbol': '₦', 'rate': 1500.0, 'name': 'Nigerian Naira'},
+    'ZAR': {'code': 'ZAR', 'symbol': 'R', 'rate': 18.5, 'name': 'South African Rand'},
+    'GBP': {'code': 'GBP', 'symbol': '£', 'rate': 0.78, 'name': 'British Pound'},
+    'EUR': {'code': 'EUR', 'symbol': '€', 'rate': 0.92, 'name': 'Euro'},
+    'KES': {'code': 'KES', 'symbol': 'KSh ', 'rate': 130.0, 'name': 'Kenyan Shilling'},
+    'GHS': {'code': 'GHS', 'symbol': 'GH₵ ', 'rate': 14.5, 'name': 'Ghanaian Cedi'},
+    'CAD': {'code': 'CAD', 'symbol': 'CA$ ', 'rate': 1.36, 'name': 'Canadian Dollar'},
+    'AUD': {'code': 'AUD', 'symbol': 'A$ ', 'rate': 1.52, 'name': 'Australian Dollar'},
+    'INR': {'code': 'INR', 'symbol': '₹', 'rate': 83.5, 'name': 'Indian Rupee'},
+    'AED': {'code': 'AED', 'symbol': 'AED ', 'rate': 3.67, 'name': 'UAE Dirham'},
+    'SGD': {'code': 'SGD', 'symbol': 'S$ ', 'rate': 1.35, 'name': 'Singapore Dollar'},
+    'BRL': {'code': 'BRL', 'symbol': 'R$ ', 'rate': 5.4, 'name': 'Brazilian Real'},
+    'EGP': {'code': 'EGP', 'symbol': 'E£ ', 'rate': 48.0, 'name': 'Egyptian Pound'},
+}
+
+# Map Country Codes to Primary Currency
+COUNTRY_TO_CURRENCY = {
+    'US': 'USD',
+    'NG': 'NGN',
+    'ZA': 'ZAR',
+    'GB': 'GBP',
+    'KE': 'KES',
+    'GH': 'GHS',
+    'CA': 'CAD',
+    'AU': 'AUD',
+    'IN': 'INR',
+    'AE': 'AED',
+    'SG': 'SGD',
+    'BR': 'BRL',
+    'EG': 'EGP',
+    # European Union Eurozone
+    'EU': 'EUR', 'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR',
+    'NL': 'EUR', 'BE': 'EUR', 'IE': 'EUR', 'PT': 'EUR', 'AT': 'EUR',
+    'FI': 'EUR', 'GR': 'EUR', 'SE': 'EUR', 'PL': 'EUR',
 }
 
 def get_country_regulations(country_code: str) -> list:
@@ -115,45 +154,116 @@ def get_country_regulation_labels(country_code: str) -> dict:
     return COUNTRY_REGULATION_LABELS.get(country_code.upper(), COUNTRY_REGULATION_LABELS['OTHER'])
 
 def detect_visitor_currency(country_code: str) -> dict:
-    code = country_code.upper()
-    if code == 'NG':
-        return {'code': 'NGN', 'symbol': '₦', 'rate': 1500.0}
-    elif code == 'GB':
-        return {'code': 'GBP', 'symbol': '£', 'rate': 0.78}
-    elif code in ['EU', 'FR', 'DE', 'IT', 'ES', 'NL', 'BE', 'IE']:
-        return {'code': 'EUR', 'symbol': '€', 'rate': 0.92}
-    else:
-        return {'code': 'USD', 'symbol': '$', 'rate': 1.0}
+    """Returns currency metadata dict for a country code."""
+    code = (country_code or 'US').upper().strip()
+    curr_code = COUNTRY_TO_CURRENCY.get(code, 'USD')
+    return CURRENCY_DATA.get(curr_code, CURRENCY_DATA['USD'])
+
+def get_visitor_country(request) -> str:
+    """Extract country code from request headers (Cloudflare, proxies, GeoIP) or query/session."""
+    try:
+        # 1. Query parameter override (e.g. ?country=ZA or ?currency=NGN)
+        param_country = request.query_params.get("country") if hasattr(request, "query_params") else None
+        if param_country and len(param_country) == 2:
+            return param_country.upper()
+
+        param_curr = request.query_params.get("currency") if hasattr(request, "query_params") else None
+        if param_curr:
+            for c_code, curr in COUNTRY_TO_CURRENCY.items():
+                if curr == param_curr.upper():
+                    return c_code
+
+        # 2. Cloudflare Country Header
+        cf_country = request.headers.get("CF-IPCountry") if hasattr(request, "headers") else None
+        if cf_country and len(cf_country) == 2 and cf_country.upper() != "XX":
+            return cf_country.upper()
+
+        # 3. Standard Geo-IP proxy headers
+        if hasattr(request, "headers"):
+            for h in ["X-Country-Code", "X-Geo-Country", "X-Appengine-Country"]:
+                val = request.headers.get(h)
+                if val and len(val) == 2:
+                    return val.upper()
+    except Exception:
+        pass
+    return "US"
+
+def get_localized_pricing(country_code: str) -> dict:
+    """
+    Returns dual pricing dictionary (base USD + localized visitor currency).
+    Core Plan: $40/mo, $399/yr.
+    """
+    curr = detect_visitor_currency(country_code)
+    rate = curr.get("rate", 1.0)
+    symbol = curr.get("symbol", "$")
+    code = curr.get("code", "USD")
+    country_upper = (country_code or 'US').upper()
+
+    monthly_usd = 40
+    yearly_usd = 399
+
+    monthly_local = int(round(monthly_usd * rate))
+    yearly_local = int(round(yearly_usd * rate))
+    savings_usd = 81
+    savings_local = int(round(savings_usd * rate))
+
+    return {
+        "country_code": country_upper,
+        "country_name": SafeData_SUPPORTED_COUNTRIES.get(country_upper, country_upper),
+        "currency_code": code,
+        "currency_symbol": symbol,
+        "currency_name": curr.get("name", "US Dollar"),
+        "exchange_rate": rate,
+        "is_usd": code == "USD",
+        "monthly": {
+            "amount_usd": monthly_usd,
+            "amount_local": monthly_local,
+            "display_usd": f"${monthly_usd}",
+            "display_local": f"{symbol}{monthly_local:,}",
+            "full_display": f"${monthly_usd}/mo" if code == "USD" else f"${monthly_usd}/mo ({symbol}{monthly_local:,}/mo)"
+        },
+        "yearly": {
+            "amount_usd": yearly_usd,
+            "amount_local": yearly_local,
+            "display_usd": f"${yearly_usd}",
+            "display_local": f"{symbol}{yearly_local:,}",
+            "full_display": f"${yearly_usd}/yr" if code == "USD" else f"${yearly_usd}/yr ({symbol}{yearly_local:,}/yr)",
+            "savings_usd": f"Save ${savings_usd}",
+            "savings_local": f"Save {symbol}{savings_local:,}"
+        }
+    }
 
 def get_framework_badge(framework: str) -> str:
-    f = framework.upper()
-    if f == 'GDPR' or f == 'UK_GDPR':
-        return 'badge-gdpr'
-    elif f == 'NDPR':
-        return 'badge-ndpr'
+    f = framework.strip().upper()
+    if f in ('GDPR', 'UK_GDPR', 'EU_GDPR'):
+        return 'bg-info text-dark fw-bold'
+    elif f in ('NDPR', 'NDPA'):
+        return 'bg-success text-white fw-bold'
     elif f == 'CCPA':
-        return 'badge-ccpa'
+        return 'bg-warning text-dark fw-bold'
     elif f == 'LGPD':
-        return 'badge-lgpd'
+        return 'bg-danger text-white fw-bold'
     elif f == 'POPIA':
-        return 'badge-popia'
-    elif f == 'DPDP':
-        return 'badge-dpdp'
+        return 'bg-primary text-white fw-bold'
+    elif f in ('DPDP', 'DPDP_ACT'):
+        return 'bg-dark text-white fw-bold'
     elif f == 'PDPL':
-        return 'badge-pdpl'
+        return 'bg-secondary text-white fw-bold'
     elif f == 'PIPEDA':
-        return 'badge-pipeda'
-    elif f == 'APPs':
-        return 'badge-apps'
+        return 'bg-info text-dark fw-bold'
+    elif f == 'APPS':
+        return 'bg-primary text-white fw-bold'
     elif f == 'EGDPL':
-        return 'badge-egdpl'
+        return 'bg-success text-white fw-bold'
+    elif f in ('BOTH', 'GLOBAL', 'MULTI', 'UNIVERSAL'):
+        return 'bg-secondary text-white fw-bold'
     else:
-        return 'bg-secondary'
+        return 'bg-secondary text-white fw-bold'
 
 # Cryptographic chain logger
-def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id: int, performed_by: int, details: dict, ip_address: str):
+def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id: int = None, performed_by: int = None, details: dict = None, ip_address: str = None):
     import json as _json
-    from datetime import datetime as _dt
+    from datetime import datetime as _dt, timezone as _tz
 
     # Fetch previous log hash
     prev_log = db.query(AuditLog).order_by(AuditLog.id.desc()).first()
@@ -168,7 +278,7 @@ def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id
         details_str = _json.dumps(details, sort_keys=True, ensure_ascii=False)
 
     # Canonical hash payload  format
-    created_at_str = _dt.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    created_at_str = _dt.now(_tz.utc).strftime("%Y-%m-%d %H:%M:%S")
     payload = "|".join([
         str(org_id), action, entity_type,
         str(entity_id) if entity_id is not None else "",
@@ -671,7 +781,7 @@ def send_system_email(db: Session, to_email: str, subject: str, html_body: str) 
         return True
 
     from_email = settings.get("smtp_from_email", "no-reply@localhost")
-    from_name = settings.get("smtp_from_name", "ADRS")
+    from_name = settings.get("smtp_from_name", "SafeData")
     
     try:
         msg = MIMEMultipart("alternative")
@@ -727,13 +837,13 @@ def email_layout(title: str, body_html: str) -> str:
     return (
         '<!doctype html><html><body style="margin:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;">'
         '<div style="max-width:600px;margin:0 auto;background:#fff;">'
-        '<div style="background:#ff914d;color:#fff;padding:18px 24px;font-size:20px;font-weight:bold;">ADRS</div>'
+        '<div style="background:#ff914d;color:#fff;padding:18px 24px;font-size:20px;font-weight:bold;">SafeData</div>'
         '<div style="padding:24px;color:#222;">'
         f'<h2 style="color:#1A6187;margin-top:0;">{_escape_html(title)}</h2>'
         f'{body_html}'
         '</div>'
         f'<div style="padding:16px 24px;background:#1A1A2E;color:#cfd2dc;font-size:12px;">&copy; {year}'
-        ' 3Consulting Limited &middot; ADRS</div>'
+        ' 3Consulting Limited &middot; SafeData</div>'
         '</div></body></html>'
     )
 
@@ -748,24 +858,24 @@ def email_password_reset(name: str, reset_link: str) -> tuple:
     """Password-reset email. Returns (subject, html)."""
     body = (
         f'<p>Hello {_escape_html(name)},</p>'
-        '<p>A password reset was requested for your ADRS account. This link is valid for 1 hour:</p>'
+        '<p>A password reset was requested for your SafeData account. This link is valid for 1 hour:</p>'
         f'<p><a href="{_escape_html(reset_link)}" style="background:#ff914d;color:#fff;padding:10px 18px;'
         'text-decoration:none;border-radius:4px;display:inline-block;">Reset your password</a></p>'
         '<p>If you did not request this, you can safely ignore this email.</p>'
     )
-    return ('Reset your ADRS password', email_layout('Password reset', body))
+    return ('Reset your SafeData password', email_layout('Password reset', body))
 
 
 def email_verification(name: str, verify_link: str) -> tuple:
     """Email verification for new registrations. Returns (subject, html)."""
     body = (
         f'<p>Hello {_escape_html(name)},</p>'
-        '<p>Welcome to ADRS. Please verify your email address to activate your account:</p>'
+        '<p>Welcome to SafeData. Please verify your email address to activate your account:</p>'
         f'<p><a href="{_escape_html(verify_link)}" style="background:#ff914d;color:#fff;padding:10px 18px;'
         'text-decoration:none;border-radius:4px;display:inline-block;">Verify my email</a></p>'
         '<p>If you did not create an account, ignore this message.</p>'
     )
-    return ('Verify your ADRS account', email_layout('Email verification', body))
+    return ('Verify your SafeData account', email_layout('Email verification', body))
 
 
 def email_team_invite(name: str, org_name: str, role: str, invite_link: str) -> tuple:
@@ -774,11 +884,11 @@ def email_team_invite(name: str, org_name: str, role: str, invite_link: str) -> 
     role_label = role_labels.get(role, role)
     body = (
         f'<p>Hello {_escape_html(name)},</p>'
-        f'<p>You have been invited to join <strong>{_escape_html(org_name)}</strong> on ADRS'
+        f'<p>You have been invited to join <strong>{_escape_html(org_name)}</strong> on SafeData'
         f' as <strong>{_escape_html(role_label)}</strong>.</p>'
-        '<p>ADRS is your organisation\'s automated data retention and compliance portal.</p>'
+        '<p>SafeData is your organisation\'s automated data retention and compliance portal.</p>'
         f'<p><a href="{_escape_html(invite_link)}" style="background:#ff914d;color:#fff;padding:10px 18px;'
         'text-decoration:none;border-radius:4px;display:inline-block;">Accept invitation</a></p>'
         '<p>This link expires in 7 days. If you were not expecting this, you can ignore this email.</p>'
     )
-    return (f"You're invited to ADRS — {org_name}", email_layout('Team invitation', body))
+    return (f"You're invited to SafeData — {org_name}", email_layout('Team invitation', body))

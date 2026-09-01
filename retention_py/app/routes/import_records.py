@@ -193,5 +193,5 @@ def download_sample_csv():
     return Response(
         content=output.getvalue(),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=adrs_import_sample.csv"}
+        headers={"Content-Disposition": "attachment; filename=SafeData_import_sample.csv"}
     )

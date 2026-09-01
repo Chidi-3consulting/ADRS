@@ -1,12 +1,13 @@
-﻿"""
-ADRS Authentication
+"""
+SafeData Authentication
 
 Provides: password hashing/verification, session management (signed cookies),
 role-based access, login throttling, and password policy enforcement.
 """
 import time
+import secrets
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from itsdangerous import URLSafeSerializer
 from fastapi import Request, Response, HTTPException, status
 from fastapi.responses import RedirectResponse
@@ -15,9 +16,10 @@ from sqlalchemy.orm import Session
 from app.config import (
     SECRET_KEY, COOKIE_SECURE, COOKIE_SAMESITE,
     LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MINUTES, PASSWORD_MIN_LENGTH,
+    PASSWORD_HISTORY_COUNT, IS_TEST,
 )
 
-serializer = URLSafeSerializer(SECRET_KEY, salt="adrs-session-salt")
+serializer = URLSafeSerializer(SECRET_KEY, salt="SafeData-session-salt")
 
 
 # ── Password Hashing (bcrypt) ──
@@ -38,26 +40,110 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-# ── Password Policy  ──
+# ── Password Policy (Gap 2: strengthened) ──
 
-def password_policy_error(password: str) -> str | None:
+# Top 100 most common passwords (lowercase) for dictionary check
+_COMMON_PASSWORDS = frozenset([
+    "password", "123456", "12345678", "qwerty", "abc123", "monkey", "1234567",
+    "letmein", "trustno1", "dragon", "baseball", "iloveyou", "master", "sunshine",
+    "ashley", "bailey", "shadow", "123456789", "1234567890", "password1",
+    "password123", "admin", "administrator", "welcome", "welcome1", "p@ssw0rd",
+    "passw0rd", "football", "charlie", "donald", "michael", "jennifer", "jordan",
+    "superman", "harley", "robert", "thomas", "hockey", "ranger", "daniel",
+    "starwars", "klaster", "george", "computer", "michelle", "jessica", "pepper",
+    "1111", "zxcvbn", "555555", "11111111", "131313", "freedom", "7777777",
+    "pass", "maggie", "159753", "aaaaaa", "ginger", "princess", "joshua",
+    "cheese", "amanda", "summer", "love", "ashley1", "nicole", "chelsea",
+    "matthew", "access", "yankees", "987654321", "dallas", "austin", "thunder",
+    "taylor", "matrix", "william", "corvette", "hello", "martin", "heather",
+    "secret", "merlin", "diamond", "1234qwer", "gfhjkm", "hammer", "silver",
+    "222222", "88888888", "anthony", "justin", "test", "kitchen", "cookie",
+    "robert1", "snoopy", "changeme", "changeme1", "qwerty123", "letmein1",
+])
+
+
+def password_policy_error(password: str, user_email: str = None, user_name: str = None) -> str | None:
     """
     Returns an error message if password fails policy, else None.
-    Policy: min 10 chars, must include both letters and numbers.
+    Policy (Gap 2 — strengthened for production):
+      - Min 10 characters
+      - At least one uppercase letter
+      - At least one lowercase letter
+      - At least one digit
+      - At least one special character
+      - Not in common password list
+      - Does not contain user's email or name
     """
     if len(password) < PASSWORD_MIN_LENGTH:
         return f"Password must be at least {PASSWORD_MIN_LENGTH} characters long."
-    has_letter = any(c.isalpha() for c in password)
-    has_digit = any(c.isdigit() for c in password)
-    if not has_letter or not has_digit:
-        return "Password must include both letters and numbers."
+    if not any(c.isupper() for c in password):
+        return "Password must include at least one uppercase letter."
+    if not any(c.islower() for c in password):
+        return "Password must include at least one lowercase letter."
+    if not any(c.isdigit() for c in password):
+        return "Password must include at least one number."
+    if not any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?/~`' for c in password):
+        return "Password must include at least one special character (!@#$%^&* etc.)."
+    if password.lower() in _COMMON_PASSWORDS:
+        return "This password is too common. Please choose a more unique password."
+    # Check if password contains the user's email or name
+    if user_email:
+        email_local = user_email.split("@")[0].lower()
+        if len(email_local) >= 4 and email_local in password.lower():
+            return "Password must not contain your email address."
+    if user_name:
+        name_lower = user_name.strip().lower()
+        if len(name_lower) >= 4 and name_lower in password.lower():
+            return "Password must not contain your name."
     return None
+
+
+# ── Password History (Gap 3: prevent reuse) ──
+
+def check_password_history(db: Session, user_id: int, new_password: str) -> bool:
+    """
+    Returns True if the new password matches any of the user's last
+    PASSWORD_HISTORY_COUNT passwords. Returns False if safe to use.
+    """
+    from app.models import PasswordHistory
+    recent = db.query(PasswordHistory).filter(
+        PasswordHistory.user_id == user_id,
+    ).order_by(PasswordHistory.created_at.desc()).limit(PASSWORD_HISTORY_COUNT).all()
+
+    for entry in recent:
+        if verify_password(new_password, entry.password_hash):
+            return True  # Match found — password was recently used
+    return False
+
+
+def record_password_history(db: Session, user_id: int, password_hash: str) -> None:
+    """
+    Record a password hash in the user's history. Prunes entries beyond
+    PASSWORD_HISTORY_COUNT to keep the table lean.
+    """
+    from app.models import PasswordHistory
+    entry = PasswordHistory(
+        user_id=user_id,
+        password_hash=password_hash,
+    )
+    db.add(entry)
+    db.flush()
+
+    # Prune old entries beyond the configured history count
+    all_entries = db.query(PasswordHistory).filter(
+        PasswordHistory.user_id == user_id,
+    ).order_by(PasswordHistory.created_at.desc()).all()
+
+    if len(all_entries) > PASSWORD_HISTORY_COUNT:
+        for old in all_entries[PASSWORD_HISTORY_COUNT:]:
+            db.delete(old)
+    db.commit()
 
 
 # ── Session Management (signed cookie) ──
 
 def get_session(request: Request) -> dict:
-    cookie = request.cookies.get("adrs_session")
+    cookie = request.cookies.get("SafeData_session")
     if not cookie:
         return {}
     try:
@@ -69,7 +155,7 @@ def get_session(request: Request) -> dict:
 def set_session(response: Response, data: dict):
     val = serializer.dumps(data)
     response.set_cookie(
-        key="adrs_session",
+        key="SafeData_session",
         value=val,
         httponly=True,
         samesite=COOKIE_SAMESITE,
@@ -78,7 +164,7 @@ def set_session(response: Response, data: dict):
 
 
 def clear_session(response: Response):
-    response.delete_cookie("adrs_session")
+    response.delete_cookie("SafeData_session")
 
 
 def build_session_data(user, org, extra: dict = None) -> dict:
@@ -92,6 +178,7 @@ def build_session_data(user, org, extra: dict = None) -> dict:
         "user_name": user.name,
         "email": user.email,
         "role": user.role,
+        "csrf_token": secrets.token_hex(32),
         "org_id": org.id,
         "org_name": org.name,
         "org_domain": org.primary_domain,
@@ -168,7 +255,7 @@ def login_throttle_seconds(db: Session, email: str, ip: str) -> int:
         from app.models import LoginAttempt
         from sqlalchemy import func
 
-        window_start = datetime.utcnow() - timedelta(minutes=LOGIN_WINDOW_MINUTES)
+        window_start = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=LOGIN_WINDOW_MINUTES)
         count = db.query(func.count(LoginAttempt.id)).filter(
             LoginAttempt.success == False,
             LoginAttempt.created_at >= window_start,
@@ -187,7 +274,7 @@ def login_throttle_seconds(db: Session, email: str, ip: str) -> int:
 
         if earliest:
             unlock_at = earliest + timedelta(minutes=LOGIN_WINDOW_MINUTES)
-            remaining = (unlock_at - datetime.utcnow()).total_seconds()
+            remaining = (unlock_at - datetime.now(timezone.utc).replace(tzinfo=None)).total_seconds()
             return max(1, int(remaining))
         return 0
     except Exception:
@@ -216,7 +303,7 @@ def issue_email_verification_token(db: Session, user_id: int) -> str:
     reset = PasswordReset(
         email=user.email,
         token_hash=f"ev_{token_hash}",  # Prefix to distinguish from password resets
-        expires_at=datetime.utcnow() + timedelta(hours=24),
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=24),
         used=False,
     )
     db.add(reset)
@@ -237,7 +324,7 @@ def verify_email_token(db: Session, token: str) -> bool:
     reset = db.query(PasswordReset).filter(
         PasswordReset.token_hash == token_hash,
         PasswordReset.used == False,
-        PasswordReset.expires_at >= datetime.utcnow(),
+        PasswordReset.expires_at >= datetime.now(timezone.utc).replace(tzinfo=None),
     ).first()
 
     if not reset:
@@ -247,7 +334,7 @@ def verify_email_token(db: Session, token: str) -> bool:
     if not user:
         return False
 
-    user.email_verified_at = datetime.utcnow()
+    user.email_verified_at = datetime.now(timezone.utc).replace(tzinfo=None)
     reset.used = True
     db.commit()
     return True
@@ -260,3 +347,47 @@ def setup_is_complete(db: Session) -> bool:
         SystemSetting.setting_key == "setup_complete"
     ).first()
     return row is not None and row.setting_value == "1"
+
+
+# ── Step-Up Authentication (Safe Delete & High-Risk Actions) ──
+
+def verify_stepup_authentication(db: Session, user_id: int, auth_credential: str) -> tuple[bool, str]:
+    """
+    Verify step-up credentials (password or 2FA TOTP code) for sensitive operations
+    (e.g., permanent disposal, bulk safe delete, legal hold changes).
+    Returns (True, "OK") or (False, "Error message").
+    """
+    from app.models import User
+    from app.helpers import totp_verify, consume_recovery_code
+
+    if not auth_credential or not str(auth_credential).strip():
+        return False, "Authentication credential (password or 2FA code) is required for safe delete."
+
+    cred = str(auth_credential).strip()
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return False, "User not found."
+
+    # 1. If user has 2FA enabled, check TOTP code or recovery code first
+    if user.twofa_enabled and user.twofa_secret:
+        if totp_verify(user.twofa_secret, cred):
+            return True, "OK"
+        if user.twofa_recovery:
+            try:
+                import json as _json
+                recovery_list = _json.loads(user.twofa_recovery) if isinstance(user.twofa_recovery, str) else (user.twofa_recovery or [])
+                remaining = consume_recovery_code(recovery_list, cred)
+                if remaining is not None:
+                    user.twofa_recovery = _json.dumps(remaining)
+                    db.commit()
+                    return True, "OK"
+            except Exception:
+                pass
+
+    # 2. Verify account password
+    if user.password_hash and verify_password(cred, user.password_hash):
+        return True, "OK"
+
+    if user.twofa_enabled:
+        return False, "Invalid account password or 2FA authenticator code."
+    return False, "Invalid account password confirmation."

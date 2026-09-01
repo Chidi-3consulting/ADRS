@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -24,7 +24,7 @@ from app.models import (
     AutoCategorizationRule, FieldMapping, OrganizationInvitation
 )
 from app.auth import get_session, hash_password, set_session
-from app.helpers import get_country_regulation_labels, get_framework_badge, send_system_email
+from app.helpers import get_country_regulation_labels, get_framework_badge, send_system_email, log_audit
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
 templates = Jinja2Templates(directory=templates_path)
@@ -64,7 +64,8 @@ def _set_org_setting(db: Session, org_id: int, key: str, value: str):
 # ---------------------------------------------------------------------------
 #   Common context builder
 # ---------------------------------------------------------------------------
-def _ctx(session, labels, extra: dict = {}):
+def _ctx(session, labels, extra: dict = None):
+    extra = extra or {}
     base = {
         "user_name": session["user_name"],
         "user_role": session["role"],
@@ -83,7 +84,7 @@ def _ctx(session, labels, extra: dict = {}):
 #   AUDIT LOG
 # ═══════════════════════════════════════════════════════════════════════════
 @router.get("/audit", response_class=HTMLResponse)
-def view_audit_log(request: Request, page: int = 1, action: str = "", entity_type: str = "", db: Session = Depends(get_db)):
+def view_audit_log(request: Request, page: int = 1, action: str = "", entity_type: str = "", q_search: str = "", start_date: str = "", end_date: str = "", db: Session = Depends(get_db)):
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
@@ -99,6 +100,20 @@ def view_audit_log(request: Request, page: int = 1, action: str = "", entity_typ
         q = q.filter(AuditLog.action == action)
     if entity_type:
         q = q.filter(AuditLog.entity_type == entity_type)
+    if q_search:
+        q = q.filter(or_(AuditLog.action.ilike(f"%{q_search}%"), AuditLog.entity_type.ilike(f"%{q_search}%")))
+    if start_date:
+        try:
+            sd = datetime.strptime(start_date, "%Y-%m-%d")
+            q = q.filter(AuditLog.created_at >= sd)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            ed = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+            q = q.filter(AuditLog.created_at < ed)
+        except ValueError:
+            pass
 
     total = q.count()
     per_page = 50
@@ -108,18 +123,10 @@ def view_audit_log(request: Request, page: int = 1, action: str = "", entity_typ
 
     rows = q.order_by(AuditLog.id.desc()).offset(offset).limit(per_page).all()
 
-    # Verify SHA-256 HMAC cryptographic chain for this org
-    all_logs = db.query(AuditLog).filter(AuditLog.organization_id == org_id).order_by(AuditLog.id.asc()).all()
-    chain_valid = True
-    prev_h = "0" * 64
-    for r in all_logs:
-        details_str = str(r.details or {})
-        payload = f"{r.organization_id}|{r.action}|{r.entity_type}|{r.entity_id}|{r.performed_by}|{details_str}|{r.ip_address}|{prev_h}"
-        computed = hashlib.sha256(payload.encode('utf-8')).hexdigest()
-        if r.row_hash and r.row_hash != computed:
-            chain_valid = False
-            break
-        prev_h = r.row_hash or prev_h
+    # P1 fix: Use engine's verify_audit_chain() instead of full in-line table scan
+    from app.engine import verify_audit_chain
+    chain_result = verify_audit_chain(db, org_id=org_id)
+    chain_valid = chain_result["ok"]
 
     # Distinct actions for filter dropdown
     actions = [r[0] for r in db.query(AuditLog.action).filter(
@@ -141,6 +148,9 @@ def view_audit_log(request: Request, page: int = 1, action: str = "", entity_typ
         "actions": actions,
         "filter_action": action,
         "filter_entity": entity_type,
+        "filter_search": q_search,
+        "filter_start_date": start_date,
+        "filter_end_date": end_date,
         "page_num": page,
         "total_pages": pages,
         "total": total,
@@ -172,11 +182,13 @@ def export_audit_csv(request: Request, db: Session = Depends(get_db)):
             l.ip_address or "127.0.0.1", l.row_hash or ""
         ])
 
+    log_audit(db, org_id, "audit_log_exported", "audit_log", None, session["user_id"], {"count": len(logs)}, request.client.host if request.client else None)
+
     output.seek(0)
     return StreamingResponse(
         io.BytesIO(output.getvalue().encode('utf-8')),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=adrs_audit_log.csv"}
+        headers={"Content-Disposition": "attachment; filename=SafeData_audit_log.csv"}
     )
 
 
@@ -185,7 +197,7 @@ def export_audit_csv(request: Request, db: Session = Depends(get_db)):
 #   NOTIFICATIONS
 # ═══════════════════════════════════════════════════════════════════════════
 @router.get("/notifications", response_class=HTMLResponse)
-def view_notifications(request: Request, db: Session = Depends(get_db)):
+def view_notifications(request: Request, filter: str = "all", db: Session = Depends(get_db)):
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
@@ -194,15 +206,33 @@ def view_notifications(request: Request, db: Session = Depends(get_db)):
     user_id = session["user_id"]
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
 
-    notifications = db.query(Notification).filter(
+    query = db.query(Notification).filter(
         Notification.organization_id == org_id,
         Notification.recipient_id == user_id
-    ).order_by(Notification.id.desc()).limit(100).all()
+    )
+
+    if filter == "unread":
+        query = query.filter(Notification.read_at == None)
+    elif filter == "warning":
+        query = query.filter(Notification.type.in_(["retention_warning", "escalation"]))
+    elif filter == "disposal":
+        query = query.filter(Notification.type == "disposal_complete")
+    elif filter == "recalculation":
+        query = query.filter(Notification.type == "recalculation_needed")
+
+    notifications = query.order_by(Notification.id.desc()).limit(100).all()
+    unread_count = db.query(Notification).filter(
+        Notification.organization_id == org_id,
+        Notification.recipient_id == user_id,
+        Notification.read_at == None
+    ).count()
 
     return templates.TemplateResponse(request=request, name="notifications.html", context=_ctx(session, labels, {
         "page_title": "Notification Inbox",
         "active_nav": "notifications",
         "notifications": notifications,
+        "current_filter": filter,
+        "unread_count": unread_count,
     }))
 
 
@@ -216,6 +246,44 @@ def mark_notification_read(nid: int, request: Request, db: Session = Depends(get
     if notif and not notif.read_at:
         notif.read_at = datetime.now(timezone.utc)
         db.commit()
+    return RedirectResponse(url="/notifications", status_code=303)
+
+
+@router.post("/notifications/read-all")
+def mark_all_notifications_read(request: Request, db: Session = Depends(get_db)):
+    session = get_session(request)
+    if not session or "user_id" not in session:
+        return RedirectResponse(url="/login", status_code=303)
+
+    user_id = session["user_id"]
+    org_id = session["org_id"]
+    db.query(Notification).filter(
+        Notification.organization_id == org_id,
+        Notification.recipient_id == user_id,
+        Notification.read_at == None
+    ).update({"read_at": datetime.now(timezone.utc)}, synchronize_session=False)
+    db.commit()
+
+    log_audit(db, org_id, "notifications_marked_all_read", "notification", None, user_id, None, request.client.host if request.client else None)
+    return RedirectResponse(url="/notifications", status_code=303)
+
+
+@router.post("/notifications/clear")
+def clear_read_notifications(request: Request, db: Session = Depends(get_db)):
+    session = get_session(request)
+    if not session or "user_id" not in session:
+        return RedirectResponse(url="/login", status_code=303)
+
+    user_id = session["user_id"]
+    org_id = session["org_id"]
+    db.query(Notification).filter(
+        Notification.organization_id == org_id,
+        Notification.recipient_id == user_id,
+        Notification.read_at != None
+    ).delete(synchronize_session=False)
+    db.commit()
+
+    log_audit(db, org_id, "notifications_cleared", "notification", None, user_id, None, request.client.host if request.client else None)
     return RedirectResponse(url="/notifications", status_code=303)
 
 
@@ -310,10 +378,10 @@ def invite_user(
     db.commit()
 
     invite_url = f"{request.base_url}invite/accept?token={raw_token}"
-    subject = "You have been invited to ADRS"
+    subject = "You have been invited to SafeData"
     html = f"""
     <p>Hello {name},</p>
-    <p>You have been invited to join the ADRS workspace for {session['org_name']} as a <strong>{role.upper()}</strong>.</p>
+    <p>You have been invited to join the SafeData workspace for {session['org_name']} as a <strong>{role.upper()}</strong>.</p>
     <p><a href="{invite_url}">Click here to accept invitation and set your password</a></p>
     <p>This invitation link is valid for 7 days.</p>
     """
@@ -381,7 +449,7 @@ def view_legal(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse(request=request, name="legal.html", context={
         "page_title": "Legal & Terms of Service",
-        "wl_name": "ADRS",
+        "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
         "law_label": labels["law"]
     })
@@ -422,7 +490,7 @@ SETTINGS_SECTIONS = {
             "smtp_port": {"label": "SMTP Port", "type": "number", "placeholder": "587"},
             "smtp_user": {"label": "SMTP Username", "type": "text", "placeholder": ""},
             "smtp_pass": {"label": "SMTP Password", "type": "password", "placeholder": ""},
-            "smtp_from_name": {"label": "Sender Name", "type": "text", "placeholder": "ADRS Notifications"},
+            "smtp_from_name": {"label": "Sender Name", "type": "text", "placeholder": "SafeData Notifications"},
             "smtp_from_email": {"label": "Sender Email", "type": "text", "placeholder": "no-reply@yourdomain.com"},
         }
     },
@@ -506,7 +574,7 @@ def view_settings(
                 session["2fa_setup_secret"] = setup_secret
             
             from app.helpers import totp_uri
-            totp_uri_val = totp_uri(setup_secret, user.email, "ADRS")
+            totp_uri_val = totp_uri(setup_secret, user.email, "SafeData")
             context_data["setup_secret"] = setup_secret
             context_data["totp_uri"] = totp_uri_val
 
@@ -700,6 +768,7 @@ def update_profile(
 
     db.commit()
     res = RedirectResponse(url="/profile?saved=1", status_code=303)
+    # F1 fix: always persist the updated session (e.g. must_change_password flag)
     set_session(res, session)
     return res
 
@@ -773,7 +842,17 @@ def view_integrations(request: Request, db: Session = Depends(get_db)):
 #   ANALYTICS & REPORTS
 # ═══════════════════════════════════════════════════════════════════════════
 @router.get("/reports", response_class=HTMLResponse)
-def view_reports(request: Request, db: Session = Depends(get_db)):
+def view_reports(
+    request: Request,
+    range: str = "ytd",
+    start_date: str = "",
+    end_date: str = "",
+    category_id: int = 0,
+    role_filter: str = "all",
+    status: str = "all",
+    page: int = 1,
+    db: Session = Depends(get_db)
+):
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
@@ -783,90 +862,431 @@ def view_reports(request: Request, db: Session = Depends(get_db)):
     org_id = session["org_id"]
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
 
+    from datetime import date as _date, timedelta
     from app.engine import (
-        records_by_category, compliance_score as calc_score,
+        records_by_category, compliance_scorecard_details,
         build_compliance_report, disposals_by_month,
     )
-    from datetime import date as _date
 
-    # Category breakdown (uses analytics library)
-    cat_stats_raw = records_by_category(db, org_id, limit=50)
-    cat_stats = []
+    today = _date.today()
+    start_d = None
+    end_d = today
+
+    if range == "30d":
+        start_d = today - timedelta(days=30)
+    elif range == "90d":
+        start_d = today - timedelta(days=90)
+    elif range == "ytd":
+        start_d = _date(today.year, 1, 1)
+    elif range == "1y":
+        start_d = today - timedelta(days=365)
+    elif range == "custom":
+        if start_date:
+            try:
+                start_d = datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                start_d = None
+        if end_date:
+            try:
+                end_d = datetime.strptime(end_date, "%Y-%m-%d").date()
+            except ValueError:
+                end_d = today
+    elif range == "all":
+        start_d = None
+        end_d = None
+
+    # Base query for records
+    q = db.query(DataRecord).filter(
+        DataRecord.organization_id == org_id,
+        DataRecord.deleted_at == None
+    )
+
+    if category_id > 0:
+        q = q.filter(DataRecord.category_id == category_id)
+
+    if status != "all" and status:
+        q = q.filter(DataRecord.status == status)
+
+    if start_d:
+        q = q.filter(DataRecord.collection_date >= start_d)
+    if end_d:
+        q = q.filter(DataRecord.collection_date <= end_d)
+
+    if role_filter == "processor":
+        q = q.filter(DataRecord.processor_name != None, DataRecord.processor_name != "")
+    elif role_filter == "controller":
+        q = q.filter(or_(DataRecord.processor_name == None, DataRecord.processor_name == ""))
+
+    total_filtered = q.count()
+    per_page = 15
+    pages = max(1, (total_filtered + per_page - 1) // per_page)
+    page = min(max(1, page), pages)
+    offset = (page - 1) * per_page
+    records_sample = q.order_by(DataRecord.collection_date.desc()).offset(offset).limit(per_page).all()
+
+    # Category stats
     cats = db.query(DataCategory).filter(
         DataCategory.organization_id == org_id, DataCategory.deleted_at == None
     ).all()
-    cat_fw_map = {c.name: c.compliance_framework for c in cats}
-    for item in cat_stats_raw:
+
+    cat_stats = []
+    for c in cats:
+        cnt = db.query(func.count(DataRecord.id)).filter(
+            DataRecord.organization_id == org_id,
+            DataRecord.category_id == c.id,
+            DataRecord.deleted_at == None
+        ).scalar() or 0
         cat_stats.append({
-            "name": item["category"],
-            "framework": cat_fw_map.get(item["category"], ""),
-            "count": item["count"],
+            "id": c.id,
+            "name": c.name,
+            "framework": c.compliance_framework,
+            "processing_role": c.processing_role or "controller",
+            "processor_name": c.processor_name or "",
+            "count": cnt,
         })
 
-    # Status breakdown
+    # Status counts
     status_counts = {}
     for s in ["active", "due_review", "disposal_requested", "legal_hold", "disposed"]:
-        status_counts[s] = db.query(func.count(DataRecord.id)).filter(
+        sq = db.query(func.count(DataRecord.id)).filter(
             DataRecord.organization_id == org_id,
             DataRecord.status == s,
             DataRecord.deleted_at == None
-        ).scalar() or 0
+        )
+        if start_d:
+            sq = sq.filter(DataRecord.collection_date >= start_d)
+        if end_d:
+            sq = sq.filter(DataRecord.collection_date <= end_d)
+        status_counts[s] = sq.scalar() or 0
 
-    total_records = sum(status_counts.values())
-    score = calc_score(db, org_id)
-
-    # Annual report data
-    current_year = _date.today().year
-    annual_report = build_compliance_report(db, org_id, current_year)
-
-    # Disposal chart data
+    scorecard = compliance_scorecard_details(db, org_id)
     disposal_chart = disposals_by_month(db, org_id, months=12)
 
     return templates.TemplateResponse(request=request, name="reports.html", context=_ctx(session, labels, {
         "page_title": "Analytics & Reports",
         "active_nav": "reports",
         "cat_stats": cat_stats,
+        "categories": cats,
         "status_counts": status_counts,
-        "total_records": total_records,
-        "compliance_score": score,
-        "annual_report": annual_report,
+        "total_records": total_filtered,
+        "scorecard": scorecard,
         "disposal_chart": disposal_chart,
+        "records_sample": records_sample,
+        "page_num": page,
+        "total_pages": pages,
+        "filter_range": range,
+        "filter_start_date": start_date or (start_d.isoformat() if start_d else ""),
+        "filter_end_date": end_date or (end_d.isoformat() if end_d else ""),
+        "filter_category_id": category_id,
+        "filter_role": role_filter,
+        "filter_status": status,
     }))
 
 
 @router.get("/reports/csv")
-def export_reports_csv(request: Request, db: Session = Depends(get_db)):
-    """Export annual compliance report as CSV."""
+def export_reports_csv(
+    request: Request,
+    range: str = "ytd",
+    start_date: str = "",
+    end_date: str = "",
+    category_id: int = 0,
+    role_filter: str = "all",
+    status: str = "all",
+    db: Session = Depends(get_db)
+):
+    """Export filtered compliance and retention inventory report as CSV."""
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
     if session["role"] not in ("admin", "dpo"):
         raise HTTPException(status_code=403, detail="Access denied")
 
-    from app.engine import build_compliance_report, compliance_report_to_csv_rows
-    from datetime import date as _date
+    from datetime import date as _date, timedelta
     import csv, io
+    from fastapi.responses import StreamingResponse
 
     org_id = session["org_id"]
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
-    year = _date.today().year
-    report = build_compliance_report(db, org_id, year)
-    title = f"{labels['law']} Annual Compliance Report"
-    rows = compliance_report_to_csv_rows(report, title)
+    today = _date.today()
+    start_d = None
+    end_d = today
+
+    if range == "30d":
+        start_d = today - timedelta(days=30)
+    elif range == "90d":
+        start_d = today - timedelta(days=90)
+    elif range == "ytd":
+        start_d = _date(today.year, 1, 1)
+    elif range == "1y":
+        start_d = today - timedelta(days=365)
+    elif range == "custom":
+        if start_date:
+            try:
+                start_d = datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                start_d = None
+        if end_date:
+            try:
+                end_d = datetime.strptime(end_date, "%Y-%m-%d").date()
+            except ValueError:
+                end_d = today
+
+    q = db.query(DataRecord).filter(
+        DataRecord.organization_id == org_id,
+        DataRecord.deleted_at == None
+    )
+
+    if category_id > 0:
+        q = q.filter(DataRecord.category_id == category_id)
+    if status != "all" and status:
+        q = q.filter(DataRecord.status == status)
+    if start_d:
+        q = q.filter(DataRecord.collection_date >= start_d)
+    if end_d:
+        q = q.filter(DataRecord.collection_date <= end_d)
+    if role_filter == "processor":
+        q = q.filter(DataRecord.processor_name != None, DataRecord.processor_name != "")
+    elif role_filter == "controller":
+        q = q.filter(or_(DataRecord.processor_name == None, DataRecord.processor_name == ""))
+
+    records = q.order_by(DataRecord.collection_date.desc()).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
-    for row in rows:
-        writer.writerow(row)
-    output.seek(0)
+    writer.writerow([f"{labels['law']} — Data Retention & Compliance Audit Report"])
+    writer.writerow(["Generated At", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")])
+    writer.writerow(["Filter Range", range, "Start Date", start_d.isoformat() if start_d else "All", "End Date", end_d.isoformat() if end_d else "All"])
+    writer.writerow(["Total Records", len(records)])
+    writer.writerow([])
+    writer.writerow(["Record ID", "Reference", "Category", "Processing Role", "Processor Name", "Collection Date", "Retention End Date", "Status", "Legal Hold", "Disposed At"])
 
-    from fastapi.responses import StreamingResponse
-    filename = f"compliance_report_{year}.csv"
+    for r in records:
+        cat_name = r.category.name if r.category else "Unassigned"
+        proc_role = r.category.processing_role if r.category else "controller"
+        writer.writerow([
+            r.id,
+            r.record_reference,
+            cat_name,
+            proc_role,
+            r.processor_name or (r.category.processor_name if r.category else "") or "In-House",
+            r.collection_date.isoformat() if r.collection_date else "",
+            r.retention_end_date.isoformat() if r.retention_end_date else "Pending Trigger",
+            r.status,
+            "Yes" if r.legal_hold else "No",
+            r.disposed_at.strftime("%Y-%m-%d %H:%M") if r.disposed_at else ""
+        ])
+
+    log_audit(db, org_id, "report_exported_csv", "report", None, session["user_id"], {
+        "range": range,
+        "count": len(records)
+    }, request.client.host if request.client else None)
+
+    output.seek(0)
+    filename = f"retention_report_{range}_{today.isoformat()}.csv"
     return StreamingResponse(
-        iter([output.getvalue()]),
+        io.BytesIO(output.getvalue().encode('utf-8')),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get("/reports/json")
+def export_reports_json(
+    request: Request,
+    range: str = "ytd",
+    start_date: str = "",
+    end_date: str = "",
+    category_id: int = 0,
+    role_filter: str = "all",
+    status: str = "all",
+    db: Session = Depends(get_db)
+):
+    """Export filtered compliance report in structured JSON format."""
+    session = get_session(request)
+    if not session or "user_id" not in session:
+        return RedirectResponse(url="/login", status_code=303)
+    if session["role"] not in ("admin", "dpo"):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    from datetime import date as _date, timedelta
+    from app.engine import compliance_scorecard_details
+
+    org_id = session["org_id"]
+    labels = get_country_regulation_labels(session.get("country", "OTHER"))
+    today = _date.today()
+    start_d = None
+    end_d = today
+
+    if range == "30d":
+        start_d = today - timedelta(days=30)
+    elif range == "90d":
+        start_d = today - timedelta(days=90)
+    elif range == "ytd":
+        start_d = _date(today.year, 1, 1)
+    elif range == "1y":
+        start_d = today - timedelta(days=365)
+    elif range == "custom":
+        if start_date:
+            try:
+                start_d = datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                start_d = None
+        if end_date:
+            try:
+                end_d = datetime.strptime(end_date, "%Y-%m-%d").date()
+            except ValueError:
+                end_d = today
+
+    q = db.query(DataRecord).filter(
+        DataRecord.organization_id == org_id,
+        DataRecord.deleted_at == None
+    )
+
+    if category_id > 0:
+        q = q.filter(DataRecord.category_id == category_id)
+    if status != "all" and status:
+        q = q.filter(DataRecord.status == status)
+    if start_d:
+        q = q.filter(DataRecord.collection_date >= start_d)
+    if end_d:
+        q = q.filter(DataRecord.collection_date <= end_d)
+    if role_filter == "processor":
+        q = q.filter(DataRecord.processor_name != None, DataRecord.processor_name != "")
+    elif role_filter == "controller":
+        q = q.filter(or_(DataRecord.processor_name == None, DataRecord.processor_name == ""))
+
+    records = q.order_by(DataRecord.collection_date.desc()).all()
+    scorecard = compliance_scorecard_details(db, org_id)
+
+    payload = {
+        "report_title": f"{labels['law']} Data Retention Compliance Audit",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "organization_id": org_id,
+        "filter": {
+            "range": range,
+            "start_date": start_d.isoformat() if start_d else None,
+            "end_date": end_d.isoformat() if end_d else None,
+            "category_id": category_id,
+            "role": role_filter,
+            "status": status
+        },
+        "scorecard": scorecard,
+        "total_records": len(records),
+        "records": [
+            {
+                "id": r.id,
+                "reference": r.record_reference,
+                "category": r.category.name if r.category else None,
+                "processing_role": r.category.processing_role if r.category else "controller",
+                "processor_name": r.processor_name or (r.category.processor_name if r.category else None),
+                "collection_date": r.collection_date.isoformat() if r.collection_date else None,
+                "retention_end_date": r.retention_end_date.isoformat() if r.retention_end_date else None,
+                "status": r.status,
+                "legal_hold": r.legal_hold,
+                "disposed_at": r.disposed_at.isoformat() if r.disposed_at else None,
+            }
+            for r in records
+        ]
+    }
+
+    log_audit(db, org_id, "report_exported_json", "report", None, session["user_id"], {
+        "range": range,
+        "count": len(records)
+    }, request.client.host if request.client else None)
+
+    import json
+    from fastapi.responses import Response
+    return Response(
+        content=json.dumps(payload, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename=compliance_report_{range}_{today.isoformat()}.json"}
+    )
+
+
+@router.get("/reports/print", response_class=HTMLResponse)
+def print_reports(
+    request: Request,
+    range: str = "ytd",
+    start_date: str = "",
+    end_date: str = "",
+    category_id: int = 0,
+    role_filter: str = "all",
+    status: str = "all",
+    db: Session = Depends(get_db)
+):
+    """Render clean printable audit report pack."""
+    session = get_session(request)
+    if not session or "user_id" not in session:
+        return RedirectResponse(url="/login", status_code=303)
+    if session["role"] not in ("admin", "dpo"):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    from datetime import date as _date, timedelta
+    from app.engine import compliance_scorecard_details
+
+    org_id = session["org_id"]
+    labels = get_country_regulation_labels(session.get("country", "OTHER"))
+    today = _date.today()
+    start_d = None
+    end_d = today
+
+    if range == "30d":
+        start_d = today - timedelta(days=30)
+    elif range == "90d":
+        start_d = today - timedelta(days=90)
+    elif range == "ytd":
+        start_d = _date(today.year, 1, 1)
+    elif range == "1y":
+        start_d = today - timedelta(days=365)
+    elif range == "custom":
+        if start_date:
+            try:
+                start_d = datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                start_d = None
+        if end_date:
+            try:
+                end_d = datetime.strptime(end_date, "%Y-%m-%d").date()
+            except ValueError:
+                end_d = today
+
+    q = db.query(DataRecord).filter(
+        DataRecord.organization_id == org_id,
+        DataRecord.deleted_at == None
+    )
+
+    if category_id > 0:
+        q = q.filter(DataRecord.category_id == category_id)
+    if status != "all" and status:
+        q = q.filter(DataRecord.status == status)
+    if start_d:
+        q = q.filter(DataRecord.collection_date >= start_d)
+    if end_d:
+        q = q.filter(DataRecord.collection_date <= end_d)
+    if role_filter == "processor":
+        q = q.filter(DataRecord.processor_name != None, DataRecord.processor_name != "")
+    elif role_filter == "controller":
+        q = q.filter(or_(DataRecord.processor_name == None, DataRecord.processor_name == ""))
+
+    records = q.order_by(DataRecord.collection_date.desc()).all()
+    scorecard = compliance_scorecard_details(db, org_id)
+
+    log_audit(db, org_id, "report_printed", "report", None, session["user_id"], {
+        "range": range,
+        "count": len(records)
+    }, request.client.host if request.client else None)
+
+    return templates.TemplateResponse(request=request, name="reports_print.html", context=_ctx(session, labels, {
+        "page_title": f"Compliance Audit Report — {session['org_name']}",
+        "scorecard": scorecard,
+        "records": records,
+        "generated_at": datetime.now(timezone.utc).strftime("%B %d, %Y at %H:%M UTC"),
+        "filter_range": range,
+        "filter_start_date": start_d.isoformat() if start_d else "Inception",
+        "filter_end_date": end_d.isoformat() if end_d else today.isoformat(),
+        "filter_role": role_filter,
+        "filter_status": status,
+    }))
 
 
 # ═══════════════════════════════════════════════════════════════════════════

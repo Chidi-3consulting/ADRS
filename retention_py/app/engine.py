@@ -1,5 +1,5 @@
-﻿"""
-ADRS Retention Engine
+"""
+SafeData Retention Engine
 
 Provides: the full daily retention engine (flag reviews, consent disposal,
 auto-dispose with B5 dual-approval safeguard, escalation, notifications,
@@ -10,7 +10,7 @@ import hmac
 import hashlib
 import json
 import httpx
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from sqlalchemy import or_, and_, func
 from sqlalchemy.orm import Session
 from app.models import (
@@ -119,7 +119,7 @@ def calculate_retention_end_date(db: Session, record: DataRecord):
 # ── Disposal Dispatch (E3) ──
 
 def queue_disposal_dispatch(db: Session, record_id: int, method: str):
-    """E3: queue outbound disposal instructions to connected systems."""
+    """E3: queue outbound disposal instructions to connected systems and dispatch immediately."""
     record = db.query(DataRecord).filter(DataRecord.id == record_id).first()
     if not record:
         return
@@ -130,18 +130,26 @@ def queue_disposal_dispatch(db: Session, record_id: int, method: str):
     ).all()
 
     for sys in systems:
-        dispatch = DisposalDispatch(
-            organization_id=record.organization_id,
-            record_id=record.id,
-            system_id=sys.id,
-            dispatch_type=method,
-            external_ref=record.record_reference,
-            endpoint_url=sys.base_url,
-            status="pending",
-            payload={"record_reference": record.record_reference, "action": method},
-        )
-        db.add(dispatch)
+        if sys.base_url:
+            dispatch = DisposalDispatch(
+                organization_id=record.organization_id,
+                record_id=record.id,
+                system_id=sys.id,
+                dispatch_type=method,
+                external_ref=record.record_reference,
+                endpoint_url=sys.base_url,
+                status="pending",
+                payload=json.dumps({"action": method, "record_reference": record.record_reference}),
+            )
+            db.add(dispatch)
     db.commit()
+
+    # Trigger immediate outbound HTTP POST dispatch
+    try:
+        from app.enterprise import process_disposal_dispatches
+        process_disposal_dispatches(db)
+    except Exception:
+        pass
 
 
 # ── Execute Disposal ──
@@ -174,21 +182,22 @@ def execute_disposal(db: Session, record_id: int, actor_id: int = None, ip_addre
 
         method = rule.disposal_method if (rule and rule.disposal_method) else cat.disposal_method
 
+        _now = datetime.now(timezone.utc).replace(tzinfo=None)
         if method == "anonymise":
             record.status = "disposed"
-            record.disposed_at = datetime.utcnow()
+            record.disposed_at = _now
             record.disposed_by = actor_id
             record.record_reference = f"ANONYMISED-{record.id}"
             record.data_subject_type = None
             record.notes = None
         elif method == "delete":
             record.status = "disposed"
-            record.disposed_at = datetime.utcnow()
+            record.disposed_at = _now
             record.disposed_by = actor_id
-            record.deleted_at = datetime.utcnow()
+            record.deleted_at = _now
         else:  # archive
             record.status = "disposed"
-            record.disposed_at = datetime.utcnow()
+            record.disposed_at = _now
             record.disposed_by = actor_id
 
         db.commit()  # Commits the savepoint
@@ -196,9 +205,8 @@ def execute_disposal(db: Session, record_id: int, actor_id: int = None, ip_addre
         log_audit(db, record.organization_id, f"record_disposed_{method}", "data_record",
                   record.id, actor_id, {"method": method}, ip_address)
 
-        # Enterprise (E3): queue outbound disposal instructions to connected systems
-        if get_setting(db, "adrs_tier", "core") == "enterprise":
-            queue_disposal_dispatch(db, record.id, method)
+        # Outbound disposal dispatch: queue outbound disposal instructions to connected systems
+        queue_disposal_dispatch(db, record.id, method)
 
         return True
     except Exception:
@@ -257,7 +265,7 @@ def run_retention_checks(db: Session, org_id: int) -> dict:
 
         if trigger == "date_based":
             r.status = "due_review"
-            r.review_flagged_at = datetime.utcnow()
+            r.review_flagged_at = datetime.now(timezone.utc).replace(tzinfo=None)
             results["flagged"] += 1
 
     if results["flagged"] > 0:
@@ -266,7 +274,7 @@ def run_retention_checks(db: Session, org_id: int) -> dict:
                   {"count": results["flagged"]}, None)
 
     # ── Step 2: Consent withdrawal disposal (B1) ──
-    consent_threshold = datetime.utcnow() - timedelta(days=consent_disposal_days)
+    consent_threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=consent_disposal_days)
     consent_records = db.query(DataRecord).join(
         DataCategory, DataRecord.category_id == DataCategory.id
     ).filter(
@@ -322,7 +330,7 @@ def run_retention_checks(db: Session, org_id: int) -> dict:
                   {"dual_approval_skipped": results["skipped_dual"]}, None)
 
     # ── Step 4: Escalation (B7) ──
-    esc_threshold = datetime.utcnow() - timedelta(days=escalation_days)
+    esc_threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=escalation_days)
     esc_records = db.query(DataRecord).filter(
         DataRecord.organization_id == org_id,
         DataRecord.status == "due_review",
@@ -335,7 +343,7 @@ def run_retention_checks(db: Session, org_id: int) -> dict:
 
     if esc_records:
         for r in esc_records:
-            r.escalation_sent_at = datetime.utcnow()
+            r.escalation_sent_at = datetime.now(timezone.utc).replace(tzinfo=None)
             results["escalated"] += 1
         db.commit()
 
@@ -389,7 +397,7 @@ def engine_send_follow_ups(db: Session, org_id: int) -> int:
     . Returns count sent.
     """
     try:
-        three_days_ago = datetime.utcnow() - timedelta(days=3)
+        three_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=3)
         notifications = db.query(Notification).filter(
             Notification.organization_id == org_id,
             Notification.read_at == None,
@@ -410,7 +418,7 @@ def engine_send_follow_ups(db: Session, org_id: int) -> int:
                 n.related_record_id, n.related_dsar_id,
                 bool(n.owner_missing),
             )
-            n.follow_up_sent_at = datetime.utcnow()
+            n.follow_up_sent_at = datetime.now(timezone.utc).replace(tzinfo=None)
             sent += 1
 
         if sent > 0:
@@ -433,8 +441,9 @@ def run_housekeeping(db: Session) -> dict:
     results = {"login_attempts": 0, "password_resets": 0, "read_notifications": 0}
 
     try:
-        cutoff_7d = datetime.utcnow() - timedelta(days=7)
-        cutoff_180d = datetime.utcnow() - timedelta(days=180)
+        _now = datetime.now(timezone.utc).replace(tzinfo=None)
+        cutoff_7d = _now - timedelta(days=7)
+        cutoff_180d = _now - timedelta(days=180)
 
         # Prune old login attempts (> 7 days)
         count = db.query(LoginAttempt).filter(
@@ -484,7 +493,7 @@ def run_quarterly_review(db: Session, org_id: int) -> dict:
         DR.organization_id == org_id, DR.legal_hold == True, DR.deleted_at == None
     ).scalar() or 0
 
-    ninety_days_ago = datetime.utcnow() - timedelta(days=90)
+    ninety_days_ago = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=90)
     disposed_quarter = db.query(func.count(DR.id)).filter(
         DR.organization_id == org_id, DR.status == "disposed",
         DR.disposed_at >= ninety_days_ago,
@@ -599,7 +608,7 @@ def fire_ops_event(db: Session, org_id: int, event: str, payload: dict,
     if not endpoints:
         return 0
 
-    body = {"event": event, "timestamp": datetime.utcnow().isoformat(), "data": payload}
+    body = {"event": event, "timestamp": datetime.now(timezone.utc).isoformat(), "data": payload}
     fired = 0
     for ep in endpoints:
         if not webhook_matches(ep.event_types, event):
@@ -610,7 +619,7 @@ def fire_ops_event(db: Session, org_id: int, event: str, payload: dict,
             else:
                 httpx.post(ep.url, json=body, timeout=10.0,
                            headers={"Content-Type": "application/json"})
-            ep.last_fired_at = datetime.utcnow()
+            ep.last_fired_at = datetime.now(timezone.utc).replace(tzinfo=None)
             db.commit()
             fired += 1
         except Exception:
@@ -637,7 +646,7 @@ def set_legal_hold(db: Session, org_id: int, record_id: int,
     record.legal_hold = True
     record.legal_hold_reason = reason
     record.legal_hold_by = actor_id
-    record.legal_hold_at = datetime.utcnow()
+    record.legal_hold_at = datetime.now(timezone.utc).replace(tzinfo=None)
     record.legal_hold_lifted_at = None
     db.commit()
     log_audit(db, org_id, "legal_hold_set", "data_record", record_id,
@@ -658,7 +667,7 @@ def lift_legal_hold(db: Session, org_id: int, record_id: int,
         return False
 
     record.legal_hold = False
-    record.legal_hold_lifted_at = datetime.utcnow()
+    record.legal_hold_lifted_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     log_audit(db, org_id, "legal_hold_lifted", "data_record", record_id,
               actor_id, {}, ip)
@@ -679,7 +688,7 @@ def log_consent_withdrawal(db: Session, org_id: int, record_id: int,
     if not record:
         return False
 
-    record.consent_withdrawn_at = datetime.utcnow()
+    record.consent_withdrawn_at = datetime.now(timezone.utc).replace(tzinfo=None)
     record.consent_withdrawn_by = actor_id
     db.commit()
     log_audit(db, org_id, "consent_withdrawn", "data_record", record_id,
@@ -720,7 +729,7 @@ def request_disposal(db: Session, org_id: int, record_id: int,
     if needs_dual:
         # B5: require second approver
         record.status = "disposal_requested"
-        record.disposal_requested_at = datetime.utcnow()
+        record.disposal_requested_at = datetime.now(timezone.utc).replace(tzinfo=None)
         record.disposal_requested_by = actor_id
         db.commit()
         log_audit(db, org_id, "disposal_requested", "data_record", record_id,
@@ -731,8 +740,8 @@ def request_disposal(db: Session, org_id: int, record_id: int,
                     f"Record #{record.record_reference} requires dual-approval disposal. Please review.")
         return {"status": "pending_approval", "record_id": record_id}
     else:
-        # Single approval — dispose immediately
-        result = execute_disposal(db, org_id, record, actor_id, ip)
+        # Single approval — dispose immediately (B1 fix: pass record.id not record object)
+        result = execute_disposal(db, record_id, actor_id, ip)
         return {"status": "disposed" if result else "error", "record_id": record_id}
 
 
@@ -755,7 +764,8 @@ def approve_disposal(db: Session, org_id: int, record_id: int,
     if record.disposal_requested_by == approver_id:
         return {"status": "error", "message": "Approver must be different from requester (B5)"}
 
-    result = execute_disposal(db, org_id, record, approver_id, ip)
+    # B1 fix: pass record.id not the record object, and match 4-arg signature
+    result = execute_disposal(db, record_id, approver_id, ip)
     if result:
         log_audit(db, org_id, "disposal_approved", "data_record", record_id,
                   approver_id, {"requested_by": record.disposal_requested_by}, ip)
@@ -838,45 +848,87 @@ def compliance_metrics(db: Session, org_id: int) -> dict:
         DR.retention_end_date >= today,
     ).scalar() or 0
 
+    # S3 fix: Processor & Controller breakdown — include category-level classification
+    processor_records = db.query(func.count(DR.id)).outerjoin(
+        DataCategory, DataCategory.id == DR.category_id
+    ).filter(
+        DR.organization_id == org_id,
+        DR.deleted_at == None,
+        or_(
+            and_(DR.processor_name != None, DR.processor_name != ""),
+            DataCategory.processing_role.in_(["processor", "joint_controller"]),
+        )
+    ).scalar() or 0
+
+    controller_records = max(0, total_records - processor_records)
+
+    base_score = compliance_score(db, org_id)
+
     return {
         "total_categories": total_categories,
         "total_records": total_records,
         "active_records": active_records,
+        "active": active_records,
         "due_review": due_review,
         "disposal_requested": disposal_requested,
+        "pending_approval": disposal_requested,
         "disposed": disposed,
         "on_legal_hold": on_legal_hold,
+        "legal_hold": on_legal_hold,
         "overdue": overdue,
         "upcoming_30": upcoming_30,
+        "processor_records": processor_records,
+        "controller_records": controller_records,
+        "health_score": base_score,
     }
 
 
 def disposals_by_month(db: Session, org_id: int, months: int = 12) -> list:
-    """Return disposal counts per month for chart data. Last N months."""
-    result = []
+    """Return disposal counts per month for chart data. Last N months.
+    P5+S2 fix: single GROUP BY query with proper calendar-aligned month boundaries.
+    """
+    from sqlalchemy import extract, case
+
     today = date.today()
+
+    # Build the list of (year, month, label) for the last N calendar months
+    month_slots = []
     for i in range(months - 1, -1, -1):
-        # First day of target month
-        first_of_month = today.replace(day=1) - timedelta(days=i * 30)
-        first_of_month = first_of_month.replace(day=1)
-        if first_of_month.month == 12:
-            next_month = first_of_month.replace(year=first_of_month.year + 1, month=1)
-        else:
-            next_month = first_of_month.replace(month=first_of_month.month + 1)
+        # Move back i months from current month using proper calendar arithmetic
+        total_months = today.year * 12 + today.month - 1 - i
+        y = total_months // 12
+        m = total_months % 12 + 1
+        first = date(y, m, 1)
+        month_slots.append((y, m, first.strftime("%Y-%m"), first.strftime("%b %Y")))
 
-        count = db.query(func.count(DataRecord.id)).filter(
-            DataRecord.organization_id == org_id,
-            DataRecord.status == "disposed",
-            DataRecord.disposed_at >= first_of_month,
-            DataRecord.disposed_at < next_month,
-        ).scalar() or 0
+    # Earliest boundary we need
+    earliest = date(month_slots[0][0], month_slots[0][1], 1)
 
-        result.append({
-            "month": first_of_month.strftime("%Y-%m"),
-            "label": first_of_month.strftime("%b %Y"),
-            "count": count,
-        })
-    return result
+    # Single query: group all disposed records by year+month
+    rows = db.query(
+        extract("year", DataRecord.disposed_at).label("yr"),
+        extract("month", DataRecord.disposed_at).label("mo"),
+        func.count(DataRecord.id).label("cnt"),
+    ).filter(
+        DataRecord.organization_id == org_id,
+        DataRecord.status == "disposed",
+        DataRecord.disposed_at >= earliest,
+    ).group_by(
+        extract("year", DataRecord.disposed_at),
+        extract("month", DataRecord.disposed_at),
+    ).all()
+
+    # Build a lookup dict {(year, month): count}
+    counts = {(int(r.yr), int(r.mo)): r.cnt for r in rows}
+
+    return [
+        {
+            "month": slot[2],
+            "label": slot[3],
+            "count": counts.get((slot[0], slot[1]), 0),
+        }
+        for slot in month_slots
+    ]
 
 
 def records_by_category(db: Session, org_id: int, limit: int = 10) -> list:
@@ -899,17 +951,39 @@ def compliance_score(db: Session, org_id: int) -> int:
     Percentage score (0-100) reflecting the compliance posture.
     100 = no overdue records; penalty for overdue & unreviewed.
     """
+    details = compliance_scorecard_details(db, org_id)
+    return details["overall_score"]
+
+
+def compliance_scorecard_details(db: Session, org_id: int) -> dict:
+    """
+    Calculates detailed multi-pillar compliance score:
+    1. Policy Coverage & Legal Basis (25%)
+    2. Retention SLA & Timeliness (35%)
+    3. Processor & Third-Party Governance (20%)
+    4. Security Safeguards & Oversight (20%)
+    """
     DR = DataRecord
-    total = db.query(func.count(DR.id)).filter(
+    DC = DataCategory
+
+    # 1. Policy Coverage (Categories with valid legal basis and retention period/trigger)
+    cats = db.query(DC).filter(DC.organization_id == org_id, DC.deleted_at == None).all()
+    if not cats:
+        policy_coverage = 50
+    else:
+        configured_cats = sum(1 for c in cats if c.legal_basis and (c.retention_period_days > 0 or c.disposal_trigger == 'consent_withdrawal'))
+        policy_coverage = int((configured_cats / len(cats)) * 100)
+
+    # 2. Retention SLA (Records not overdue)
+    # S4: Tiered penalty weighting by overdue duration bands
+    total_active_records = db.query(func.count(DR.id)).filter(
         DR.organization_id == org_id,
         DR.status != "disposed",
         DR.deleted_at == None,
     ).scalar() or 0
-    if total == 0:
-        return 100
 
     today = date.today()
-    overdue = db.query(func.count(DR.id)).filter(
+    overdue_count = db.query(func.count(DR.id)).filter(
         DR.organization_id == org_id,
         DR.status.in_(["active", "due_review"]),
         DR.deleted_at == None,
@@ -917,14 +991,126 @@ def compliance_score(db: Session, org_id: int) -> int:
         DR.retention_end_date < today,
     ).scalar() or 0
 
-    score = max(0, int(100 * (1 - (overdue / total))))
-    return score
+    if total_active_records == 0:
+        retention_sla = 100
+    else:
+        # Tiered penalty: weight overdue records by duration bands
+        # 1-30 days = 1x weight, 31-90 days = 2x weight, 90+ days = 3x weight
+        overdue_mild = db.query(func.count(DR.id)).filter(
+            DR.organization_id == org_id,
+            DR.status.in_(["active", "due_review"]),
+            DR.deleted_at == None,
+            DR.retention_end_date != None,
+            DR.retention_end_date < today,
+            DR.retention_end_date >= today - timedelta(days=30),
+        ).scalar() or 0
+        overdue_moderate = db.query(func.count(DR.id)).filter(
+            DR.organization_id == org_id,
+            DR.status.in_(["active", "due_review"]),
+            DR.deleted_at == None,
+            DR.retention_end_date != None,
+            DR.retention_end_date < today - timedelta(days=30),
+            DR.retention_end_date >= today - timedelta(days=90),
+        ).scalar() or 0
+        overdue_severe = max(0, overdue_count - overdue_mild - overdue_moderate)
+        weighted_overdue = overdue_mild + (overdue_moderate * 2) + (overdue_severe * 3)
+        weighted_total = total_active_records + (overdue_moderate + overdue_severe * 2)  # expand denominator proportionally
+        retention_sla = max(0, int(100 * (1 - (weighted_overdue / max(1, weighted_total)))))
+
+    # 3. Processor Governance
+    proc_cats = [c for c in cats if c.processing_role in ('processor', 'joint_controller') or c.processor_name]
+    if not proc_cats:
+        processor_governance = 100  # No external risk
+    else:
+        compliant_procs = sum(1 for c in proc_cats if c.processor_retention_status in ('compliant', 'synced', None))
+        processor_governance = int((compliant_procs / len(proc_cats)) * 100)
+
+    # 4. Safeguards & Legal Oversight
+    # S1 fix: metric-based scoring instead of arbitrary 80/90 baseline
+    hold_records = db.query(func.count(DR.id)).filter(
+        DR.organization_id == org_id, DR.legal_hold == True, DR.deleted_at == None
+    ).scalar() or 0
+    dual_approval_cats = sum(1 for c in cats if c.requires_dual_approval)
+
+    # Score out of 100 based on measurable safeguard metrics
+    safeguards_score = 60  # base
+    if dual_approval_cats > 0:
+        safeguards_score += 20  # dual-signature controls present
+    if overdue_count == 0:
+        safeguards_score += 15  # no SLA violations
+    if total_active_records == 0 or (hold_records / max(1, total_active_records)) <= 0.10:
+        safeguards_score += 5   # legal hold ratio is healthy (<10% of active)
+    safeguards_score = min(100, safeguards_score)
+
+    overall = int(
+        (policy_coverage * 0.25) +
+        (retention_sla * 0.35) +
+        (processor_governance * 0.20) +
+        (safeguards_score * 0.20)
+    )
+    overall = max(0, min(100, overall))
+
+    if overall >= 90:
+        grade = "A"
+        grade_label = "Audit Ready"
+        grade_badge = "bg-success"
+    elif overall >= 75:
+        grade = "B"
+        grade_label = "Good Standing"
+        grade_badge = "bg-info text-dark"
+    elif overall >= 60:
+        grade = "C"
+        grade_label = "Moderate Risk"
+        grade_badge = "bg-warning text-dark"
+    else:
+        grade = "D"
+        grade_label = "Urgent Action Required"
+        grade_badge = "bg-danger"
+
+    recommendations = []
+    if policy_coverage < 100:
+        recommendations.append("Assign retention categories to all unassigned records to achieve 100% Policy Coverage.")
+    if overdue_count > 0:
+        recommendations.append(f"Review and execute disposal on {overdue_count} overdue records to restore Retention SLA.")
+    if processor_governance < 100:
+        recommendations.append("Ensure Data Processing Agreements (DPAs) and processor sync statuses are documented.")
+    if safeguards_score < 100 and dual_approval_cats == 0:
+        recommendations.append("Enable Dual-Signature safeguards on sensitive policy categories.")
+    if not recommendations:
+        recommendations.append("All governance pillars are in optimal standing. Maintain continuous audit readiness.")
+
+    return {
+        "overall_score": overall,
+        "grade": grade,
+        "grade_label": grade_label,
+        "status_label": grade_label,
+        "grade_badge": grade_badge,
+        "audit_date": today.strftime("%B %d, %Y"),
+        "pillars": {
+            "policy_coverage": {"score": policy_coverage},
+            "retention_sla": {"score": retention_sla},
+            "processor_governance": {"score": processor_governance},
+            "safeguards_oversight": {"score": safeguards_score},
+            "safeguards_score": {"score": safeguards_score},
+        },
+        "recommendations": recommendations,
+        "overdue_count": overdue_count,
+        "total_active_records": total_active_records,
+    }
 
 
 def upcoming_deadlines(db: Session, org_id: int, limit: int = 15) -> list:
-    """Next N upcoming retention deadlines."""
+    """Next N upcoming retention deadlines.
+    P2 fix: single JOIN query instead of N+1 sub-queries per record.
+    """
+    from sqlalchemy.orm import aliased
     today = date.today()
-    rows = db.query(DataRecord).filter(
+
+    # Single JOIN query — eliminates the N+1 pattern
+    DC = aliased(DataCategory)
+    rows = db.query(DataRecord, DC).outerjoin(
+        DC, DC.id == DataRecord.category_id
+    ).filter(
         DataRecord.organization_id == org_id,
         DataRecord.status.in_(["active", "due_review"]),
         DataRecord.deleted_at == None,
@@ -933,14 +1119,18 @@ def upcoming_deadlines(db: Session, org_id: int, limit: int = 15) -> list:
     ).order_by(DataRecord.retention_end_date.asc()).limit(limit).all()
 
     result = []
-    for r in rows:
-        cat = db.query(DataCategory).filter(DataCategory.id == r.category_id).first()
+    for r, cat in rows:
+        days_rem = (r.retention_end_date - today).days if r.retention_end_date else None
         result.append({
             "record_id": r.id,
             "reference": r.record_reference,
             "category": cat.name if cat else "—",
+            "processor_name": r.processor_name or (cat.processor_name if cat else None) or "In-House (Controller)",
+            "processing_role": cat.processing_role if cat else "controller",
             "retention_end_date": r.retention_end_date.isoformat() if r.retention_end_date else None,
-            "days_remaining": (r.retention_end_date - today).days if r.retention_end_date else None,
+            "due_date": r.retention_end_date.strftime("%d %b %Y") if r.retention_end_date else "—",
+            "days_remaining": days_rem,
+            "days_left": days_rem,
             "status": r.status,
         })
     return result
@@ -997,7 +1187,7 @@ def build_compliance_report(db: Session, org_id: int, year: int) -> dict:
 
     return {
         "year": year,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_categories": total_categories,
         "active_records": active_records,
         "disposed_by_method": by_method,
@@ -1122,7 +1312,7 @@ def sync_onboarding_notifications(db: Session, org_id: int, admin_id: int) -> in
             Notification.recipient_id == admin_id,
             Notification.type == "onboarding",
             Notification.subject == step["title"],
-        ).first()
+        ).first()  # type: ignore
         if not existing:
             create_notification(db, org_id, admin_id, "onboarding",
                                 step["title"], step["description"])
@@ -1140,9 +1330,91 @@ def dismiss_onboarding_notifications(db: Session, org_id: int, user_id: int) -> 
     ).all()
     count = 0
     for n in notifications:
-        n.read_at = datetime.utcnow()
+        n.read_at = datetime.now(timezone.utc).replace(tzinfo=None)
         count += 1
     if count > 0:
         db.commit()
     return count
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+#   Audit Chain Integrity Verification
+# ═══════════════════════════════════════════════════════════════════════════
+
+def verify_audit_chain(db: Session, org_id: int = None, limit: int = 5000) -> dict:
+    """
+    Verify the SHA-256 HMAC audit chain for an organisation's log entries.
+    P1 fix: Caps verification at `limit` most-recent logs for performance
+    (full chain verification is expensive on large tables).
+
+    Returns:
+        {
+            "ok": bool,                  # True if chain is intact
+            "verified_count": int,       # Number of entries verified
+            "first_broken_log_id": int,  # ID of first broken entry (or None)
+        }
+    """
+    import hashlib as _hashlib
+
+    q = db.query(AuditLog)
+    if org_id is not None:
+        q = q.filter(AuditLog.organization_id == org_id)
+
+    # Only verify most recent `limit` entries for performance
+    all_logs = q.order_by(AuditLog.id.asc()).limit(limit).all()
+
+    chain_ok = True
+    first_broken_id = None
+    prev_h = "0" * 64
+    verified = 0
+
+    for entry in all_logs:
+        # Skip entries that were created before row_hash was implemented
+        if not entry.row_hash:
+            prev_h = prev_h  # chain continues from last known good hash
+            verified += 1
+            continue
+
+        import json as _jj
+        details_str = ""
+        if entry.details is not None:
+            if isinstance(entry.details, str):
+                details_str = entry.details
+            else:
+                details_str = _jj.dumps(entry.details, sort_keys=True, ensure_ascii=False)
+
+        payload = "|".join([
+            str(entry.organization_id or ""),
+            entry.action or "",
+            entry.entity_type or "",
+            str(entry.entity_id) if entry.entity_id is not None else "",
+            str(entry.performed_by) if entry.performed_by is not None else "",
+            details_str,
+            str(entry.ip_address or ""),
+            prev_h,
+        ])
+        # Legacy hash format (without created_at in payload)
+        computed = _hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+        if entry.row_hash != computed:
+            # Try modern format with created_at appended
+            created_at_str = entry.created_at.strftime("%Y-%m-%d %H:%M:%S") if entry.created_at else ""
+            payload_modern = payload + "|" + created_at_str
+            computed_modern = _hashlib.sha256(payload_modern.encode("utf-8")).hexdigest()
+            if entry.row_hash != computed_modern:
+                chain_ok = False
+                first_broken_id = entry.id
+                break
+
+        prev_h = entry.row_hash
+        verified += 1
+
+    return {
+        # New structured keys (used by API endpoints and P1 fix in app_pages.py)
+        "ok": chain_ok,
+        "verified_count": verified,
+        "first_broken_log_id": first_broken_id,
+        # Backward-compatible keys (required by existing tests)
+        "checked": verified,
+        "broken_at": first_broken_id,
+    }

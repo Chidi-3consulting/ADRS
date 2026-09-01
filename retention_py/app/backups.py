@@ -1,5 +1,5 @@
-﻿"""
-ADRS Backup System
+"""
+SafeData Backup System
 
 Provides: logical database dump (pure-Python, no external mysqldump dependency),
 backup log recording, and old backup pruning.
@@ -10,7 +10,7 @@ For MySQL (prod): uses a table-by-table SELECT + INSERT approach matching the le
 import os
 import glob
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import text, inspect
 
@@ -24,7 +24,7 @@ def backup_database(db: Session, backup_dir: str) -> dict:
     Returns {'file': str, 'size': int, 'status': 'success'|'failed', 'message': str|None}.
     Ported from legacy backup_database().
     """
-    filename = f"adrs_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql"
+    filename = f"SafeData_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql"
     filepath = os.path.join(backup_dir, filename)
 
     try:
@@ -33,7 +33,7 @@ def backup_database(db: Session, backup_dir: str) -> dict:
         dialect = engine.dialect.name
 
         with open(filepath, "w", encoding="utf-8") as fh:
-            fh.write(f"-- ADRS backup {datetime.now().isoformat()}\n")
+            fh.write(f"-- SafeData backup {datetime.now().isoformat()}\n")
             fh.write("SET FOREIGN_KEY_CHECKS=0;\nSET NAMES utf8mb4;\n\n")
 
             if dialect == "sqlite":
@@ -114,7 +114,7 @@ def prune_backups(db: Session, backup_dir: str, days: int = 30) -> int:
     cutoff = time.time() - (days * 86400)
     removed = 0
 
-    pattern = os.path.join(backup_dir, "adrs_backup_*.sql")
+    pattern = os.path.join(backup_dir, "SafeData_backup_*.sql")
     for f in glob.glob(pattern):
         try:
             if os.path.getmtime(f) < cutoff:
@@ -124,7 +124,7 @@ def prune_backups(db: Session, backup_dir: str, days: int = 30) -> int:
             pass
 
     # Prune log rows
-    cutoff_dt = datetime.utcnow() - timedelta(days=days)
+    cutoff_dt = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
     db.query(BackupLog).filter(BackupLog.created_at < cutoff_dt).delete()
     db.commit()
 

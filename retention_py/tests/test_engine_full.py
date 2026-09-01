@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from app.models import (
     DataCategory, DataRecord, User, Notification, LoginAttempt, PasswordReset
 )
@@ -39,7 +39,7 @@ def test_b5_dual_approval_safeguard(db):
         collection_date=past_date,
         retention_end_date=past_date,
         status="due_review",
-        review_flagged_at=datetime.utcnow() - timedelta(days=10)
+        review_flagged_at=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=10)
     )
     db.add(rec)
     db.commit()
@@ -77,7 +77,7 @@ def test_auto_disposal_standard_category(db):
         collection_date=past_date,
         retention_end_date=past_date,
         status="due_review",
-        review_flagged_at=datetime.utcnow() - timedelta(days=10)
+        review_flagged_at=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=10)
     )
     db.add(rec)
     db.commit()
@@ -90,7 +90,7 @@ def test_auto_disposal_standard_category(db):
 
 def test_housekeeping(db):
     """Housekeeping prunes old login attempts, password resets, and read notifications."""
-    old_date = datetime.utcnow() - timedelta(days=10)
+    old_date = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=10)
     
     # Old login attempt
     la = LoginAttempt(email="test@test.com", ip_address="127.0.0.1", success=False, created_at=old_date)

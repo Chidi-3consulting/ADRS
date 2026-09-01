@@ -1,5 +1,5 @@
-﻿"""
-ADRS Public Routes — landing, login, register, password reset, logout.
+"""
+SafeData Public Routes — landing, login, register, password reset, logout.
 
 Security integrations:
   - Login brute-force throttling
@@ -8,7 +8,7 @@ Security integrations:
   - Session timestamps for timeout enforcement
 """
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Request, Response, Form, Depends, HTTPException
@@ -23,12 +23,12 @@ from app.models import User, Organization, DataCategory, PasswordReset
 from app.auth import (
     hash_password, verify_password, set_session, clear_session, get_session,
     build_session_data, record_login_attempt, login_throttle_seconds,
-    password_policy_error,
+    password_policy_error, check_password_history, record_password_history,
 )
 from app.helpers import (
-    ADRS_SUPPORTED_COUNTRIES, detect_visitor_currency, get_country_regulation_labels,
+    SafeData_SUPPORTED_COUNTRIES, detect_visitor_currency, get_country_regulation_labels,
     provision_org_categories, get_framework_badge, totp_verify, consume_recovery_code,
-    send_system_email, log_audit,
+    send_system_email, log_audit, get_visitor_country, get_localized_pricing, CURRENCY_DATA,
 )
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
@@ -45,13 +45,17 @@ def view_landing(request: Request, db: Session = Depends(get_db)):
     if session and "user_id" in session:
         return RedirectResponse(url="/dashboard", status_code=303)
 
-    country = request.headers.get("accept-language", "US")[:2].upper()
+    country = get_visitor_country(request)
+    pricing = get_localized_pricing(country)
     geo = detect_visitor_currency(country)
 
     return templates.TemplateResponse(request=request, name="landing.html", context={
-        "page_title": "ADRS — Automated Data Retention Solution",
-        "wl_name": "ADRS",
+        "page_title": "SafeData — Automated Data Retention & Governance Platform",
+        "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
+        "country_code": country,
+        "pricing": pricing,
+        "currencies": CURRENCY_DATA,
         "geo_currency": geo["code"],
         "geo_symbol": geo["symbol"],
         "geo_rate_yearly": "{:,.2f}".format(399 * geo["rate"]),
@@ -65,10 +69,15 @@ def view_login(request: Request):
     if session and "user_id" in session:
         return RedirectResponse(url="/dashboard", status_code=303)
 
+    # A6: Show session expiry message
+    expired = request.query_params.get("expired", "")
+    flash_msg = "Your session has expired. Please sign in again." if expired == "1" else None
+
     return templates.TemplateResponse(request=request, name="login.html", context={
-        "page_title": "Sign In — ADRS",
-        "wl_name": "ADRS",
-        "wl_footer": "3Consulting Limited"
+        "page_title": "Sign In — SafeData",
+        "wl_name": "SafeData",
+        "wl_footer": "3Consulting Limited",
+        "flash_error": flash_msg,
     })
 
 
@@ -87,8 +96,8 @@ def handle_login(
     wait = login_throttle_seconds(db, email, ip)
     if wait > 0:
         return templates.TemplateResponse(request=request, name="login.html", context={
-            "page_title": "Sign In — ADRS",
-            "wl_name": "ADRS",
+            "page_title": "Sign In — SafeData",
+            "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "flash_error": f"Too many failed attempts. Try again in {wait} seconds."
         })
@@ -97,9 +106,14 @@ def handle_login(
     if not user or not verify_password(password, user.password_hash):
         # Record failed attempt
         record_login_attempt(db, email, ip, success=False)
+        # F2 fix: check user is not None before accessing user.organization_id
+        audit_org_id = user.organization_id if user else 0
+        audit_user_id = user.id if user else None
+        log_audit(db, audit_org_id, "login_failed", "user",
+                  audit_user_id, None, {"email": email, "ip": ip}, ip)
         return templates.TemplateResponse(request=request, name="login.html", context={
-            "page_title": "Sign In — ADRS",
-            "wl_name": "ADRS",
+            "page_title": "Sign In — SafeData",
+            "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "flash_error": "Invalid email credentials or inactive account."
         })
@@ -116,8 +130,14 @@ def handle_login(
     org = db.query(Organization).filter(Organization.id == user.organization_id).first()
     session_data = build_session_data(user, org)
 
-    user.last_login_at = datetime.utcnow()
+    # Gap 10: Regenerate CSRF token on login to prevent session fixation
+    import secrets as _secrets
+    session_data["csrf_token"] = _secrets.token_hex(32)
+
+    user.last_login_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
+
+    log_audit(db, org.id, "login_success", "user", user.id, user.id, {"email": email, "role": user.role}, ip)
 
     redir = RedirectResponse(url="/dashboard", status_code=303)
     set_session(redir, session_data)
@@ -131,8 +151,8 @@ def view_2fa(request: Request):
         return RedirectResponse(url="/login", status_code=303)
 
     return templates.TemplateResponse(request=request, name="twofa_challenge.html", context={
-        "page_title": "Two-Factor Authentication — ADRS",
-        "wl_name": "ADRS"
+        "page_title": "Two-Factor Authentication — SafeData",
+        "wl_name": "SafeData"
     })
 
 
@@ -174,16 +194,24 @@ def handle_2fa(
     if ok:
         org = db.query(Organization).filter(Organization.id == user.organization_id).first()
         session_data = build_session_data(user, org)
-        user.last_login_at = datetime.utcnow()
+
+        # Gap 10: Regenerate CSRF token on 2FA login
+        import secrets as _secrets
+        session_data["csrf_token"] = _secrets.token_hex(32)
+
+        user.last_login_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
+
+        ip = request.client.host if request.client else "127.0.0.1"
+        log_audit(db, org.id, "2fa_login_success", "user", user.id, user.id, {"email": user.email}, ip)
 
         redir = RedirectResponse(url="/dashboard", status_code=303)
         set_session(redir, session_data)
         return redir
 
     return templates.TemplateResponse(request=request, name="twofa_challenge.html", context={
-        "page_title": "Two-Factor Authentication — ADRS",
-        "wl_name": "ADRS",
+        "page_title": "Two-Factor Authentication — SafeData",
+        "wl_name": "SafeData",
         "error": "Invalid verification code or recovery code."
     })
 
@@ -191,8 +219,8 @@ def handle_2fa(
 @router.get("/forgot_password", response_class=HTMLResponse)
 def view_forgot_password(request: Request):
     return templates.TemplateResponse(request=request, name="forgot_password.html", context={
-        "page_title": "Forgot Password — ADRS",
-        "wl_name": "ADRS"
+        "page_title": "Forgot Password — SafeData",
+        "wl_name": "SafeData"
     })
 
 
@@ -218,10 +246,10 @@ def handle_forgot_password(
         db.commit()
 
         reset_link = f"{request.base_url}reset_password?email={email}&token={raw_token}"
-        subject = "Reset your password — ADRS"
+        subject = "Reset your password — SafeData"
         html = f"""
         <p>Hello,</p>
-        <p>We received a request to reset the password for your ADRS account.</p>
+        <p>We received a request to reset the password for your SafeData account.</p>
         <p><a href="{reset_link}">Click here to set a new password</a></p>
         <p>This link is valid for 1 hour.</p>
         <p>If you did not request this, please ignore this email.</p>
@@ -229,8 +257,8 @@ def handle_forgot_password(
         send_system_email(db, email, subject, html)
 
     return templates.TemplateResponse(request=request, name="forgot_password.html", context={
-        "page_title": "Forgot Password — ADRS",
-        "wl_name": "ADRS",
+        "page_title": "Forgot Password — SafeData",
+        "wl_name": "SafeData",
         "done": True
     })
 
@@ -251,8 +279,8 @@ def view_reset_password(
     ).first()
 
     return templates.TemplateResponse(request=request, name="reset_password.html", context={
-        "page_title": "Set New Password — ADRS",
-        "wl_name": "ADRS",
+        "page_title": "Set New Password — SafeData",
+        "wl_name": "SafeData",
         "valid_token": bool(reset),
         "email": email,
         "token": token
@@ -278,15 +306,15 @@ def handle_reset_password(
 
     if not reset:
         return templates.TemplateResponse(request=request, name="reset_password.html", context={
-            "page_title": "Set New Password — ADRS",
-            "wl_name": "ADRS",
+            "page_title": "Set New Password — SafeData",
+            "wl_name": "SafeData",
             "valid_token": False
         })
 
     if password != password_confirm:
         return templates.TemplateResponse(request=request, name="reset_password.html", context={
-            "page_title": "Set New Password — ADRS",
-            "wl_name": "ADRS",
+            "page_title": "Set New Password — SafeData",
+            "wl_name": "SafeData",
             "valid_token": True,
             "email": email,
             "token": token,
@@ -297,8 +325,8 @@ def handle_reset_password(
     policy_err = password_policy_error(password)
     if policy_err:
         return templates.TemplateResponse(request=request, name="reset_password.html", context={
-            "page_title": "Set New Password — ADRS",
-            "wl_name": "ADRS",
+            "page_title": "Set New Password — SafeData",
+            "wl_name": "SafeData",
             "valid_token": True,
             "email": email,
             "token": token,
@@ -307,14 +335,32 @@ def handle_reset_password(
 
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
     if user:
-        user.password_hash = hash_password(password)
+        # Gap 3: Check password history before allowing reset
+        if check_password_history(db, user.id, password):
+            return templates.TemplateResponse(request=request, name="reset_password.html", context={
+                "page_title": "Set New Password — SafeData",
+                "wl_name": "SafeData",
+                "valid_token": True,
+                "email": email,
+                "token": token,
+                "error": "You cannot reuse a recent password. Please choose a different one.",
+            })
+
+        new_hash = hash_password(password)
+        user.password_hash = new_hash
         user.must_change_password = False  # Clear enforcement flag
         reset.used = True
         db.commit()
 
+        # Gap 3: Record in password history
+        record_password_history(db, user.id, new_hash)
+
+        ip = request.client.host if request.client else "127.0.0.1"
+        log_audit(db, user.organization_id, "password_reset_completed", "user", user.id, user.id, {"email": email}, ip)
+
     return templates.TemplateResponse(request=request, name="reset_password.html", context={
-        "page_title": "Set New Password — ADRS",
-        "wl_name": "ADRS",
+        "page_title": "Set New Password — SafeData",
+        "wl_name": "SafeData",
         "ok": True
     })
 
@@ -326,9 +372,9 @@ def view_register(request: Request):
         return RedirectResponse(url="/dashboard", status_code=303)
 
     return templates.TemplateResponse(request=request, name="register.html", context={
-        "page_title": "Start Free Trial — ADRS",
-        "countries": ADRS_SUPPORTED_COUNTRIES,
-        "wl_name": "ADRS",
+        "page_title": "Start Free Trial — SafeData",
+        "countries": SafeData_SUPPORTED_COUNTRIES,
+        "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited"
     })
 
@@ -362,9 +408,9 @@ def handle_register(
     # Helper: return to form with error + retained values
     def _error(msg: str):
         return templates.TemplateResponse(request=request, name="register.html", context={
-            "page_title": "Start Free Trial — ADRS",
-            "countries": ADRS_SUPPORTED_COUNTRIES,
-            "wl_name": "ADRS",
+            "page_title": "Start Free Trial — SafeData",
+            "countries": SafeData_SUPPORTED_COUNTRIES,
+            "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "flash_error": msg,
             "form_org_name": org_name,
@@ -407,7 +453,7 @@ def handle_register(
     email_exists = db.query(User).filter(User.email == email).first()
 
     if domain_exists:
-        return _error("This domain is already registered on ADRS.")
+        return _error("This domain is already registered on SafeData.")
     if email_exists:
         return _error("This email address is already registered.")
 
@@ -435,7 +481,7 @@ def handle_register(
         password_hash=pwd,
         role="admin",
         is_active=True,
-        email_verified_at=datetime.utcnow()
+        email_verified_at=datetime.now(timezone.utc).replace(tzinfo=None)
     )
     db.add(user)
     db.commit()
@@ -445,6 +491,9 @@ def handle_register(
     record_login_attempt(db, email, ip, success=True)
     log_audit(db, org.id, "user_registered", "user", user.id, user.id, {"email": email}, ip)
 
+    # Gap 3: Record initial password in history
+    record_password_history(db, user.id, pwd)
+
     session_data = build_session_data(user, org)
 
     redir = RedirectResponse(url="/dashboard", status_code=303)
@@ -453,7 +502,11 @@ def handle_register(
 
 
 @router.get("/logout")
-def handle_logout(response: Response):
+def handle_logout(request: Request, response: Response, db: Session = Depends(get_db)):
+    session = get_session(request)
+    if session and "user_id" in session:
+        ip = request.client.host if request.client else "127.0.0.1"
+        log_audit(db, session.get("org_id", 1), "user_logout", "user", session["user_id"], session["user_id"], {"name": session.get("user_name")}, ip)
     redir = RedirectResponse(url="/", status_code=303)
     clear_session(redir)
     return redir
@@ -472,8 +525,8 @@ def view_verify_email(request: Request, token: str = "", db: Session = Depends(g
         from app.auth import verify_email_token
         success = verify_email_token(db, token)
         return templates.TemplateResponse(request=request, name="verify_email.html", context={
-            "page_title": "Email Verification — ADRS",
-            "wl_name": "ADRS",
+            "page_title": "Email Verification — SafeData",
+            "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "verified": success,
             "token_provided": True,
@@ -481,8 +534,8 @@ def view_verify_email(request: Request, token: str = "", db: Session = Depends(g
         })
 
     return templates.TemplateResponse(request=request, name="verify_email.html", context={
-        "page_title": "Verify Your Email — ADRS",
-        "wl_name": "ADRS",
+        "page_title": "Verify Your Email — SafeData",
+        "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
         "verified": False,
         "token_provided": False,
@@ -528,8 +581,8 @@ def view_setup(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/login", status_code=303)
 
     return templates.TemplateResponse(request=request, name="setup.html", context={
-        "page_title": "Initial Setup — ADRS",
-        "wl_name": "ADRS",
+        "page_title": "Initial Setup — SafeData",
+        "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
         "error": None,
     })
@@ -574,8 +627,8 @@ def handle_setup(
 
     if error:
         return templates.TemplateResponse(request=request, name="setup.html", context={
-            "page_title": "Initial Setup — ADRS",
-            "wl_name": "ADRS",
+            "page_title": "Initial Setup — SafeData",
+            "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "error": error,
         })
@@ -585,7 +638,7 @@ def handle_setup(
     org = Organization(
         name=org_name,
         slug=org_name.lower().replace(" ", "-")[:50],
-        primary_domain=f"{org_name.lower().replace(' ', '-')}.adrs.local",
+        primary_domain=f"{org_name.lower().replace(' ', '-')}.SafeData.local",
         country="NG",
         tier="core",
         status="active",

@@ -1,89 +1,148 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="card shadow-sm mb-4" style="max-width: 820px;">
-  <div class="card-body">
-    <h1 class="h4 mb-3 fw-bold text-dark">Edit Data Category Policy: {{ category.name }}</h1>
-    <form method="POST" action="/categories/edit/{{ category.id }}">
-      {{ csrf_field | safe }}
-      <div class="mb-3">
-        <label class="form-label">Category Name *</label>
-        <input type="text" name="name" class="form-control" required value="{{ category.name }}">
-      </div>
+<div class="container-fluid px-0" style="max-width: 860px;">
 
-      <div class="mb-3">
-        <label class="form-label">Description</label>
-        <textarea name="description" class="form-control" rows="2">{{ category.description }}</textarea>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Retention Reason / Lawful Purpose *</label>
-        <textarea name="retention_reason" class="form-control" rows="2" required>{{ category.retention_reason }}</textarea>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Legal Basis *</label>
-          <select name="legal_basis" class="form-select" required>
-            <option value="legal_obligation" {{ 'selected' if category.legal_basis == 'legal_obligation' else '' }}>Legal Obligation</option>
-            <option value="contract" {{ 'selected' if category.legal_basis == 'contract' else '' }}>Performance of Contract</option>
-            <option value="consent" {{ 'selected' if category.legal_basis == 'consent' else '' }}>Consent of Subject</option>
-            <option value="legitimate_interest" {{ 'selected' if category.legal_basis == 'legitimate_interest' else '' }}>Legitimate Interest</option>
-            <option value="vital_interest" {{ 'selected' if category.legal_basis == 'vital_interest' else '' }}>Vital Interest</option>
-            <option value="public_task" {{ 'selected' if category.legal_basis == 'public_task' else '' }}>Public Task</option>
-          </select>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Disposal Trigger *</label>
-          <select name="disposal_trigger" id="trigger" class="form-select" required>
-            <option value="date_based" {{ 'selected' if category.disposal_trigger == 'date_based' else '' }}>📅 Date-based — dispose after a fixed period</option>
-            <option value="consent_withdrawal" {{ 'selected' if category.disposal_trigger == 'consent_withdrawal' else '' }}>👤 Consent withdrawal — dispose after grace period</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="retentionBlock" class="row">
-        <div class="col-md-4 mb-3">
-          <label class="form-label">Retention Period (Days)</label>
-          <input type="number" name="retention_period_days" class="form-control" value="{{ category.retention_period_days }}">
-        </div>
-        <div class="col-md-8 mb-3">
-          <label class="form-label">Retention period label</label>
-          <input type="text" name="retention_period_label" class="form-control" value="{{ category.retention_period_label }}">
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Disposal Method *</label>
-          <select name="disposal_method" class="form-select" required>
-            <option value="delete" {{ 'selected' if category.disposal_method == 'delete' else '' }}>Secure Delete (Complete Purge)</option>
-            <option value="anonymise" {{ 'selected' if category.disposal_method == 'anonymise' else '' }}>Anonymise (Mask Personal Fields)</option>
-            <option value="archive" {{ 'selected' if category.disposal_method == 'archive' else '' }}>Archive (Offline Backup)</option>
-          </select>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Review Frequency *</label>
-          <select name="review_frequency" class="form-select" required>
-            <option value="monthly" {{ 'selected' if category.review_frequency == 'monthly' else '' }}>Monthly Review</option>
-            <option value="quarterly" {{ 'selected' if category.review_frequency == 'quarterly' else '' }}>Quarterly Review</option>
-            <option value="annually" {{ 'selected' if category.review_frequency == 'annually' else '' }}>Annual Review</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-check mb-4 mt-2">
-        <input class="form-check-input" type="checkbox" name="requires_dual_approval" id="requires_dual_approval" {{ 'checked' if category.requires_dual_approval else '' }}>
-        <label class="form-check-label fw-bold text-dark" for="requires_dual_approval">
-          Enable Dual-Signature Approval Safeguard
-        </label>
-        <div class="small text-muted">If checked, records under this category can never be auto-disposed by the scheduler. A DPO and Admin must both explicitly sign off.</div>
-      </div>
-
-      <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary px-4">Save Policy Changes</button>
-        <a href="/categories" class="btn btn-outline-secondary">Cancel</a>
-      </div>
-    </form>
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <a href="/categories/view/{{ category.id }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Category</a>
+    <h1 class="h3 mb-0 fw-bold text-dark">Edit Data Category: {{ category.name }}</h1>
   </div>
+
+  <div class="card shadow-sm border-0 rounded-4 bg-white mb-4">
+    <div class="card-body p-4 p-md-5">
+      <form method="POST" action="/categories/edit/{{ category.id }}">
+        {{ csrf_field | safe }}
+
+        <!-- Basic Information -->
+        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-folder2 text-primary me-2"></i> 1. Category Classification</h2>
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Category Name *</label>
+          <input type="text" name="name" class="form-control" required value="{{ category.name }}">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Description</label>
+          <textarea name="description" class="form-control" rows="2">{{ category.description or '' }}</textarea>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-muted">Retention Reason / Lawful Purpose *</label>
+          <textarea name="retention_reason" class="form-control" rows="2" required>{{ category.retention_reason }}</textarea>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <!-- Controller vs Third-Party Processor Governance -->
+        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-people text-primary me-2"></i> 2. Third-Party Processor & Governance</h2>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Processing Role *</label>
+            <select name="processing_role" class="form-select">
+              <option value="controller" {{ 'selected' if category.processing_role == 'controller' else '' }}>Controller (Data Processed In-House)</option>
+              <option value="processor" {{ 'selected' if category.processing_role == 'processor' else '' }}>Processor (Outsourced to Third-Party Vendor)</option>
+              <option value="joint_controller" {{ 'selected' if category.processing_role == 'joint_controller' else '' }}>Joint Controller (Shared Co-Governance)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Third-Party Processor Name (if applicable)</label>
+            <input type="text" name="processor_name" class="form-control" placeholder="e.g. Amazon Web Services, Salesforce, Workday" value="{{ category.processor_name or '' }}">
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Data Processing Agreement (DPA) Ref</label>
+            <input type="text" name="dpa_reference" class="form-control" placeholder="e.g. DPA-2026-AWS-EU-09" value="{{ category.dpa_reference or '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Processor DPO / Compliance Contact</label>
+            <input type="text" name="processor_contact" class="form-control" placeholder="e.g. dpo@vendor.com" value="{{ category.processor_contact or '' }}">
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Processor Retention Sync Status</label>
+            <select name="processor_retention_status" class="form-select">
+              <option value="compliant" {{ 'selected' if category.processor_retention_status == 'compliant' else '' }}>Compliant (SLA & Erasure Confirmed)</option>
+              <option value="under_review" {{ 'selected' if category.processor_retention_status == 'under_review' else '' }}>Under Review / Verification</option>
+              <option value="pending_sync" {{ 'selected' if category.processor_retention_status == 'pending_sync' else '' }}>Pending Sync</option>
+              <option value="non_compliant" {{ 'selected' if category.processor_retention_status == 'non_compliant' else '' }}>Non-Compliant / Escalated</option>
+            </select>
+          </div>
+        </div>
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <!-- Legal Basis & Retention Formula -->
+        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-hourglass-split text-primary me-2"></i> 3. Statutory Retention Schedule</h2>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Legal Basis *</label>
+            <select name="legal_basis" class="form-select" required>
+              <option value="legal_obligation" {{ 'selected' if category.legal_basis == 'legal_obligation' else '' }}>Legal Obligation (Statutory Requirement)</option>
+              <option value="contract" {{ 'selected' if category.legal_basis == 'contract' else '' }}>Performance of Contract</option>
+              <option value="consent" {{ 'selected' if category.legal_basis == 'consent' else '' }}>Consent of Data Subject</option>
+              <option value="legitimate_interest" {{ 'selected' if category.legal_basis == 'legitimate_interest' else '' }}>Legitimate Interest</option>
+              <option value="vital_interest" {{ 'selected' if category.legal_basis == 'vital_interest' else '' }}>Vital Interest</option>
+              <option value="public_task" {{ 'selected' if category.legal_basis == 'public_task' else '' }}>Public Task</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Disposal Trigger *</label>
+            <select name="disposal_trigger" class="form-select" required>
+              <option value="date_based" {{ 'selected' if category.disposal_trigger == 'date_based' else '' }}>Date-based — countdown from collection date</option>
+              <option value="consent_withdrawal" {{ 'selected' if category.disposal_trigger == 'consent_withdrawal' else '' }}>Consent withdrawal — countdown begins when subject withdraws</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label small fw-bold text-muted">Retention Period (Days) *</label>
+            <input type="number" name="retention_period_days" class="form-control" value="{{ category.retention_period_days }}" required>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label small fw-bold text-muted">Retention Period Label</label>
+            <input type="text" name="retention_period_label" class="form-control" value="{{ category.retention_period_label or '' }}">
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Disposal Method *</label>
+            <select name="disposal_method" class="form-select" required>
+              <option value="delete" {{ 'selected' if category.disposal_method == 'delete' else '' }}>Secure Delete (Complete Purge from DB & Backups)</option>
+              <option value="anonymise" {{ 'selected' if category.disposal_method == 'anonymise' else '' }}>Anonymise (Strip Identifiers & Retain Aggregate)</option>
+              <option value="archive" {{ 'selected' if category.disposal_method == 'archive' else '' }}>Secure Archive (Move to Offline Vault)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Periodic Review Frequency *</label>
+            <select name="review_frequency" class="form-select" required>
+              <option value="monthly" {{ 'selected' if category.review_frequency == 'monthly' else '' }}>Monthly Review</option>
+              <option value="quarterly" {{ 'selected' if category.review_frequency == 'quarterly' else '' }}>Quarterly Review</option>
+              <option value="annually" {{ 'selected' if category.review_frequency == 'annually' else '' }}>Annual Review</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-check p-3 bg-light rounded-3 border mb-4">
+          <input class="form-check-input ms-0 me-2" type="checkbox" name="requires_dual_approval" id="requires_dual_approval" {{ 'checked' if category.requires_dual_approval else '' }}>
+          <label class="form-check-label fw-bold text-dark" for="requires_dual_approval">
+            Enable Four-Eyes (Dual-Approval) Safeguard
+          </label>
+          <div class="small text-muted ms-4">
+            Requires two distinct authorized users (DPO and Admin) to sign off before any record in this category can be permanently purged.
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary px-4">Save Policy Changes</button>
+          <a href="/categories/view/{{ category.id }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </div>
 {% endblock %}

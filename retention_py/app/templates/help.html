@@ -1,134 +1,481 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="container-fluid px-0" style="max-width: 960px;">
-  <!-- Title / Introduction -->
-  <div class="d-flex align-items-center gap-3 mb-4">
-    <div class="bg-primary text-white rounded-3 p-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
-      <i class="bi bi-book fs-3"></i>
+<div class="container-fluid px-0" style="max-width: 1100px;">
+
+  <!-- Header & Back Navigation -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+      <div class="bg-primary text-white rounded-4 p-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 58px; height: 58px; background: linear-gradient(135deg, #ff914d 0%, #e67a35 100%) !important;">
+        <i class="bi bi-journal-bookmark-fill fs-2"></i>
+      </div>
+      <div>
+        <h1 class="h3 mb-1 fw-bold text-dark">SafeData Enterprise Solution Manual</h1>
+        <p class="text-muted mb-0 small">The Definitive Handbook for Automated Data Retention, Governance, and Regulatory Compliance</p>
+      </div>
     </div>
+    <div class="d-flex gap-2">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+      </a>
+      <button onclick="window.print()" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-printer"></i> Print Manual
+      </button>
+    </div>
+  </div>
+
+  <!-- Regulatory Context Banner -->
+  <div class="alert alert-info border-0 shadow-sm d-flex gap-3 mb-4 p-4 rounded-4" style="background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border-left: 5px solid #4f46e5 !important;">
+    <div class="fs-2 text-primary"><i class="bi bi-shield-check"></i></div>
     <div>
-      <h1 class="h3 mb-1 fw-bold text-dark">ADRS Platform Manual</h1>
-      <p class="text-muted mb-0">The complete guide to automated data retention, disposal, and regulatory compliance.</p>
-    </div>
-  </div>
-
-  <!-- Localized Alert box -->
-  <div class="alert alert-info border-0 shadow-sm d-flex gap-3 mb-5 p-4 rounded-3">
-    <div class="fs-3"><i class="bi bi-shield-check text-info"></i></div>
-    <div>
-      <h4 class="h6 fw-bold text-dark">Active Compliance Setting</h4>
-      <p class="small mb-0 text-muted">
-        Your ADRS account is registered under <strong>{{ country_name }}</strong>. 
-        Your categories and automated timelines are dynamically tailored to the <strong>{{ law_name }}</strong> regulated by the <strong>{{ authority_name }}</strong>.
-      </p>
-    </div>
-  </div>
-
-  <!-- Grid of Sections -->
-  <div class="row g-4">
-    <!-- Part 1: Lifecycle Concepts -->
-    <div class="col-12">
-      <div class="card shadow-sm border-0 bg-white">
-        <div class="card-body p-4">
-          <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-diagram-3 text-primary me-2"></i> 1. Core Lifecycle Concepts</h2>
-          <p class="text-muted small">ADRS is built around three fundamental blocks to help businesses manage data lifecycles cleanly:</p>
-          
-          <div class="row g-3 mt-2">
-            <div class="col-md-4">
-              <div class="p-3 bg-light-subtle rounded border h-100" style="background-color: #fafbfc;">
-                <h3 class="h6 fw-bold text-dark">Data Categories</h3>
-                <p class="small text-muted mb-0">These are the retention policies (e.g. Employee Records, Customer PII). Each category defines its retention period, lawful basis, review frequency, and disposal method.</p>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="p-3 bg-light-subtle rounded border h-100" style="background-color: #fafbfc;">
-                <h3 class="h6 fw-bold text-dark">Data Records</h3>
-                <p class="small text-muted mb-0">Individual data references created when you collect customer/employee data. ADRS monitors these records to track their exact expiration dates in real-time.</p>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="p-3 bg-light-subtle rounded border h-100" style="background-color: #fafbfc;">
-                <h3 class="h6 fw-bold text-dark">Disposal Actions</h3>
-                <p class="small text-muted mb-0">When records expire, ADRS instructs your system to carry out the designated action: <strong>Secure Delete</strong>, <strong>Anonymise</strong>, or <strong>Archive</strong>.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Part 2: Operating Manual / Checklist -->
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 bg-white h-100">
-        <div class="card-body p-4">
-          <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-list-task text-primary me-2"></i> 2. Business Compliance Checklist</h2>
-          <div class="d-flex gap-3 mb-3">
-            <div class="font-monospace text-primary fw-bold">01</div>
-            <div>
-              <h4 class="h6 fw-bold mb-1">Define Your Inventory</h4>
-              <p class="small text-muted">Create data categories corresponding to the data your organization handles. Choose categories based on the pre-built templates suggested for your region.</p>
-            </div>
-          </div>
-          <div class="d-flex gap-3 mb-3">
-            <div class="font-monospace text-primary fw-bold">02</div>
-            <div>
-              <h4 class="h6 fw-bold mb-1">Integrate Data Sources</h4>
-              <p class="small text-muted">Connect your CRM, database, or payment system. Generate API credentials in settings so records flow automatically when captured.</p>
-            </div>
-          </div>
-          <div class="d-flex gap-3 mb-3">
-            <div class="font-monospace text-primary fw-bold">03</div>
-            <div>
-              <h4 class="h6 fw-bold mb-1">Audit and Approve Expirations</h4>
-              <p class="small text-muted">When a retention timeline is reached, DPOs receive alerts. Approve disposal lists or freeze them with legal holds when necessary.</p>
-            </div>
-          </div>
-          <div class="d-flex gap-3">
-            <div class="font-monospace text-primary fw-bold">04</div>
-            <div>
-              <h4 class="h6 fw-bold mb-1">Annual Compliance Audit</h4>
-              <p class="small text-muted">At the end of the fiscal year, export the compliance report to prove to auditors and regulators that expired data has been successfully purged.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Part 3: Safeguards & API -->
-    <div class="col-md-6">
-      <div class="card shadow-sm border-0 bg-white h-100">
-        <div class="card-body p-4">
-          <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-shield-lock text-primary me-2"></i> 3. Security & Safe Disposal</h2>
-          <h4 class="h6 fw-bold text-dark mb-1">Dual-Signature Control</h4>
-          <p class="small text-muted mb-3">Sensitive categories like children's data or biometric files require two authorized users (DPO and Admin) to sign off before disposal is executed, avoiding accidental loss.</p>
-
-          <h4 class="h6 fw-bold text-dark mb-1">Tamper-Proof Ledger</h4>
-          <p class="small text-muted mb-3">Every change to categories, policy audits, and data purges is cryptographically signed and stored in the immutable audit log chain, which can be verified at any time in general settings.</p>
-
-          <h4 class="h6 fw-bold text-dark mb-1">Secure Webhooks</h4>
-          <p class="small text-muted mb-0">When dispatching disposal commands, ADRS computes an HMAC-SHA256 signature using a shared secret so your backend systems can securely authenticate incoming calls.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Part 4: API Quickstart snippet -->
-    <div class="col-12">
-      <div class="card shadow-sm border-0 bg-white">
-        <div class="card-body p-4">
-          <h2 class="h5 fw-bold text-dark mb-2"><i class="bi bi-code-slash text-primary me-2"></i> 4. REST API Quickstart</h2>
-          <p class="text-muted small">Push new records from your CRM or core backend into ADRS during ingestion:</p>
-          <pre class="bg-dark text-light p-3 rounded font-monospace small mb-0 overflow-x-auto">
-POST /api/v1/records
-Header: Authorization: Bearer {your_api_key}
-Body:
-{
-  "record_reference": "USER-4929",
-  "category_id": 12,
-  "collection_date": "2026-07-20"
-}</pre>
-        </div>
+      <div class="fw-bold text-dark fs-6">Active Jurisdiction & Regulatory Baseline</div>
+      <div class="small text-muted mt-1">
+        Your organization (<strong>{{ org_name }}</strong>) is registered under <strong>{{ country_name }}</strong>. 
+        Retention triggers, schedules, and compliance metrics are automatically harmonized with <strong>{{ law_name }}</strong> under the supervisory oversight of the <strong>{{ authority_name }}</strong>.
       </div>
     </div>
   </div>
+
+  <!-- Quick Chapter Index Bar -->
+  <div class="card shadow-sm border-0 mb-4 bg-white rounded-4 sticky-top" style="top: 15px; z-index: 99;">
+    <div class="card-body py-2 px-3">
+      <div class="d-flex align-items-center gap-2 overflow-auto text-nowrap py-1">
+        <span class="small fw-bold text-muted text-uppercase me-2"><i class="bi bi-list-nested"></i> Chapters:</span>
+        <a href="#ch1" class="btn btn-sm btn-light border-0 py-1 px-2 rounded-pill small">1. Overview</a>
+        <a href="#ch2" class="btn btn-sm btn-light border-0 py-1 px-2 rounded-pill small">2. Core Lifecycle</a>
+        <a href="#ch3" class="btn btn-sm btn-light border-0 py-1 px-2 rounded-pill small">3. Controller vs Processor</a>
+        <a href="#ch4" class="btn btn-sm btn-light border-0 py-1 px-2 rounded-pill small">4. Dual-Approver Disposal</a>
+        <a href="#ch5" class="btn btn-sm btn-light border-0 py-1 px-2 rounded-pill small">5. Legal Holds & Consent</a>
+        <a href="#ch6" class="btn btn-sm btn-light border-0 py-1 px-2 rounded-pill small">6. Cryptographic Ledger</a>
+        <a href="#ch7" class="btn btn-sm btn-light border-0 py-1 px-2 rounded-pill small">7. Scorecard & Pillars</a>
+        <a href="#ch8" class="btn btn-sm btn-light border-0 py-1 px-2 rounded-pill small">8. API & Automated Dispatch</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chapter Content Sections -->
+  <div class="d-flex flex-column gap-4">
+
+    <!-- Chapter 1 -->
+    <section id="ch1" class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-2 text-primary fw-bold small text-uppercase mb-2">
+          <i class="bi bi-bookmark-star"></i> Chapter 1
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-3">Introduction: Why Data Retention Matters (In Plain English)</h2>
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <p class="text-secondary leading-relaxed">
+              In the modern digital economy, keeping customer, employee, or financial data forever is not just bad practice—it is illegal under major global data protection laws (such as GDPR, NDPR, CCPA, and POPIA).
+            </p>
+            <p class="text-secondary leading-relaxed">
+              When an organization hoards old data, two critical risks emerge:
+            </p>
+            <ul class="text-secondary small">
+              <li class="mb-2"><strong>Massive Cyber Breach Liability:</strong> If your servers or cloud storage are breached, leaking 10 years of outdated customer records multiplies legal liability exponentially compared to retaining only what is legally necessary.</li>
+              <li class="mb-2"><strong>Heavy Regulatory Sanctions:</strong> Regulators mandate the <em>Storage Limitation Principle</em>: data must be deleted, anonymized, or archived as soon as its lawful retention purpose expires.</li>
+            </ul>
+            <p class="text-secondary mb-0">
+              <strong>SafeData</strong> acts as your automated retention compliance engine. It tracks every record from creation to disposal, alerts you when retention windows close, enforces multi-step approvals, and generates cryptographically signed audit proof for regulators.
+            </p>
+          </div>
+          <div class="col-lg-5">
+            <div class="p-4 rounded-4 bg-light border h-100">
+              <h3 class="h6 fw-bold text-dark mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i> What SafeData Does For You</h3>
+              <div class="d-flex flex-column gap-3 small">
+                <div class="d-flex gap-2">
+                  <i class="bi bi-clock-history text-primary fs-5"></i>
+                  <div><strong>Automated Countdown:</strong> Automatically calculates exact expiration dates based on your country's legal requirements.</div>
+                </div>
+                <div class="d-flex gap-2">
+                  <i class="bi bi-shield-lock text-primary fs-5"></i>
+                  <div><strong>Dual-Approval Safeguards:</strong> Prevents unauthorized or accidental permanent deletion with two-person approval.</div>
+                </div>
+                <div class="d-flex gap-2">
+                  <i class="bi bi-diagram-3 text-primary fs-5"></i>
+                  <div><strong>Third-Party Processor Tracking:</strong> Monitors whether your cloud and outsourced vendors are complying with your retention terms.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 2 -->
+    <section id="ch2" class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-2 text-primary fw-bold small text-uppercase mb-2">
+          <i class="bi bi-collection"></i> Chapter 2
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-3">The Core Lifecycle: Categories, Schedules & Records</h2>
+        <p class="text-secondary mb-4">
+          SafeData organizes your organization's entire data inventory through a hierarchy of <strong>Categories</strong>, <strong>Rules</strong>, and individual <strong>Records</strong>.
+        </p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+              <div class="fw-bold text-dark mb-1"><i class="bi bi-folder2 text-primary me-1"></i> 1. Data Category</div>
+              <div class="small text-muted">A policy bucket representing a business function (e.g., <em>Customer Transaction Logs</em>, <em>Employee Payroll</em>, <em>KYC ID Documents</em>). It sets the default retention period, legal basis, and disposal trigger.</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+              <div class="fw-bold text-dark mb-1"><i class="bi bi-sliders text-primary me-1"></i> 2. Retention Schedule</div>
+              <div class="small text-muted">The formula that calculates the exact retention end date. Can be fixed time (e.g., 7 years), trigger-based (e.g., 6 years after contract termination), or subject to consent withdrawal.</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+              <div class="fw-bold text-dark mb-1"><i class="bi bi-file-earmark-text text-primary me-1"></i> 3. Data Record</div>
+              <div class="small text-muted">A specific customer ID, invoice reference, or employee token tracked in SafeData. SafeData stores only references and metadata—never sensitive raw plaintext.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3 bg-light-subtle border rounded-3">
+          <h4 class="h6 fw-bold text-dark mb-2"><i class="bi bi-arrow-repeat text-primary me-2"></i> The 5 Lifecycle Stages of a Record</h4>
+          <div class="row g-2 text-center text-md-start small mt-2">
+            <div class="col-6 col-md">
+              <span class="badge bg-success w-100 py-2">1. Active</span>
+              <div class="text-muted mt-1" style="font-size: 0.75rem;">Currently in retention period</div>
+            </div>
+            <div class="col-6 col-md">
+              <span class="badge bg-warning text-dark w-100 py-2">2. Due Review</span>
+              <div class="text-muted mt-1" style="font-size: 0.75rem;">Retention date reached; review alert sent</div>
+            </div>
+            <div class="col-6 col-md">
+              <span class="badge bg-primary w-100 py-2">3. Disposal Requested</span>
+              <div class="text-muted mt-1" style="font-size: 0.75rem;">Awaiting 2nd approver confirmation</div>
+            </div>
+            <div class="col-6 col-md">
+              <span class="badge bg-info text-dark w-100 py-2">4. Legal Hold</span>
+              <div class="text-muted mt-1" style="font-size: 0.75rem;">Frozen due to litigation or audit</div>
+            </div>
+            <div class="col-6 col-md">
+              <span class="badge bg-dark w-100 py-2">5. Disposed</span>
+              <div class="text-muted mt-1" style="font-size: 0.75rem;">Permanently deleted/anonymized</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 3 -->
+    <section id="ch3" class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-2 text-primary fw-bold small text-uppercase mb-2">
+          <i class="bi bi-people"></i> Chapter 3
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-3">Controller vs. Third-Party Processor Retention Tracking</h2>
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <p class="text-secondary leading-relaxed">
+              One of the greatest regulatory blindspots for organizations is <strong>third-party processors</strong>. When you send customer data to a cloud host, marketing automation SaaS, payroll vendor, or CRM, you remain legally responsible as the <strong>Data Controller</strong>.
+            </p>
+            <p class="text-secondary leading-relaxed">
+              If your vendor keeps your customer data longer than your <strong>Data Processing Agreement (DPA)</strong> specifies, your organization can be held strictly liable.
+            </p>
+            <h4 class="h6 fw-bold text-dark mb-2">How SafeData Solves This:</h4>
+            <ul class="text-secondary small">
+              <li class="mb-2"><strong>Role Tagging:</strong> Every Data Category and Record can be designated as <code>Controller (Internal)</code>, <code>Processor (Third-Party)</code>, or <code>Joint Controller</code>.</li>
+              <li class="mb-2"><strong>DPA Reference & Vendor Contact:</strong> Store the vendor's legal contract reference and DPO contact directly on the retention schedule.</li>
+              <li class="mb-2"><strong>Processor Retention Status:</strong> Monitor whether the external processor has confirmed deletion synchronization (<code>Compliant</code>, <code>Under Review</code>, or <code>Disposal Pending</code>).</li>
+            </ul>
+          </div>
+          <div class="col-lg-5">
+            <div class="p-4 rounded-4 bg-light border">
+              <h3 class="h6 fw-bold text-dark mb-3"><i class="bi bi-shield-shaded text-primary me-2"></i> Controller vs Processor Matrix</h3>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered bg-white small mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Role</th>
+                      <th>Primary Responsibility</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="fw-bold">Controller</td>
+                      <td>Sets retention duration, legal basis, and issues disposal instructions.</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold">Processor</td>
+                      <td>Executes disposal in vendor storage and submits proof of erasure.</td>
+                    </tr>
+                    <tr>
+                      <td class="fw-bold">Joint Controller</td>
+                      <td>Shares joint retention governance under bilateral SLA.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 4 -->
+    <section id="ch4" class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-2 text-primary fw-bold small text-uppercase mb-2">
+          <i class="bi bi-check2-all"></i> Chapter 4
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-3">Dual-Approver Workflow & Safe Disposal Protocol</h2>
+        <p class="text-secondary leading-relaxed">
+          Accidental data deletion is as dangerous as unlawful retention. SafeData features a robust <strong>Four-Eyes (Dual-Approval) Security Protocol</strong>.
+        </p>
+
+        <div class="row g-4 mt-2">
+          <div class="col-md-6">
+            <div class="p-4 border rounded-4 bg-light h-100">
+              <h4 class="h6 fw-bold text-dark mb-3"><i class="bi bi-1-circle-fill text-primary me-2"></i> Step 1: Disposal Request</h4>
+              <p class="small text-secondary">
+                When a record expires, a Data Owner or DPO reviews the record. If disposal is warranted, they click <strong>"Request Disposal"</strong>. The record status transitions to <code>disposal_requested</code>.
+              </p>
+              <div class="alert alert-warning small py-2 px-3 mb-0">
+                <i class="bi bi-exclamation-triangle me-1"></i> The user who requested disposal <strong>CANNOT</strong> approve their own request.
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-4 border rounded-4 bg-light h-100">
+              <h4 class="h6 fw-bold text-dark mb-3"><i class="bi bi-2-circle-fill text-success me-2"></i> Step 2: Second Approver Confirmation</h4>
+              <p class="small text-secondary">
+                A separate Administrator or DPO reviews the request. They can either:
+              </p>
+              <ul class="small text-secondary mb-0">
+                <li><strong>Confirm & Execute:</strong> Permanently executes the disposal method and cryptographically seals the audit certificate.</li>
+                <li><strong>Reject:</strong> Returns the record to <code>due_review</code> status with mandatory reason documentation.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 p-3 bg-light rounded-3 border">
+          <h4 class="h6 fw-bold text-dark mb-2">Three Approved Disposal Methods:</h4>
+          <div class="row g-3 small">
+            <div class="col-md-4">
+              <strong>1. Secure Delete (Purge):</strong> Complete cryptographic wipe or physical erasure of database rows and backup keys.
+            </div>
+            <div class="col-md-4">
+              <strong>2. Anonymize (Pseudonymize):</strong> Stripping all direct and indirect identifiers so statistical records can remain safely without PII.
+            </div>
+            <div class="col-md-4">
+              <strong>3. Secure Archive:</strong> Moving records to cold, access-restricted, encrypted offline vault storage.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 5 -->
+    <section id="ch5" class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-2 text-primary fw-bold small text-uppercase mb-2">
+          <i class="bi bi-pause-circle"></i> Chapter 5
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-3">Legal Holds, Consent Withdrawal & Overrides</h2>
+        <div class="row g-4">
+          <div class="col-md-6">
+            <h4 class="h6 fw-bold text-dark mb-2"><i class="bi bi-lock-fill text-danger me-2"></i> Legal Holds (Litigation Freeze)</h4>
+            <p class="small text-secondary">
+              If your organization is served with a court subpoena, regulatory investigation, or pending litigation, standard disposal schedules must be halted immediately to avoid charges of <em>spoliation of evidence</em>.
+            </p>
+            <p class="small text-secondary">
+              Placing a record on <strong>Legal Hold</strong> freezes the countdown and prevents automated or manual deletion until the DPO formally lifts the hold with justification.
+            </p>
+          </div>
+          <div class="col-md-6">
+            <h4 class="h6 fw-bold text-dark mb-2"><i class="bi bi-person-x-fill text-warning me-2"></i> Consent Withdrawal Handling</h4>
+            <p class="small text-secondary">
+              Under GDPR and modern data privacy laws, data subjects have the right to withdraw consent at any time.
+            </p>
+            <p class="small text-secondary">
+              Clicking <strong>"Withdraw Consent"</strong> overrides standard 5-year or 7-year schedules and sets a configurable grace period (e.g., 30 days) to allow orderly purge across all operational backups.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 6 -->
+    <section id="ch6" class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-2 text-primary fw-bold small text-uppercase mb-2">
+          <i class="bi bi-shield-check"></i> Chapter 6
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-3">The Tamper-Evident Cryptographic Audit Ledger</h2>
+        <p class="text-secondary leading-relaxed">
+          Standard database logs can be edited by database administrators. SafeData implements a <strong>Blockchain-grade SHA-256 HMAC Merkle Hash Chain</strong>.
+        </p>
+
+        <div class="p-3 bg-dark text-white rounded-3 font-monospace small mb-4">
+          Row[N].Hash = SHA256(OrgID + Action + EntityType + EntityID + ActorID + DetailsJSON + IPAddress + Row[N-1].Hash)
+        </div>
+
+        <div class="row g-3 small text-secondary">
+          <div class="col-md-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+              <div class="fw-bold text-dark mb-1"><i class="bi bi-link-45deg text-primary"></i> Cryptographic Interlink</div>
+              Every single login, record intake, disposal request, approval, and report export links to the preceding entry's hash.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+              <div class="fw-bold text-dark mb-1"><i class="bi bi-patch-check-fill text-success"></i> Instant Tamper Detection</div>
+              If an attacker modifies a single character in the past database records, the entire ledger chain breaks with an instant red integrity warning.
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded-3 bg-light h-100">
+              <div class="fw-bold text-dark mb-1"><i class="bi bi-file-earmark-pdf-fill text-danger"></i> Regulatory Evidentiary Standard</div>
+              Exported audit logs and certificates satisfy stringent evidential standards for court subpoenas and Data Protection Authority inquiries.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 7 -->
+    <section id="ch7" class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-2 text-primary fw-bold small text-uppercase mb-2">
+          <i class="bi bi-pie-chart"></i> Chapter 7
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-3">Compliance Scorecard & The 4 Governance Pillars</h2>
+        <p class="text-secondary leading-relaxed">
+          The SafeData Compliance Scorecard on your Dashboard is not an arbitrary number. It is computed in real-time across four weighted pillars of data protection governance:
+        </p>
+
+        <div class="row g-3 mt-2">
+          <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-dark">1. Policy Coverage (30% Weight)</span>
+                <span class="badge bg-primary">Pillar 1</span>
+              </div>
+              <p class="small text-muted mb-0">Measures the percentage of total stored data records that have an assigned legal retention category and defined lawful basis.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-dark">2. Retention SLA (30% Weight)</span>
+                <span class="badge bg-primary">Pillar 2</span>
+              </div>
+              <p class="small text-muted mb-0">Calculates your adherence to disposal deadlines. High overdue record backlogs degrade this pillar score.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-dark">3. Processor Governance (20% Weight)</span>
+                <span class="badge bg-primary">Pillar 3</span>
+              </div>
+              <p class="small text-muted mb-0">Audits third-party processor retention sync, DPA documentation, and vendor disposal compliance confirmation.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-dark">4. Safeguards Oversight (20% Weight)</span>
+                <span class="badge bg-primary">Pillar 4</span>
+              </div>
+              <p class="small text-muted mb-0">Monitors active Legal Holds, dual-approval requirement coverage, and SMTP alert health.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter 8 -->
+    <section id="ch8" class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="d-flex align-items-center gap-2 text-primary fw-bold small text-uppercase mb-2">
+          <i class="bi bi-hdd-network"></i> Chapter 8
+        </div>
+        <h2 class="h4 fw-bold text-dark mb-3">Integrations, REST API & Automated Dispatches</h2>
+        <p class="text-secondary leading-relaxed">
+          SafeData provides a headless REST API and Webhook engine allowing your engineering teams to connect CRMs (Salesforce, HubSpot), ERPs (SAP, NetSuite), custom databases, and Cloud Storage.
+        </p>
+
+        <div class="row g-3 small">
+          <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light">
+              <h5 class="h6 fw-bold text-dark mb-2"><i class="bi bi-box-arrow-in-right text-primary me-1"></i> Inbound Record Intake API</h5>
+              <p class="text-muted">When a new customer signs up or transaction completes, your server sends a POST request to <code>/api/v1/records/intake</code> with the reference ID and category code.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 border rounded-3 bg-light">
+              <h5 class="h6 fw-bold text-dark mb-2"><i class="bi bi-send text-primary me-1"></i> Outbound Disposal Webhooks</h5>
+              <p class="text-muted">When a dual-approval disposal is approved, SafeData sends an automated webhook payload to your deletion microservice to purge the raw row in your production SQL/NoSQL cluster.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive FAQ -->
+    <section class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 p-md-5">
+        <h2 class="h4 fw-bold text-dark mb-4"><i class="bi bi-question-circle text-primary me-2"></i> Frequently Asked Questions</h2>
+        <div class="accordion accordion-flush" id="faqAccordion">
+          <div class="accordion-item border-bottom">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                Does SafeData store my actual customer personal data or credit cards?
+              </button>
+            </h2>
+            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body small text-secondary">
+                <strong>No.</strong> SafeData is designed on a <em>Zero-PII Metadata Architecture</em>. You only store identifier references (e.g. <code>CUST-98231</code>, <code>INV-2026-004</code>) and collection dates. SafeData tells you WHEN to delete, but never needs to ingest your raw customer plaintext.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item border-bottom">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                What is the difference between ROPA and Retention Tracking?
+              </button>
+            </h2>
+            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body small text-secondary">
+                A ROPA (Record of Processing Activities) is a broad macro document outlining what types of processing happen in a company. <strong>Retention Tracking in SafeData</strong> is the operational execution engine that tracks the exact countdowns, DPA vendor SLAs, and ensures records are physically purged when those periods expire.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item border-bottom">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                How do I export proof for an external compliance auditor?
+              </button>
+            </h2>
+            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body small text-secondary">
+                Navigate to <strong>Compliance & Governance &rarr; Compliance & Reports</strong>. Select your desired time range (e.g. YTD, Last 1 Year, or Custom), and click <strong>Print / PDF Audit Pack</strong> or <strong>Export CSV</strong>. It generates a full evidentiary ledger with cryptographic hashes.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="d-flex justify-content-between align-items-center mt-5 mb-4">
+    <a href="/dashboard" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+    <a href="#top" class="btn btn-light btn-sm text-muted">
+      <i class="bi bi-arrow-up"></i> Back to Top
+    </a>
+  </div>
+
 </div>
 {% endblock %}

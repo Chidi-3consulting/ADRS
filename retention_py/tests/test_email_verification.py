@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test email verification.
 Tests token generation, verification, and expiry.
 """

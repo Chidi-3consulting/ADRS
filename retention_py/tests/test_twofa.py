@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test 2FA (TOTP).
 Tests TOTP generation, verification, recovery codes, and URI generation.
 """
@@ -40,9 +40,9 @@ def test_totp_verify_wrong_code():
 def test_totp_uri():
     """URI should be properly formatted for QR code generation."""
     secret = totp_generate_secret()
-    uri = totp_uri(secret, "user@example.com", "ADRS")
+    uri = totp_uri(secret, "user@example.com", "SafeData")
     assert uri.startswith("otpauth://totp/")
-    assert "ADRS" in uri
+    assert "SafeData" in uri
     assert secret in uri
 
 

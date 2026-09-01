@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test audit chain integrity.
 Tests the SHA-256 hash chain write + verification.
 """

@@ -1,52 +1,131 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Notification Inbox</h1>
-</div>
+<div class="container-fluid px-0" style="max-width: 960px;">
 
-{% if notifications | length == 0 %}
-<div class="card shadow-sm">
-  <div class="card-body text-center py-5">
-    <i class="bi bi-bell-slash fs-1 text-muted"></i>
-    <p class="text-muted mt-3 mb-0">No notifications yet. They will appear here when retention events are triggered.</p>
-  </div>
-</div>
-{% else %}
-<div class="list-group shadow-sm">
-  {% for n in notifications %}
-  <div class="list-group-item list-group-item-action {{ '' if n.read_at else 'list-group-item-light' }}">
-    <div class="d-flex w-100 justify-content-between">
-      <div>
-        <h6 class="mb-1 {{ 'fw-bold' if not n.read_at }}">
-          {% if n.type == 'retention_warning' %}
-            <i class="bi bi-exclamation-triangle text-warning me-1"></i>
-          {% elif n.type == 'disposal_complete' %}
-            <i class="bi bi-check-circle text-success me-1"></i>
-          {% elif n.type == 'escalation' %}
-            <i class="bi bi-arrow-up-circle text-danger me-1"></i>
-          {% else %}
-            <i class="bi bi-info-circle text-info me-1"></i>
-          {% endif %}
-          {{ n.subject }}
-        </h6>
-        <p class="mb-1 small text-muted">{{ n.message }}</p>
+  <!-- Header & Bulk Action Controls -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h3 mb-0 fw-bold text-dark">Notification Inbox</h1>
       </div>
-      <div class="text-end text-nowrap">
-        <small class="text-muted">{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}</small>
-        {% if not n.read_at %}
-        <form method="post" action="/notifications/{{ n.id }}/read" class="d-inline ms-2">
+      <p class="text-muted mb-0 small mt-1">Real-time statutory alerts, retention warnings, and disposal confirmations</p>
+    </div>
+    <div class="d-flex gap-2">
+      {% if unread_count is defined and unread_count > 0 %}
+        <form method="post" action="/notifications/read-all">
           {{ csrf_field | safe }}
-          <button class="btn btn-outline-secondary btn-sm py-0 px-1" title="Mark read">
-            <i class="bi bi-check2"></i>
+          <button type="submit" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+            <i class="bi bi-check2-all"></i> Mark All Read ({{ unread_count }})
           </button>
         </form>
-        {% else %}
-        <span class="badge bg-secondary ms-2" style="font-size:0.6rem;">Read</span>
-        {% endif %}
-      </div>
+      {% endif %}
+      <form method="post" action="/notifications/clear">
+        {{ csrf_field | safe }}
+        <button type="submit" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onclick="return confirm('Clear all read notifications?');">
+          <i class="bi bi-trash"></i> Clear Read
+        </button>
+      </form>
     </div>
   </div>
-  {% endfor %}
+
+  <!-- Filter Tabs -->
+  <div class="card shadow-sm border-0 rounded-4 bg-white mb-4">
+    <div class="card-body p-2">
+      <ul class="nav nav-pills nav-fill gap-1">
+        <li class="nav-item">
+          <a class="nav-link py-2 small {{ 'active' if current_filter == 'all' or not current_filter else '' }}" href="/notifications?filter=all">
+            All Notifications
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link py-2 small {{ 'active' if current_filter == 'unread' else '' }}" href="/notifications?filter=unread">
+            Unread {% if unread_count is defined and unread_count > 0 %}<span class="badge bg-danger rounded-pill ms-1">{{ unread_count }}</span>{% endif %}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link py-2 small {{ 'active' if current_filter == 'warning' else '' }}" href="/notifications?filter=warning">
+            Warnings & Escalations
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link py-2 small {{ 'active' if current_filter == 'disposal' else '' }}" href="/notifications?filter=disposal">
+            Disposals
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link py-2 small {{ 'active' if current_filter == 'recalculation' else '' }}" href="/notifications?filter=recalculation">
+            Recalculations
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Notifications List -->
+  {% if notifications | length == 0 %}
+    <div class="card shadow-sm border-0 rounded-4 bg-white text-center py-5">
+      <div class="card-body">
+        <i class="bi bi-bell-slash fs-1 text-muted opacity-50 mb-2 d-block"></i>
+        <div class="fw-semibold text-dark">No Notifications</div>
+        <p class="text-muted small mb-0">You're completely caught up! New notifications will appear here when retention events trigger.</p>
+      </div>
+    </div>
+  {% else %}
+    <div class="d-flex flex-column gap-3">
+      {% for n in notifications %}
+        <div class="card shadow-sm border-0 rounded-4 {{ 'bg-white' if n.read_at else 'border-start border-4 border-primary bg-light-subtle' }}">
+          <div class="card-body p-3 p-md-4">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <div class="d-flex gap-3">
+                <div class="fs-3">
+                  {% if n.type == 'retention_warning' %}
+                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                  {% elif n.type == 'disposal_complete' %}
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                  {% elif n.type == 'escalation' %}
+                    <i class="bi bi-arrow-up-circle-fill text-danger"></i>
+                  {% elif n.type == 'recalculation_needed' %}
+                    <i class="bi bi-calculator text-primary"></i>
+                  {% else %}
+                    <i class="bi bi-info-circle-fill text-info"></i>
+                  {% endif %}
+                </div>
+                <div>
+                  <h6 class="mb-1 {{ 'fw-bold text-dark' if not n.read_at else 'text-secondary' }}">
+                    {{ n.subject }}
+                  </h6>
+                  <p class="mb-2 small text-secondary leading-relaxed">{{ n.message }}</p>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-muted border" style="font-size:0.7rem;">
+                      <i class="bi bi-clock me-1"></i>{{ n.created_at.strftime('%b %d, %Y · %H:%M') if n.created_at else '' }}
+                    </span>
+                    {% if n.type == 'retention_warning' or n.type == 'escalation' %}
+                      <a href="/records" class="btn btn-link btn-sm p-0 small text-decoration-none">Review Retention Register &rarr;</a>
+                    {% elif n.type == 'recalculation_needed' %}
+                      <a href="/recalculations" class="btn btn-link btn-sm p-0 small text-decoration-none">View Pending Recalculations &rarr;</a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <div class="text-end text-nowrap">
+                {% if not n.read_at %}
+                  <form method="post" action="/notifications/{{ n.id }}/read">
+                    {{ csrf_field | safe }}
+                    <button type="submit" class="btn btn-light btn-sm border py-1 px-2" title="Mark as Read">
+                      <i class="bi bi-check2"></i> Mark Read
+                    </button>
+                  </form>
+                {% else %}
+                  <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">Read</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
 </div>
-{% endif %}
 {% endblock %}

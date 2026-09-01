@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test login throttle.
 Tests brute-force login prevention.
 """

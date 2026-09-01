@@ -1,9 +1,12 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
-    <h1 class="h4 mb-0">Integrations & API Hub</h1>
-    <p class="text-muted small mb-0">Connect external systems, manage API keys, auto-categorization rules, and inspect API logs.</p>
+    <div class="d-flex align-items-center gap-2">
+      <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h1 class="h3 mb-0 fw-bold text-dark">Integrations & API Hub</h1>
+    </div>
+    <p class="text-muted small mb-0 mt-1">Connect external systems, manage API keys, auto-categorization rules, and inspect API logs</p>
   </div>
   <div class="d-flex gap-2">
     <a href="/integrations/tier" class="btn btn-outline-dark btn-sm"><i class="bi bi-shield-check me-1"></i> Product Tier</a>
@@ -95,7 +98,7 @@
         <div class="card-body d-flex align-items-center justify-content-between">
           <div>
             <div class="fw-bold text-dark mb-1"><i class="bi bi-diagram-3 me-2 text-success"></i> Field Mappings</div>
-            <div class="small text-muted">Map external payload parameters to ADRS category fields.</div>
+            <div class="small text-muted">Map external payload parameters to SafeData category fields.</div>
           </div>
           <span class="badge bg-success fs-6">{{ mappings_count }} Mappings</span>
         </div>
@@ -111,7 +114,7 @@
   </div>
   <div class="card-body p-0">
     {% if webhooks | length == 0 %}
-      <div class="p-4 text-center text-muted">No webhook endpoints configured. Webhooks allow ADRS to notify external systems of retention events.</div>
+      <div class="p-4 text-center text-muted">No webhook endpoints configured. Webhooks allow SafeData to notify external systems of retention events.</div>
     {% else %}
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -137,7 +140,7 @@
 <div class="card shadow-sm">
   <div class="card-body">
     <h5 class="card-title fw-bold">REST API Documentation</h5>
-    <p class="text-muted small mb-3">The ADRS REST API allows external systems to ingest records, withdraw consent, and check retention status programmatically.</p>
+    <p class="text-muted small mb-3">The SafeData REST API allows external systems to ingest records, withdraw consent, and check retention status programmatically.</p>
     <a href="/api/docs" class="btn btn-outline-primary btn-sm me-2" target="_blank">
       <i class="bi bi-file-code me-1"></i> API Documentation (Swagger)
     </a>

@@ -1,17 +1,17 @@
-# ADRS — Automated Data Retention System
+# SafeData — Data Retention & Governance
 
-A compliance-first, **GDPR/NDPR** data-lifecycle management platform by 3Consulting. ADRS
+A compliance-first, **GDPR/NDPR** data-lifecycle management platform by 3Consulting. SafeData
 governs personal data from collection to compliant disposal: a documented retention register,
 an automated enforcement engine, immutable evidence, and data-subject-rights workflows.
 
-Built with **Python (Flask) + SQLite/SQLAlchemy** — lightweight, portable, and easy to deploy.
+Built with **Python (FastAPI) + SQLite/SQLAlchemy** — lightweight, portable, and easy to deploy.
 The application lives in [`retention_py/`](retention_py/).
 
 ## Two tiers
 
-- **ADRS Core** — standalone compliance portal. Your team registers records; the engine then
+- **SafeData Core** — standalone compliance portal. Your team registers records; the engine then
   flags reviews, escalates, and disposes automatically.
-- **ADRS Enterprise** — everything in Core **plus** a REST API for automatic data capture from
+- **SafeData Enterprise** — everything in Core **plus** a REST API for automatic data capture from
   connected systems (CRM, core banking, HR…), real-time governance, inbound consent signals,
   and outbound disposal dispatch. Toggle via licence key (Settings → Tier & Licence).
 

@@ -74,7 +74,7 @@ def client(db):
 
 @pytest.fixture
 def auth_user(db):
-    pwd = hash_password("Password123!")
+    pwd = hash_password("Str0ng!Pass#99")
     user = User(
         organization_id=1,
         name="Test Admin User",

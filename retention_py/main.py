@@ -1,5 +1,5 @@
 """
-ADRS Python Engine — main application entry point.
+SafeData Python Engine — main application entry point.
 
 Registers FastAPI app with:
   - Security middleware (headers with nonce CSP, CSRF, session enforcement)
@@ -13,10 +13,13 @@ Registers FastAPI app with:
   - Static file serving
 """
 import uvicorn
+import traceback
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 import os
 import asyncio
 from datetime import datetime
@@ -24,7 +27,7 @@ from contextlib import asynccontextmanager
 
 from app.database import engine, Base, SessionLocal
 from app.auth import get_session, build_session_data
-from app.config import APP_ENV, IS_PRODUCTION
+from app.config import APP_ENV, IS_PRODUCTION, IS_TEST, ALLOWED_HOSTS
 
 # ── Patch TemplateResponse to inject common context (incl. CSP nonce) ──
 _original_template_response = Jinja2Templates.TemplateResponse
@@ -35,10 +38,27 @@ def _patched_template_response(self, request, name, context=None, *args, **kwarg
         context = {}
     context["request"] = request
     session = get_session(request)
-    if session:
+    if session and "user_id" in session:
         context["is_platform_admin"] = session.get("is_platform_admin", False)
+        # Dynamically query unread notifications count for logged-in user
+        # B5 fix: use try/finally to guarantee db_s.close() even on exceptions
+        try:
+            from app.models import Notification
+            db_s = SessionLocal()
+            try:
+                unread_count = db_s.query(Notification).filter(
+                    Notification.organization_id == session.get("org_id", 1),
+                    Notification.recipient_id == session["user_id"],
+                    Notification.read_at == None
+                ).count()
+                context["unread_notifications_count"] = unread_count
+            finally:
+                db_s.close()
+        except Exception:
+            context.setdefault("unread_notifications_count", 0)
     else:
         context["is_platform_admin"] = False
+        context.setdefault("unread_notifications_count", 0)
     # Inject CSRF token/field for templates
     context.setdefault("csrf_token", getattr(request.state, "csrf_token", ""))
     context.setdefault("csrf_field", getattr(request.state, "csrf_field", ""))
@@ -72,6 +92,31 @@ def ensure_schema_columns(bind_engine):
                 cols = [c["name"] for c in inspector.get_columns("notifications")]
                 if "follow_up_sent_at" not in cols:
                     conn.execute(text("ALTER TABLE notifications ADD COLUMN follow_up_sent_at DATETIME NULL"))
+                    conn.commit()
+            if inspector.has_table("data_categories"):
+                cols = [c["name"] for c in inspector.get_columns("data_categories")]
+                if "processing_role" not in cols:
+                    conn.execute(text("ALTER TABLE data_categories ADD COLUMN processing_role VARCHAR(20) DEFAULT 'controller' NOT NULL"))
+                    conn.commit()
+                if "processor_name" not in cols:
+                    conn.execute(text("ALTER TABLE data_categories ADD COLUMN processor_name VARCHAR(255) NULL"))
+                    conn.commit()
+                if "processor_contact" not in cols:
+                    conn.execute(text("ALTER TABLE data_categories ADD COLUMN processor_contact VARCHAR(255) NULL"))
+                    conn.commit()
+                if "dpa_reference" not in cols:
+                    conn.execute(text("ALTER TABLE data_categories ADD COLUMN dpa_reference VARCHAR(255) NULL"))
+                    conn.commit()
+                if "processor_retention_status" not in cols:
+                    conn.execute(text("ALTER TABLE data_categories ADD COLUMN processor_retention_status VARCHAR(50) DEFAULT 'compliant' NULL"))
+                    conn.commit()
+            if inspector.has_table("data_records"):
+                cols = [c["name"] for c in inspector.get_columns("data_records")]
+                if "processor_name" not in cols:
+                    conn.execute(text("ALTER TABLE data_records ADD COLUMN processor_name VARCHAR(255) NULL"))
+                    conn.commit()
+                if "processor_sync_status" not in cols:
+                    conn.execute(text("ALTER TABLE data_records ADD COLUMN processor_sync_status VARCHAR(50) DEFAULT 'synced' NULL"))
                     conn.commit()
             # ROPA enhancements: add role_type, processor_name, processor_contact
             if inspector.has_table("ropa_entries"):
@@ -171,7 +216,7 @@ async def disposal_dispatch_scheduler_task():
         db = SessionLocal()
         try:
             from app.engine import get_setting
-            if get_setting(db, "adrs_tier", "core") == "enterprise":
+            if get_setting(db, "SafeData_tier", "core") == "enterprise":
                 from app.enterprise import process_disposal_dispatches
                 result = process_disposal_dispatches(db, 50)
                 if result["sent"] or result["failed"]:
@@ -189,7 +234,7 @@ async def intake_queue_scheduler_task():
         db = SessionLocal()
         try:
             from app.engine import get_setting
-            if get_setting(db, "adrs_tier", "core") == "enterprise":
+            if get_setting(db, "SafeData_tier", "core") == "enterprise":
                 from app.enterprise import process_intake_queue
                 result = process_intake_queue(db, 100)
                 if result["processed"]:
@@ -217,12 +262,13 @@ async def lifespan(app: FastAPI):
     task5.cancel()
 
 
+# Gap 14: Only enable debug in local dev mode — never in production or staging
 app = FastAPI(
-    title="Automated Data Retention Solution (ADRS)",
+    title="SafeData — Data Retention & Governance Platform",
     version="3.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    debug=not IS_PRODUCTION,
+    docs_url="/api/docs" if not IS_PRODUCTION else None,
+    redoc_url="/api/redoc" if not IS_PRODUCTION else None,
+    debug=(APP_ENV == "local"),
     lifespan=lifespan
 )
 
@@ -232,12 +278,20 @@ from app.middleware import (
     SecurityHeadersMiddleware,
     CSRFMiddleware,
     SessionEnforcementMiddleware,
+    RequestSizeLimitMiddleware,
 )
 
 # Middleware is applied in reverse order — last added = outermost
 app.add_middleware(SessionEnforcementMiddleware)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestSizeLimitMiddleware)
+
+# Gap 9: Trusted Host validation — prevent Host header attacks in production
+if ALLOWED_HOSTS and ALLOWED_HOSTS != "*":
+    _hosts = [h.strip() for h in ALLOWED_HOSTS.split(",") if h.strip()]
+    if _hosts:
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=_hosts)
 
 
 # ── Mount Static Files ──
@@ -265,7 +319,7 @@ app.include_router(api_v1.router, prefix="/api/v1")
 def system_healthz():
     return JSONResponse(content={
         "status": "ok",
-        "service": "ADRS Python Engine",
+        "service": "SafeData Python Engine",
         "env": APP_ENV,
     })
 
@@ -275,12 +329,75 @@ templates_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app",
 _error_templates = Jinja2Templates(directory=templates_path)
 
 
+def _is_api_request(request: Request) -> bool:
+    """True if the request targets an API endpoint (expects JSON)."""
+    return request.url.path.startswith("/api/")
+
+
+# Gap 7: Sanitised global exception handler — prevents stack traces leaking via API
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if _is_api_request(request):
+        # In local/test mode, include error detail for debugging
+        detail = str(exc) if APP_ENV in ("local", "test") else "Internal server error"
+        return JSONResponse(
+            status_code=500,
+            content={"error": "internal_server_error", "detail": detail},
+        )
+    # Web pages: render HTML error template
+    try:
+        return _error_templates.TemplateResponse(
+            request=request, name="500.html",
+            context={"page_title": "Server Error — SafeData"},
+            status_code=500,
+        )
+    except Exception:
+        return HTMLResponse(
+            content="<h1>500 — Internal Server Error</h1><p>Something went wrong. Please try again later.</p>",
+            status_code=500,
+        )
+
+
+# Gap 7: Sanitised validation error handler — prevents field/type leaks via API in production
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    if _is_api_request(request):
+        if APP_ENV in ("local", "test"):
+            # Full detail for development debugging
+            return JSONResponse(
+                status_code=422,
+                content={"error": "validation_error", "detail": exc.errors()},
+            )
+        else:
+            # Sanitised: only field names and error types, no internal Python types
+            safe_errors = []
+            for err in exc.errors():
+                safe_errors.append({
+                    "field": ".".join(str(loc) for loc in err.get("loc", [])),
+                    "message": err.get("msg", "Invalid value"),
+                })
+            return JSONResponse(
+                status_code=422,
+                content={"error": "validation_error", "detail": safe_errors},
+            )
+    # Web pages: default FastAPI handling is fine (returns HTML form errors)
+    return HTMLResponse(
+        content="<h1>422 — Invalid Request</h1><p>The submitted data was invalid. Please go back and try again.</p>",
+        status_code=422,
+    )
+
+
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
+    if _is_api_request(request):
+        return JSONResponse(
+            status_code=404,
+            content={"error": "not_found", "detail": "The requested resource was not found."},
+        )
     try:
         return _error_templates.TemplateResponse(
             request=request, name="404.html",
-            context={"page_title": "Page Not Found — ADRS"},
+            context={"page_title": "Page Not Found — SafeData"},
             status_code=404,
         )
     except Exception:
@@ -292,10 +409,16 @@ async def not_found_handler(request: Request, exc):
 
 @app.exception_handler(500)
 async def server_error_handler(request: Request, exc):
+    if _is_api_request(request):
+        detail = str(exc) if APP_ENV in ("local", "test") else "Internal server error"
+        return JSONResponse(
+            status_code=500,
+            content={"error": "internal_server_error", "detail": detail},
+        )
     try:
         return _error_templates.TemplateResponse(
             request=request, name="500.html",
-            context={"page_title": "Server Error — ADRS"},
+            context={"page_title": "Server Error — SafeData"},
             status_code=500,
         )
     except Exception:

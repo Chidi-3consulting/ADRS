@@ -2,7 +2,7 @@ import sys
 import os
 import traceback
 
-os.environ["DATABASE_URL"] = "mysql+pymysql://adrs_user:adrs_pass@localhost:3306/adrs_db"
+os.environ["DATABASE_URL"] = "mysql+pymysql://SafeData_user:SafeData_pass@localhost:3306/SafeData_db"
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -14,7 +14,7 @@ from fastapi import Request
 # Create a mock Request
 request = Request(scope={
     "type": "http",
-    "headers": [(b"host", b"localhost:8200"), (b"cookie", b"adrs_session=xxx")],
+    "headers": [(b"host", b"localhost:8200"), (b"cookie", b"SafeData_session=xxx")],
     "path": "/settings"
 })
 

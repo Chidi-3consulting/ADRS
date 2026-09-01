@@ -1,117 +1,180 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <a href="/categories" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i> Back to Categories</a>
-    <h1 class="h4 mt-1 mb-0">{{ category.name }} {{ get_framework_badge(category.compliance_framework) | safe }}</h1>
-  </div>
-  <div>
-    {% if user_role in ['admin', 'dpo'] %}
-      <a href="/categories/edit/{{ category.id }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil me-1"></i> Edit Category</a>
-    {% endif %}
-  </div>
-</div>
+<div class="container-fluid px-0">
 
-<div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="card shadow-sm"><div class="card-body">
-      <div class="text-muted small">Active records</div>
-      <div class="h3 mb-0 fw-bold">{{ active_count }}</div>
-    </div></div>
-  </div>
-  <div class="col-md-3">
-    <div class="card shadow-sm"><div class="card-body">
-      <div class="text-muted small">Due for review</div>
-      <div class="h3 mb-0 fw-bold text-warning">{{ due_review_count }}</div>
-    </div></div>
-  </div>
-  <div class="col-md-3">
-    <div class="card shadow-sm"><div class="card-body">
-      <div class="text-muted small">On legal hold</div>
-      <div class="h3 mb-0 fw-bold text-danger">{{ on_hold_count }}</div>
-    </div></div>
-  </div>
-  <div class="col-md-3">
-    <div class="card shadow-sm"><div class="card-body">
-      <div class="text-muted small">Dual approval</div>
-      <div class="h3 mb-0 fw-bold">{{ 'Yes 🔐' if category.requires_dual_approval else 'No' }}</div>
-    </div></div>
-  </div>
-</div>
-
-<div class="card shadow-sm mb-4">
-  <div class="card-header bg-light fw-bold py-3">Category Configuration</div>
-  <div class="card-body">
-    <dl class="row mb-0">
-      <dt class="col-sm-3 text-muted">Description</dt>
-      <dd class="col-sm-9">{{ category.description or '—' }}</dd>
-
-      <dt class="col-sm-3 text-muted">Legal basis</dt>
-      <dd class="col-sm-9"><span class="badge bg-secondary">{{ category.legal_basis.replace('_', ' ') | title }}</span></dd>
-
-      <dt class="col-sm-3 text-muted">Disposal trigger</dt>
-      <dd class="col-sm-9">{{ '👤 Consent withdrawal' if category.disposal_trigger == 'consent_withdrawal' else '📅 Date-based' }}</dd>
-
-      <dt class="col-sm-3 text-muted">Retention</dt>
-      <dd class="col-sm-9">{{ 'Until consent withdrawn' if category.disposal_trigger == 'consent_withdrawal' else category.retention_period_label }}</dd>
-
-      <dt class="col-sm-3 text-muted">Disposal method</dt>
-      <dd class="col-sm-9"><span class="badge bg-dark text-uppercase">{{ category.disposal_method }}</span></dd>
-
-      <dt class="col-sm-3 text-muted">Review frequency</dt>
-      <dd class="col-sm-9">{{ category.review_frequency | title }}</dd>
-
-      <dt class="col-sm-3 text-muted">Category Owner</dt>
-      <dd class="col-sm-9">{{ owner_name or 'Unassigned' }}</dd>
-    </dl>
-  </div>
-</div>
-
-<div class="card shadow-sm">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
-    <span class="fw-bold">Category Retention Rules ({{ rules | length }})</span>
-  </div>
-  <div class="card-body p-0">
-    {% if not rules %}
-      <div class="p-4 text-center text-muted">
-        No institution-specific retention rules configured. Standard category parameters apply.
+  <!-- Top Navigation & Action Controls -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="/categories" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h3 mb-0 fw-bold text-dark">{{ category.name }}</h1>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fs-6 px-2 py-1" title="Use Category ID in API requests & CSV imports">
+          ID: #{{ category.id }}
+        </span>
+        {% if category.compliance_framework %}
+          {% for f in category.compliance_framework.split(',') %}
+            {% set fw = f.strip() %}
+            <span class="badge {{ get_framework_badge(fw) }} badge-sm text-uppercase me-1">
+              {{ 'Universal' if fw == 'BOTH' else fw }}
+            </span>
+          {% endfor %}
+        {% endif %}
       </div>
-    {% else %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Rule Name</th>
-              <th>Legal Basis</th>
-              <th>Institution Type</th>
-              <th>Retention</th>
-              <th>Disposal</th>
-              <th>Dual Approval</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in rules %}
-              <tr>
-                <td class="fw-semibold">{{ r.rule_name }} {% if r.is_default %}<span class="badge bg-primary">Default</span>{% endif %}</td>
-                <td>{{ r.legal_basis.replace('_', ' ') | title }}</td>
-                <td><span class="badge bg-secondary">{{ r.institution_type | title }}</span></td>
-                <td>{{ 'Until consent withdrawn' if r.disposal_trigger == 'consent_withdrawal' else r.retention_period_label }}</td>
-                <td><span class="badge bg-dark text-uppercase">{{ r.disposal_method }}</span></td>
-                <td>{{ 'Yes 🔐' if r.requires_dual_approval else 'No' }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% endif %}
+      <p class="text-muted mb-0 small mt-1">Data Category Master Policy & Retention Definition (Category ID: <strong>{{ category.id }}</strong>)</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/records?category_id={{ category.id }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-card-list"></i> View Records ({{ active_count }})
+      </a>
+      {% if user_role in ['admin', 'dpo'] %}
+        <a href="/categories/edit/{{ category.id }}" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+          <i class="bi bi-pencil-square"></i> Edit Policy
+        </a>
+      {% endif %}
+    </div>
   </div>
-</div>
 
-{% if user_role == 'admin' %}
-  <form method="post" action="/categories/delete/{{ category.id }}" class="mt-4" onsubmit="return confirm('Soft-delete this category? Blocked if active records exist.');">
-    {{ csrf_field | safe }}
-    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i> Delete Category</button>
-  </form>
-{% endif %}
+  <!-- Metric Strip -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 rounded-4 bg-white p-3">
+        <div class="text-muted small fw-bold">Active Records</div>
+        <div class="h3 mb-0 fw-bold text-dark mt-1">{{ active_count }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 rounded-4 bg-white p-3">
+        <div class="text-muted small fw-bold">Due for Review</div>
+        <div class="h3 mb-0 fw-bold text-warning mt-1">{{ due_review_count }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 rounded-4 bg-white p-3">
+        <div class="text-muted small fw-bold">On Legal Hold</div>
+        <div class="h3 mb-0 fw-bold text-danger mt-1">{{ on_hold_count }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card shadow-sm border-0 rounded-4 bg-white p-3">
+        <div class="text-muted small fw-bold">Disposal Approval</div>
+        <div class="h5 mb-0 fw-bold {{ 'text-danger' if category.requires_dual_approval else 'text-success' }} mt-1">
+          {% if category.requires_dual_approval %}
+            <i class="bi bi-shield-lock-fill me-1"></i> Dual Approval (2 Signatures)
+          {% else %}
+            <i class="bi bi-person-check-fill me-1"></i> Single Approver (Standard)
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Policy Configuration -->
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0 rounded-4 bg-white h-100">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+          <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-sliders text-primary me-2"></i> Retention Policy Parameters</h2>
+        </div>
+        <div class="card-body p-4">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-4 text-muted mb-3">Category ID</dt>
+            <dd class="col-sm-8 text-dark mb-3">
+              <span class="badge bg-light text-dark border font-monospace fw-bold">#{{ category.id }}</span>
+              <span class="text-muted ms-1">(API Reference ID)</span>
+            </dd>
+
+            <dt class="col-sm-4 text-muted mb-3">Description</dt>
+            <dd class="col-sm-8 text-dark mb-3">{{ category.description or '—' }}</dd>
+
+            <dt class="col-sm-4 text-muted mb-3">Lawful Purpose</dt>
+            <dd class="col-sm-8 text-dark mb-3">{{ category.retention_reason }}</dd>
+
+            <dt class="col-sm-4 text-muted mb-3">Legal Basis</dt>
+            <dd class="col-sm-8 text-dark mb-3">
+              <span class="badge bg-light text-dark border">{{ category.legal_basis.replace('_', ' ') | title }}</span>
+            </dd>
+
+            <dt class="col-sm-4 text-muted mb-3">Disposal Trigger</dt>
+            <dd class="col-sm-8 text-dark mb-3">
+              {{ '👤 Consent withdrawal' if category.disposal_trigger == 'consent_withdrawal' else '📅 Date-based countdown' }}
+            </dd>
+
+            <dt class="col-sm-4 text-muted mb-3">Statutory Retention</dt>
+            <dd class="col-sm-8 text-dark mb-3 fw-bold">
+              {{ 'Until consent withdrawn' if category.disposal_trigger == 'consent_withdrawal' else category.retention_period_label or (category.retention_period_days ~ ' days') }}
+              <span class="text-muted fw-normal">({{ category.retention_period_days }} days)</span>
+            </dd>
+
+            <dt class="col-sm-4 text-muted mb-3">Disposal Method</dt>
+            <dd class="col-sm-8 text-dark mb-3">
+              <span class="badge bg-dark text-uppercase">{{ category.disposal_method }}</span>
+            </dd>
+
+            <dt class="col-sm-4 text-muted mb-0">Review Frequency</dt>
+            <dd class="col-sm-8 text-dark mb-0">{{ category.review_frequency | title }}</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processor & Vendor Governance -->
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-0 rounded-4 bg-white h-100">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+          <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-people text-primary me-2"></i> Processor & Governance</h2>
+        </div>
+        <div class="card-body p-4">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-5 text-muted mb-3">Processing Role</dt>
+            <dd class="col-sm-7 mb-3">
+              <span class="badge bg-{{ 'secondary' if category.processing_role == 'processor' else 'light text-dark border' }}">
+                {{ category.processing_role | replace('_', ' ') | title }}
+              </span>
+            </dd>
+
+            <dt class="col-sm-5 text-muted mb-3">Processor / Vendor</dt>
+            <dd class="col-sm-7 text-dark mb-3 fw-bold">
+              {{ category.processor_name or 'Internal / In-House' }}
+            </dd>
+
+            <dt class="col-sm-5 text-muted mb-3">DPA Reference</dt>
+            <dd class="col-sm-7 font-monospace text-muted mb-3">
+              {{ category.dpa_reference or '—' }}
+            </dd>
+
+            <dt class="col-sm-5 text-muted mb-3">Vendor Contact</dt>
+            <dd class="col-sm-7 text-muted mb-3">
+              {{ category.processor_contact or '—' }}
+            </dd>
+
+            <dt class="col-sm-5 text-muted mb-0">Sync Status</dt>
+            <dd class="col-sm-7 mb-0">
+              <span class="badge bg-{{ 'success' if category.processor_retention_status == 'compliant' else ('warning text-dark' if category.processor_retention_status == 'under_review' else 'danger') }}">
+                {{ category.processor_retention_status | replace('_', ' ') | title }}
+              </span>
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Policy Option -->
+  {% if user_role == 'admin' %}
+    <div class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <div class="fw-bold text-danger">Delete This Policy Category</div>
+          <div class="small text-muted">Categories can only be deleted if zero active records are assigned.</div>
+        </div>
+        <form method="post" action="/categories/delete/{{ category.id }}" onsubmit="return confirm('Are you sure you want to delete this category?');">
+          {{ csrf_field | safe }}
+          <button type="submit" class="btn btn-outline-danger btn-sm">Delete Category</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
 {% endblock %}

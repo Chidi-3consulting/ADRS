@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import DataRecord, DataCategory, CategoryRetentionRule, AuditLog, Attachment, User
-from app.auth import get_session
+from app.auth import get_session, verify_stepup_authentication
 from app.helpers import get_country_regulation_labels, get_framework_badge, log_audit
 from app.engine import calculate_retention_end_date, execute_disposal
 from app.config import UPLOAD_PATH
@@ -27,6 +27,28 @@ router = APIRouter()
 
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'txt', 'csv'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Gap 5: Magic-byte signatures for MIME type validation
+# Maps file extension to expected magic-byte prefixes
+_MIME_SIGNATURES = {
+    'pdf':  [b'%PDF'],
+    'png':  [b'\x89PNG'],
+    'jpg':  [b'\xff\xd8\xff'],
+    'jpeg': [b'\xff\xd8\xff'],
+    'doc':  [b'\xd0\xcf\x11\xe0'],  # OLE2 compound
+    'docx': [b'PK\x03\x04'],        # ZIP-based OOXML
+    'xls':  [b'\xd0\xcf\x11\xe0'],  # OLE2 compound
+    'xlsx': [b'PK\x03\x04'],        # ZIP-based OOXML
+    # txt and csv have no reliable magic bytes — validated by extension only
+}
+
+
+def _validate_file_magic(content: bytes, extension: str) -> bool:
+    """Gap 5: Verify file content matches expected magic-byte signature."""
+    signatures = _MIME_SIGNATURES.get(extension)
+    if not signatures:
+        return True  # txt/csv have no reliable magic bytes
+    return any(content[:len(sig)] == sig for sig in signatures)
 
 def _get_org_setting(db: Session, org_id: int, key: str, default: str = "") -> str:
     from app.models import OrganizationSetting, SystemSetting
@@ -69,17 +91,25 @@ def list_records(
     else:
         end_of_month = datetime(today.year, today.month + 1, 1)
 
+    # P4 fix: Use case() expressions instead of func.sum(bool_expr) for cross-DB compatibility
+    from sqlalchemy import case
     kpi_query = db.query(
-        func.sum(DataRecord.status != 'disposed').label('active'),
-        func.sum(DataRecord.status == 'due_review').label('due_review'),
-        func.sum(and_(DataRecord.retention_end_date < today, DataRecord.status != 'disposed')).label('overdue'),
-        func.sum(or_(DataRecord.legal_hold == True, DataRecord.status == 'legal_hold')).label('on_hold'),
-        func.sum(DataRecord.status == 'disposal_requested').label('awaiting_approval'),
-        func.sum(and_(
-            DataRecord.status == 'disposed',
-            DataRecord.disposed_at >= start_of_month,
-            DataRecord.disposed_at < end_of_month
-        )).label('disposed_month')
+        func.count(case((DataRecord.status != 'disposed', 1))).label('active'),
+        func.count(case((DataRecord.status == 'due_review', 1))).label('due_review'),
+        func.count(case((
+            and_(DataRecord.retention_end_date < today, DataRecord.status != 'disposed'), 1
+        ))).label('overdue'),
+        func.count(case((
+            or_(DataRecord.legal_hold == True, DataRecord.status == 'legal_hold'), 1
+        ))).label('on_hold'),
+        func.count(case((DataRecord.status == 'disposal_requested', 1))).label('awaiting_approval'),
+        func.count(case((
+            and_(
+                DataRecord.status == 'disposed',
+                DataRecord.disposed_at >= start_of_month,
+                DataRecord.disposed_at < end_of_month
+            ), 1
+        ))).label('disposed_month')
     ).join(DataCategory, DataRecord.category_id == DataCategory.id).filter(*kpi_filters).first()
 
     # List categories options
@@ -146,6 +176,7 @@ def list_records(
         "categories": categories,
         "records": records,
         "today_str": today_str,
+        "today_date": today,
         "filter_q": q,
         "filter_status": status,
         "filter_category_id": category_id,
@@ -160,6 +191,8 @@ def handle_create_record(
     record_reference: str = Form(...),
     category_id: int = Form(...),
     collection_date: str = Form(...),
+    data_subject_type: Optional[str] = Form(None),
+    processor_name: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
@@ -190,12 +223,16 @@ def handle_create_record(
         CategoryRetentionRule.is_default == True
     ).first()
 
+    eff_proc_name = processor_name.strip() if processor_name and processor_name.strip() else (cat.processor_name if cat.processor_name else None)
+
     new_rec = DataRecord(
         organization_id=org_id,
         category_id=category_id,
         retention_rule_id=default_rule.id if default_rule else None,
         record_reference=record_reference.strip(),
-        data_subject_type=None,
+        data_subject_type=data_subject_type.strip() if data_subject_type and data_subject_type.strip() else None,
+        processor_name=eff_proc_name,
+        processor_sync_status="synced",
         collection_date=coll_date,
         status="active",
         created_by_owner=(role == "data_owner"),
@@ -483,13 +520,27 @@ def handle_consent_withdrawal(id: int, request: Request, db: Session = Depends(g
     return RedirectResponse(url=f"/records/view/{id}", status_code=303)
 
 @router.post("/records/dispose/{id}")
-def handle_request_disposal(id: int, request: Request, db: Session = Depends(get_db)):
+def handle_request_disposal(
+    id: int,
+    request: Request,
+    auth_credential: Optional[str] = Form(None),
+    db: Session = Depends(get_db)
+):
     session = get_session(request)
     if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
         return RedirectResponse(url="/login", status_code=303)
 
     org_id = session["org_id"]
     user_id = session["user_id"]
+    ip_addr = request.client.host if request.client else "127.0.0.1"
+
+    # Step-Up Verification (if credential provided)
+    if auth_credential is not None and str(auth_credential).strip():
+        ok, msg = verify_stepup_authentication(db, user_id, auth_credential)
+        if not ok:
+            log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": "dispose"}, ip_addr)
+            return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
+        log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": "dispose"}, ip_addr)
 
     record = db.query(DataRecord).filter(
         DataRecord.id == id,
@@ -508,14 +559,94 @@ def handle_request_disposal(id: int, request: Request, db: Session = Depends(get
         record.disposal_requested_at = datetime.utcnow()
         record.disposal_requested_by = user_id
         db.commit()
-        log_audit(db, org_id, "disposal_requested", "data_record", id, user_id, None, request.client.host if request.client else None)
+        log_audit(db, org_id, "disposal_requested", "data_record", id, user_id, None, ip_addr)
     else:
-        execute_disposal(db, id, actor_id=user_id, ip_address=request.client.host if request.client else "127.0.0.1")
+        execute_disposal(db, id, actor_id=user_id, ip_address=ip_addr)
         log_audit(db, org_id, "disposal_request_approved", "data_record", id, user_id, {
             "single_approver": True
-        }, request.client.host if request.client else None)
+        }, ip_addr)
 
     return RedirectResponse(url=f"/records/view/{id}", status_code=303)
+
+@router.post("/records/bulk_dispose")
+def handle_bulk_dispose(
+    request: Request,
+    record_ids: str = Form(...),
+    auth_credential: Optional[str] = Form(None),
+    return_url: Optional[str] = Form("/records"),
+    db: Session = Depends(get_db)
+):
+    """Bulk safe disposal for multiple records that have exceeded retention period."""
+    session = get_session(request)
+    if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
+        return RedirectResponse(url="/login", status_code=303)
+
+    org_id = session["org_id"]
+    user_id = session["user_id"]
+    ip_addr = request.client.host if request.client else "127.0.0.1"
+
+    # Step-Up Verification
+    if auth_credential is not None and str(auth_credential).strip():
+        ok, msg = verify_stepup_authentication(db, user_id, auth_credential)
+        if not ok:
+            log_audit(db, org_id, "stepup_auth_failed", "data_record", 0, user_id, {"error": msg, "action": "bulk_dispose"}, ip_addr)
+            return RedirectResponse(url=f"{return_url}?error=stepup_failed", status_code=303)
+        log_audit(db, org_id, "stepup_auth_success", "data_record", 0, user_id, {"action": "bulk_dispose"}, ip_addr)
+
+    raw_ids = [int(i.strip()) for i in record_ids.split(",") if i.strip().isdigit()]
+    if not raw_ids:
+        return RedirectResponse(url=f"{return_url}?error=no_records_selected", status_code=303)
+
+    today = date.today()
+    disposed_count = 0
+    requested_count = 0
+    skipped_count = 0
+
+    for rec_id in raw_ids:
+        rec = db.query(DataRecord).filter(
+            DataRecord.id == rec_id,
+            DataRecord.organization_id == org_id,
+            DataRecord.deleted_at == None,
+            DataRecord.status != "disposed"
+        ).first()
+
+        if not rec or rec.legal_hold:
+            skipped_count += 1
+            continue
+
+        is_due = (
+            (rec.retention_end_date and rec.retention_end_date <= today)
+            or rec.status in ("due_disposal", "expired")
+            or session.get("role") in ("admin", "dpo")
+        )
+
+        if not is_due:
+            skipped_count += 1
+            continue
+
+        cat = rec.category
+        if cat and cat.requires_dual_approval:
+            rec.status = "disposal_requested"
+            rec.disposal_requested_at = datetime.utcnow()
+            rec.disposal_requested_by = user_id
+            db.commit()
+            log_audit(db, org_id, "disposal_requested", "data_record", rec.id, user_id, {"bulk": True}, ip_addr)
+            requested_count += 1
+        else:
+            success = execute_disposal(db, rec.id, actor_id=user_id, ip_address=ip_addr)
+            if success:
+                log_audit(db, org_id, "disposal_request_approved", "data_record", rec.id, user_id, {
+                    "single_approver": True,
+                    "bulk": True
+                }, ip_addr)
+                disposed_count += 1
+            else:
+                skipped_count += 1
+
+    return RedirectResponse(
+        url=f"{return_url}?disposed={disposed_count}&requested={requested_count}&skipped={skipped_count}",
+        status_code=303
+    )
 
 @router.post("/records/legal_hold/{id}")
 def handle_legal_hold(
@@ -523,6 +654,7 @@ def handle_legal_hold(
     request: Request,
     action: Optional[str] = Form(None),
     reason: Optional[str] = Form(""),
+    auth_credential: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     session = get_session(request)
@@ -531,6 +663,15 @@ def handle_legal_hold(
 
     org_id = session["org_id"]
     user_id = session["user_id"]
+    ip_addr = request.client.host if request.client else "127.0.0.1"
+
+    # Step-up verification for legal hold changes
+    if auth_credential is not None and str(auth_credential).strip():
+        ok, msg = verify_stepup_authentication(db, user_id, auth_credential)
+        if not ok:
+            log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": f"legal_hold_{action}"}, ip_addr)
+            return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
+        log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": f"legal_hold_{action}"}, ip_addr)
 
     record = db.query(DataRecord).filter(
         DataRecord.id == id,
@@ -545,7 +686,7 @@ def handle_legal_hold(
         record.legal_hold = False
         record.legal_hold_lifted_at = datetime.utcnow()
         db.commit()
-        log_audit(db, org_id, "legal_hold_lifted", "data_record", id, user_id, None, request.client.host if request.client else None)
+        log_audit(db, org_id, "legal_hold_lifted", "data_record", id, user_id, None, ip_addr)
     else:
         if not reason.strip():
             raise HTTPException(status_code=400, detail="Reason for legal hold is required.")
@@ -557,7 +698,7 @@ def handle_legal_hold(
         db.commit()
         log_audit(db, org_id, "legal_hold_set", "data_record", id, user_id, {
             "reason": reason.strip()
-        }, request.client.host if request.client else None)
+        }, ip_addr)
 
     return RedirectResponse(url=f"/records/view/{id}", status_code=303)
 
@@ -566,6 +707,7 @@ def handle_legal_hold(
 def handle_disposal_approve(
     id: int,
     request: Request,
+    auth_credential: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """B5 dual-approval: second approver approves disposal."""
@@ -573,10 +715,22 @@ def handle_disposal_approve(
     if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
         return RedirectResponse(url="/login", status_code=303)
 
+    org_id = session["org_id"]
+    user_id = session["user_id"]
+    ip_addr = request.client.host if request.client else "127.0.0.1"
+
+    # Step-Up Verification
+    if auth_credential is not None and str(auth_credential).strip():
+        ok, msg = verify_stepup_authentication(db, user_id, auth_credential)
+        if not ok:
+            log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": "disposal_approve"}, ip_addr)
+            return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
+        log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": "disposal_approve"}, ip_addr)
+
     from app.engine import approve_disposal
     result = approve_disposal(
-        db, session["org_id"], id, session["user_id"],
-        ip=request.client.host if request.client else None
+        db, org_id, id, user_id,
+        ip=ip_addr
     )
     return RedirectResponse(url=f"/records/view/{id}", status_code=303)
 
@@ -653,6 +807,13 @@ async def handle_attachment_upload(
     if file_size > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File size exceeds limit of 10MB.")
 
+    # Gap 5: Validate file magic bytes match declared extension
+    if not _validate_file_magic(content, ext):
+        raise HTTPException(
+            status_code=400,
+            detail=f"File content does not match the .{ext} extension. Upload rejected."
+        )
+
     stored_filename = f"{uuid.uuid4().hex}.{ext}"
     dest_path = os.path.join(UPLOAD_PATH, stored_filename)
 
@@ -695,6 +856,13 @@ def handle_attachment_download(id: int, request: Request, db: Session = Depends(
         raise HTTPException(status_code=404, detail="Attachment not found")
 
     file_path = os.path.join(UPLOAD_PATH, att.stored_filename)
+
+    # Gap 6: Path traversal protection — ensure resolved path stays within UPLOAD_PATH
+    real_path = os.path.realpath(file_path)
+    real_upload = os.path.realpath(UPLOAD_PATH)
+    if not real_path.startswith(real_upload + os.sep) and real_path != real_upload:
+        raise HTTPException(status_code=403, detail="Access denied.")
+
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on storage server.")
 

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test reports.
 Tests compliance report queries.
 """

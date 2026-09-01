@@ -1,73 +1,87 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h1 class="h4 mb-0">Pending Recalculations</h1>
-    <p class="text-muted small mb-0">Review retention period adjustments resulting from category parameter updates or record reassignments.</p>
-  </div>
-</div>
+<div class="container-fluid px-0">
 
-<div class="card shadow-sm">
-  <div class="card-body p-0">
-    {% if not items %}
-      <div class="p-4 text-center text-muted">
-        <i class="bi bi-calculator fs-2 d-block mb-2"></i>
-        No pending retention recalculations awaiting review.
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h3 mb-0 fw-bold text-dark">Pending Recalculations</h1>
       </div>
-    {% else %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>ID</th>
-              <th>Record Reference</th>
-              <th>Category</th>
-              <th>Current End Date</th>
-              <th>New Proposed Date</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in items %}
-              <tr>
-                <td>#{{ r.id }}</td>
-                <td><a href="/records/view/{{ r.record_id }}" class="fw-semibold text-decoration-none">{{ r.record.record_reference if r.record else 'Record #' ~ r.record_id }}</a></td>
-                <td>{{ r.category.name if r.category else 'Category #' ~ r.category_id }}</td>
-                <td><span class="badge bg-secondary">{{ r.old_retention_end_date }}</span></td>
-                <td><span class="badge bg-primary fs-6">{{ r.new_retention_end_date }}</span></td>
-                <td>
-                  {% if r.status == 'pending' %}
-                    <span class="badge bg-warning text-dark">Pending Review</span>
-                  {% elif r.status == 'recalculate' %}
-                    <span class="badge bg-success">Recalculated</span>
-                  {% else %}
-                    <span class="badge bg-secondary">{{ r.status }}</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if r.status == 'pending' %}
-                    <div class="d-flex gap-1">
-                      <form method="post" action="/recalculations/{{ r.id }}/action">
-                        {{ csrf_field | safe }}
-                        <input type="hidden" name="decision" value="recalculate">
-                        <button type="submit" class="btn btn-sm btn-success py-0 px-2" title="Apply New Date">Apply</button>
-                      </form>
-                      <form method="post" action="/recalculations/{{ r.id }}/action">
-                        {{ csrf_field | safe }}
-                        <input type="hidden" name="decision" value="keep_original">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Keep Original Date">Keep</button>
-                      </form>
-                    </div>
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% endif %}
+      <p class="text-muted small mb-0 mt-1">Review and approve retention period adjustments resulting from policy parameter changes or category reassignments</p>
+    </div>
   </div>
+
+  <div class="card shadow-sm border-0 rounded-4 bg-white">
+    <div class="card-body p-0">
+      {% if not items %}
+        <div class="p-5 text-center text-muted">
+          <i class="bi bi-calculator fs-1 d-block mb-2 text-success opacity-75"></i>
+          <div class="fw-semibold text-dark">No Pending Recalculations</div>
+          <p class="small text-muted mb-0">All record retention schedules are currently synchronized with active category policies.</p>
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle small mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Queue ID</th>
+                <th>Record Reference</th>
+                <th>Category</th>
+                <th>Current End Date</th>
+                <th>New Proposed Date</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in items %}
+                <tr>
+                  <td class="font-monospace text-muted">#{{ r.id }}</td>
+                  <td>
+                    <a href="/records/view/{{ r.record_id }}" class="fw-bold text-dark text-decoration-none">
+                      {{ r.record.record_reference if r.record else 'Record #' ~ r.record_id }}
+                    </a>
+                  </td>
+                  <td>{{ r.category.name if r.category else 'Category #' ~ r.category_id }}</td>
+                  <td><span class="badge bg-light text-muted border">{{ r.old_retention_end_date }}</span></td>
+                  <td><span class="badge bg-primary-subtle text-primary border border-primary fs-6">{{ r.new_retention_end_date }}</span></td>
+                  <td>
+                    {% if r.status == 'pending' %}
+                      <span class="badge bg-warning text-dark">Pending Review</span>
+                    {% elif r.status == 'recalculate' %}
+                      <span class="badge bg-success">Recalculated</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{{ r.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if r.status == 'pending' %}
+                      <div class="d-flex justify-content-end gap-1">
+                        <form method="post" action="/recalculations/{{ r.id }}/action">
+                          {{ csrf_field | safe }}
+                          <input type="hidden" name="decision" value="recalculate">
+                          <button type="submit" class="btn btn-sm btn-success py-1 px-2" title="Apply New Date">Apply Date</button>
+                        </form>
+                        <form method="post" action="/recalculations/{{ r.id }}/action">
+                          {{ csrf_field | safe }}
+                          <input type="hidden" name="decision" value="keep_original">
+                          <button type="submit" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Keep Original Date">Keep Original</button>
+                        </form>
+                      </div>
+                    {% else %}
+                      <span class="text-muted small">Resolved</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
 </div>
 {% endblock %}

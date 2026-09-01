@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test import records.
 Tests CSV import validation + processing.
 """

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test settings.
 Tests settings read/write and org-scoped settings.
 """

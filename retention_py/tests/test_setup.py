@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test setup wizard.
 Tests setup_is_complete, and the POST /setup flow.
 """

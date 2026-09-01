@@ -8,8 +8,8 @@ def test_registration_flow(client, db):
         "domain": "skyline.com",
         "user_name": "John Doe",
         "email": "john@skyline.com",
-        "password": "SuperSecurePassword123!",
-        "password_confirm": "SuperSecurePassword123!",
+        "password": "Xyq9$mNpL2!k",
+        "password_confirm": "Xyq9$mNpL2!k",
         "country": "NG"
     }, follow_redirects=False)
 
@@ -22,7 +22,7 @@ def test_registration_flow(client, db):
 
     user = db.query(User).filter(User.email == "john@skyline.com").first()
     assert user is not None
-    assert verify_password("SuperSecurePassword123!", user.password_hash)
+    assert verify_password("Xyq9$mNpL2!k", user.password_hash)
 
 def test_login_flow(client, db):
     # Register first
@@ -31,16 +31,16 @@ def test_login_flow(client, db):
         "domain": "skyline.com",
         "user_name": "John Doe",
         "email": "john@skyline.com",
-        "password": "SuperSecurePassword123!",
-        "password_confirm": "SuperSecurePassword123!",
+        "password": "Xyq9$mNpL2!k",
+        "password_confirm": "Xyq9$mNpL2!k",
         "country": "NG"
     })
 
     # Try logging in
     response = client.post("/login", data={
         "email": "john@skyline.com",
-        "password": "SuperSecurePassword123!"
+        "password": "Xyq9$mNpL2!k"
     }, follow_redirects=False)
 
     assert response.status_code == 303
-    assert "adrs_session" in response.cookies
+    assert "SafeData_session" in response.cookies

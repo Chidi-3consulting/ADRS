@@ -1,5 +1,5 @@
-﻿"""
-ADRS Security Middleware
+"""
+SafeData Security Middleware
 
 Provides:
   1. Security response headers (CSP with nonce-based script-src, HSTS, etc.)
@@ -10,6 +10,7 @@ Provides:
   6. Subscription/trial enforcement (redirect expired orgs to /billing)
   7. Email verification enforcement (redirect unverified to /verify_email)
   8. Setup-complete guard (redirect to /setup if not yet configured)
+  9. Request body size limiting (Gap 8)
 """
 import secrets
 import time
@@ -22,7 +23,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.config import (
     IS_PRODUCTION, APP_ENV, SESSION_IDLE_TIMEOUT, SESSION_ABSOLUTE_TIMEOUT,
-    CSRF_TOKEN_LENGTH, SECRET_KEY,
+    CSRF_TOKEN_LENGTH, SECRET_KEY, MAX_REQUEST_BODY_SIZE,
 )
 from app.auth import get_session, set_session
 
@@ -58,6 +59,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains"
             )
+
+        # Gap 13: Cache-Control for authenticated pages — prevent browser caching
+        # Static files and public pages are excluded
+        if not request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
 
         # CSP — nonce-based script-src 
         response.headers["Content-Security-Policy"] = (
@@ -118,14 +125,16 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         session = get_session(request)
+        new_token_generated = False
 
         # Ensure session has a CSRF token
         csrf_token = session.get("csrf_token", "")
         if not csrf_token:
             csrf_token = _generate_csrf_token()
             session["csrf_token"] = csrf_token
+            new_token_generated = True
 
-        # Store token on request.state so templates can access it
+        # Store token on request.state so templates and inner middlewares can access it
         request.state.csrf_token = csrf_token
         request.state.csrf_field = _csrf_field_html(csrf_token)
 
@@ -178,16 +187,14 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         response: Response = await call_next(request)
 
-        # Persist the CSRF token in the session cookie ONLY if:
-        # 1. The incoming request had no user_id (unauthenticated visitor)
-        # 2. The route handler did NOT already set a session cookie
-        #    (e.g. login/register set the full user session — we must not overwrite it)
-        if session.get("csrf_token") and not session.get("user_id"):
-            handler_already_set_session = False
-            for header_value in response.headers.getlist("set-cookie"):
-                if "adrs_session" in header_value:
-                    handler_already_set_session = True
-                    break
+        # F4 fix: Starlette MutableHeaders has no getlist() — use raw headers iteration
+        if new_token_generated or not session.get("user_id"):
+            raw_cookies = response.raw_headers  # list of (name_bytes, value_bytes)
+            handler_already_set_session = any(
+                b"SafeData_session" in v or b"safedata_session" in v
+                for n, v in raw_cookies
+                if n.lower() == b"set-cookie"
+            )
             if not handler_already_set_session:
                 set_session(response, session)
 
@@ -327,6 +334,9 @@ class SessionEnforcementMiddleware(BaseHTTPMiddleware):
 
         # Continue with updated session
         response: Response = await call_next(request)
+        # Ensure csrf_token from request.state is retained in session cookie
+        if not session.get("csrf_token") and hasattr(request.state, "csrf_token"):
+            session["csrf_token"] = request.state.csrf_token
         set_session(response, session)
         return response
 
@@ -348,3 +358,30 @@ def register_csrf_template_globals(templates_instance):
     # These are request-scoped, so we provide callables that read from
     # request.state (set by CSRFMiddleware)
     pass  # Handled via the _patched_template_response in main.py
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#   4. Request Body Size Limit Middleware (Gap 8)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """
+    Reject requests with bodies exceeding MAX_REQUEST_BODY_SIZE.
+    Prevents memory exhaustion from oversized payloads.
+    File upload routes have their own per-route limits (10MB in records.py);
+    this is a global safety net.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > MAX_REQUEST_BODY_SIZE:
+                    return Response(
+                        content='{"error": "payload_too_large", "detail": "Request body too large."}',
+                        status_code=413,
+                        media_type="application/json",
+                    )
+            except (ValueError, TypeError):
+                pass  # Malformed header — let downstream handle
+        return await call_next(request)

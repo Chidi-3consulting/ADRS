@@ -2,9 +2,9 @@
 {% block content %}
 <!-- Topbar Alerts -->
 {% if smtp_warning %}
-  <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center gap-2 mb-4">
+  <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center gap-2 mb-4 rounded-3">
     <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-    <div>
+    <div class="small">
       <strong>SMTP email is not configured.</strong> Retention alerts and compliance warning escalations cannot be sent. Configure SMTP settings under <a href="/settings" class="text-dark fw-bold">Settings &rarr; Email delivery</a>.
     </div>
   </div>
@@ -13,12 +13,12 @@
 <!-- Metrics Grid -->
 <div class="row g-3 mb-4">
   <!-- Active Records -->
-  <div class="col-md-4 col-xl-2">
-    <div class="card h-100 stat-card-gradient orange shadow-sm">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card h-100 stat-card-gradient orange shadow-sm rounded-4">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <span class="text-muted small fw-bold">Active records</span>
+        <span class="text-muted small fw-bold">Active Records</span>
         <div class="d-flex align-items-baseline justify-content-between mt-2">
-          <span class="display-6 fw-bold text-dark">{{ metrics.active }}</span>
+          <span class="fs-2 fw-bold text-dark">{{ metrics.active }}</span>
           <i class="bi bi-file-earmark-text text-muted fs-3"></i>
         </div>
       </div>
@@ -26,12 +26,12 @@
   </div>
 
   <!-- Due for review -->
-  <div class="col-md-4 col-xl-2">
-    <div class="card h-100 stat-card-gradient yellow shadow-sm">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card h-100 stat-card-gradient yellow shadow-sm rounded-4">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <span class="text-muted small fw-bold">Due for review</span>
+        <span class="text-muted small fw-bold">Due for Review</span>
         <div class="d-flex align-items-baseline justify-content-between mt-2">
-          <span class="display-6 fw-bold text-dark">{{ metrics.due_review }}</span>
+          <span class="fs-2 fw-bold text-dark">{{ metrics.due_review }}</span>
           <i class="bi bi-bell text-muted fs-3"></i>
         </div>
       </div>
@@ -39,25 +39,25 @@
   </div>
 
   <!-- Overdue retention -->
-  <div class="col-md-4 col-xl-2">
-    <div class="card h-100 stat-card-gradient danger shadow-sm">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card h-100 stat-card-gradient danger shadow-sm rounded-4">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <span class="text-muted small fw-bold">Overdue retention</span>
+        <span class="text-muted small fw-bold">Overdue Records</span>
         <div class="d-flex align-items-baseline justify-content-between mt-2">
-          <span class="display-6 fw-bold text-dark">{{ metrics.overdue }}</span>
-          <i class="bi bi-exclamation-circle text-muted fs-3"></i>
+          <span class="fs-2 fw-bold text-danger">{{ metrics.overdue }}</span>
+          <i class="bi bi-exclamation-circle text-danger fs-3"></i>
         </div>
       </div>
     </div>
   </div>
 
   <!-- On legal hold -->
-  <div class="col-md-4 col-xl-2">
-    <div class="card h-100 stat-card-gradient secondary shadow-sm">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card h-100 stat-card-gradient secondary shadow-sm rounded-4">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <span class="text-muted small fw-bold">On legal hold</span>
+        <span class="text-muted small fw-bold">On Legal Hold</span>
         <div class="d-flex align-items-baseline justify-content-between mt-2">
-          <span class="display-6 fw-bold text-dark">{{ metrics.legal_hold }}</span>
+          <span class="fs-2 fw-bold text-dark">{{ metrics.legal_hold }}</span>
           <i class="bi bi-lock text-muted fs-3"></i>
         </div>
       </div>
@@ -65,12 +65,12 @@
   </div>
 
   <!-- Pending approval -->
-  <div class="col-md-4 col-xl-2">
-    <div class="card h-100 stat-card-gradient teal shadow-sm">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card h-100 stat-card-gradient teal shadow-sm rounded-4">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <span class="text-muted small fw-bold">Pending approval</span>
+        <span class="text-muted small fw-bold">Pending Approval</span>
         <div class="d-flex align-items-baseline justify-content-between mt-2">
-          <span class="display-6 fw-bold text-dark">{{ metrics.pending_approval }}</span>
+          <span class="fs-2 fw-bold text-dark">{{ metrics.pending_approval }}</span>
           <i class="bi bi-shield-check text-muted fs-3"></i>
         </div>
       </div>
@@ -78,12 +78,12 @@
   </div>
 
   <!-- Total disposed -->
-  <div class="col-md-4 col-xl-2">
-    <div class="card h-100 stat-card-gradient secondary shadow-sm">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card h-100 stat-card-gradient secondary shadow-sm rounded-4">
       <div class="card-body d-flex flex-column justify-content-between p-3">
-        <span class="text-muted small fw-bold">Total disposed</span>
+        <span class="text-muted small fw-bold">Total Disposed</span>
         <div class="d-flex align-items-baseline justify-content-between mt-2">
-          <span class="display-6 fw-bold text-dark">{{ metrics.disposed }}</span>
+          <span class="fs-2 fw-bold text-dark">{{ metrics.disposed }}</span>
           <i class="bi bi-trash text-muted fs-3"></i>
         </div>
       </div>
@@ -91,42 +91,195 @@
   </div>
 </div>
 
-<div class="row g-4">
-  <!-- Compliance Score Chart -->
-  <div class="col-lg-4">
-    <div class="card shadow-sm h-100">
-      <div class="card-header bg-white fw-bold">Compliance Score</div>
-      <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
-        <div class="position-relative d-flex align-items-center justify-content-center" style="width: 160px; height: 160px;">
-          <!-- SVG Radial circle -->
-          <svg class="position-absolute w-100 h-100" viewBox="0 0 36 36">
-            <path class="text-light" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-            <path class="text-primary" stroke-dasharray="{{ metrics.health_score }}, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-          </svg>
-          <div class="text-center z-1">
-            <div class="display-6 fw-bold">{{ metrics.health_score }}%</div>
-            <div class="text-muted small fw-bold text-uppercase" style="font-size:0.65rem;">HEALTH</div>
+<!-- Main Scorecard & Operational Columns -->
+<div class="row g-4 mb-4">
+  <!-- Multi-Pillar Compliance Scorecard -->
+  <div class="col-xl-5">
+    <div class="card shadow-sm border-0 rounded-4 bg-white h-100">
+      <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="h5 fw-bold text-dark mb-0">Compliance Scorecard</h2>
+          <span class="small text-muted">Multi-Pillar Governance Health</span>
+        </div>
+        <span class="badge bg-{{ 'success' if scorecard.grade == 'A' else ('primary' if scorecard.grade == 'B' else ('warning text-dark' if scorecard.grade == 'C' else 'danger')) }} fs-6 px-3 py-1 rounded-pill">
+          Grade {{ scorecard.grade }}
+        </span>
+      </div>
+
+      <div class="card-body p-4">
+        <!-- Radial Gauge & Overall Score -->
+        <div class="d-flex align-items-center justify-content-center gap-4 py-3 bg-light-subtle rounded-4 mb-4 p-3">
+          <div class="position-relative d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+            <svg class="w-100 h-100" viewBox="0 0 36 36">
+              <path stroke="#e2e8f0" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path stroke="{{ '#22c55e' if scorecard.overall_score >= 85 else ('#ff914d' if scorecard.overall_score >= 70 else '#ef4444') }}" stroke-dasharray="{{ scorecard.overall_score }}, 100" stroke-width="3.5" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <div class="position-absolute text-center">
+              <span class="fs-3 fw-bold text-dark">{{ scorecard.overall_score }}%</span>
+            </div>
+          </div>
+          <div>
+            <div class="fw-bold text-dark fs-6">{{ scorecard.status_label }}</div>
+            <div class="small text-muted mt-1">Regulatory Baseline: <strong>{{ law_label }}</strong></div>
+            <div class="small text-muted">Audited: {{ scorecard.audit_date }}</div>
           </div>
         </div>
-        <p class="text-muted small text-center mt-4 mb-0 px-3">
-          Based on the proportion of compliant data records vs overdue items. Ensure overdue retention is kept at zero.
-        </p>
+
+        <!-- 4 Pillars Breakdown -->
+        <h3 class="small text-muted fw-bold text-uppercase mb-3">Governance Pillars</h3>
+        <div class="d-flex flex-column gap-3 mb-4">
+          <!-- Pillar 1 -->
+          <div>
+            <div class="d-flex justify-content-between small fw-semibold mb-1">
+              <span><i class="bi bi-folder-check text-primary me-1"></i> Policy Coverage</span>
+              <span>{{ scorecard.pillars.policy_coverage.score }}%</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar bg-primary" role="progressbar" style="width: {{ scorecard.pillars.policy_coverage.score }}%"></div>
+            </div>
+          </div>
+
+          <!-- Pillar 2 -->
+          <div>
+            <div class="d-flex justify-content-between small fw-semibold mb-1">
+              <span><i class="bi bi-clock-history text-success me-1"></i> Retention SLA Adherence</span>
+              <span>{{ scorecard.pillars.retention_sla.score }}%</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar bg-success" role="progressbar" style="width: {{ scorecard.pillars.retention_sla.score }}%"></div>
+            </div>
+          </div>
+
+          <!-- Pillar 3 -->
+          <div>
+            <div class="d-flex justify-content-between small fw-semibold mb-1">
+              <span><i class="bi bi-people text-info me-1"></i> Third-Party Processor Governance</span>
+              <span>{{ scorecard.pillars.processor_governance.score }}%</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar bg-info" role="progressbar" style="width: {{ scorecard.pillars.processor_governance.score }}%"></div>
+            </div>
+          </div>
+
+          <!-- Pillar 4 -->
+          <div>
+            <div class="d-flex justify-content-between small fw-semibold mb-1">
+              <span><i class="bi bi-shield-check text-warning me-1"></i> Safeguards & Dual Approvals</span>
+              <span>{{ scorecard.pillars.safeguards_oversight.score }}%</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar bg-warning" role="progressbar" style="width: {{ scorecard.pillars.safeguards_oversight.score }}%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recommendations Callout -->
+        {% if scorecard.recommendations %}
+          <div class="p-3 bg-light rounded-3 border">
+            <div class="small fw-bold text-dark mb-2"><i class="bi bi-lightbulb text-warning me-1"></i> Actionable Improvement:</div>
+            <ul class="small text-muted mb-0 ps-3">
+              {% for rec in scorecard.recommendations %}
+                <li>{{ rec }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>
 
-  <!-- Approaching Deadlines -->
-  <div class="col-lg-8">
-    <div class="card shadow-sm h-100">
-      <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-        <span>Approaching Deadlines</span>
-        <a href="/records" class="small text-primary text-decoration-none">View all</a>
+  <!-- Approaching Deadlines & Operational Velocity -->
+  <div class="col-xl-7">
+    <div class="card shadow-sm border-0 rounded-4 bg-white mb-4">
+      <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="h5 fw-bold text-dark mb-0">Approaching Retention Deadlines</h2>
+          <span class="small text-muted">Upcoming records requiring review or disposal</span>
+        </div>
+        <a href="/records" class="btn btn-outline-primary btn-sm rounded-pill px-3">View Full Register</a>
       </div>
-      <div class="card-body d-flex flex-column align-items-center justify-content-center text-muted py-5">
-        <i class="bi bi-calendar-check fs-1 text-muted opacity-50 mb-3"></i>
-        <p class="mb-0">No active records require retention review soon.</p>
+
+      <div class="card-body p-4 pt-2">
+        {% if upcoming_deadlines %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle small mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Record Reference</th>
+                  <th>Category</th>
+                  <th>Role / Processor</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in upcoming_deadlines %}
+                  <tr>
+                    <td class="fw-bold text-dark">
+                      <a href="/records/view/{{ d.id }}" class="text-dark text-decoration-none">{{ d.reference }}</a>
+                    </td>
+                    <td>{{ d.category }}</td>
+                    <td>
+                      {% if d.processor_name %}
+                        <span class="badge bg-light text-dark border">{{ d.processor_name }}</span>
+                      {% else %}
+                        <span class="badge bg-light-subtle text-muted">Internal</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <div>{{ d.due_date }}</div>
+                      <span class="badge bg-{{ 'danger' if d.days_left < 0 else ('warning text-dark' if d.days_left <= 7 else 'secondary') }}" style="font-size:0.65rem;">
+                        {{ d.days_left | abs }}d {{ 'overdue' if d.days_left < 0 else 'left' }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge bg-{{ 'warning text-dark' if d.status == 'due_review' else ('primary' if d.status == 'disposal_requested' else 'success') }}">
+                        {{ d.status | replace('_', ' ') | title }}
+                      </span>
+                    </td>
+                    <td class="text-end">
+                      <a href="/records/view/{{ d.id }}" class="btn btn-light btn-sm py-1 px-2 border">Review</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-calendar-check fs-1 text-success opacity-75 mb-2 d-block"></i>
+            <div class="fw-semibold text-dark">All Retention Deadlines Up To Date</div>
+            <p class="small text-muted mb-3">There are no records requiring urgent review or disposal action.</p>
+            <a href="/records/create" class="btn btn-primary btn-sm rounded-pill px-3">Intake New Record</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 6-Month Disposal Velocity Trend -->
+    <div class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="h6 fw-bold text-dark mb-0">6-Month Disposal Velocity</h2>
+          <span class="small text-muted">Historical volume of verified data purges and anonymizations</span>
+        </div>
+        <a href="/reports" class="small text-primary text-decoration-none">Full Analytics &rarr;</a>
+      </div>
+      <div class="card-body p-4 pt-2">
+        <div class="row g-2 text-center">
+          {% for m in disposal_chart %}
+            <div class="col">
+              <div class="p-3 bg-light rounded-3 border">
+                <div class="fs-4 fw-bold text-dark">{{ m.count }}</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">{{ m.label }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
       </div>
     </div>
   </div>
 </div>
+
 {% endblock %}

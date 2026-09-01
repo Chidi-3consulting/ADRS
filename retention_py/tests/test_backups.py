@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test backups.
 Tests database backup and pruning.
 """
@@ -24,13 +24,13 @@ def test_backup_file_content(db, tmp_path):
 
     with open(result["file"], "r", encoding="utf-8") as f:
         content = f.read()
-    assert "ADRS backup" in content or "CREATE" in content or "INSERT" in content
+    assert "SafeData backup" in content or "CREATE" in content or "INSERT" in content
 
 
 def test_prune_removes_old_files(db, tmp_path):
     """Prune should remove files older than specified days."""
     # Create a fake old backup file
-    old_file = os.path.join(str(tmp_path), "adrs_backup_20200101_000000.sql")
+    old_file = os.path.join(str(tmp_path), "SafeData_backup_20200101_000000.sql")
     with open(old_file, "w") as f:
         f.write("-- old backup")
 
@@ -45,7 +45,7 @@ def test_prune_removes_old_files(db, tmp_path):
 
 def test_prune_keeps_recent_files(db, tmp_path):
     """Prune should keep files newer than specified days."""
-    recent_file = os.path.join(str(tmp_path), "adrs_backup_99991231_235959.sql")
+    recent_file = os.path.join(str(tmp_path), "SafeData_backup_99991231_235959.sql")
     with open(recent_file, "w") as f:
         f.write("-- recent backup")
 
@@ -56,7 +56,7 @@ def test_prune_keeps_recent_files(db, tmp_path):
 def test_backup_logs_on_failure(db):
     """Backup to invalid path should return failed status."""
     # Pass a path pointing to a file (not directory) so opening filename inside it fails
-    invalid_path = os.path.join(tempfile.gettempdir(), "adrs_test_invalid_file_path.txt")
+    invalid_path = os.path.join(tempfile.gettempdir(), "SafeData_test_invalid_file_path.txt")
     with open(invalid_path, "w") as f:
         f.write("not a directory")
     try:

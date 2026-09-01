@@ -1,9 +1,9 @@
-﻿"""
+"""
 Test housekeeping.
 Tests pruning of stale login_attempts, password_resets, and old notifications.
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.engine import run_housekeeping
 from app.models import LoginAttempt, PasswordReset, Notification, User
 
@@ -59,7 +59,7 @@ def test_housekeeping_keeps_recent_data(db):
 
     reset = PasswordReset(
         email="recent@x.com", token_hash="recent_hash",
-        expires_at=datetime.utcnow() + timedelta(hours=1), used=False,
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=1), used=False,
     )
     db.add(reset)
     db.commit()

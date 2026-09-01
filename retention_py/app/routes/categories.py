@@ -148,6 +148,11 @@ def handle_create_category(
     retention_period_label: str = Form("1 year"),
     disposal_method: str = Form("delete"),
     review_frequency: str = Form("quarterly"),
+    processing_role: str = Form("controller"),
+    processor_name: str = Form(""),
+    processor_contact: str = Form(""),
+    dpa_reference: str = Form(""),
+    processor_retention_status: str = Form("compliant"),
     requires_dual_approval: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
@@ -176,13 +181,18 @@ def handle_create_category(
         disposal_trigger=disposal_trigger,
         requires_dual_approval=dual_bool,
         review_frequency=review_frequency,
+        processing_role=processing_role,
+        processor_name=processor_name.strip() or None,
+        processor_contact=processor_contact.strip() or None,
+        dpa_reference=dpa_reference.strip() or None,
+        processor_retention_status=processor_retention_status or "compliant",
         source="custom"
     )
 
     db.add(new_cat)
     db.commit()
 
-    log_audit(db, org_id, "category_created", "data_category", new_cat.id, session["user_id"], {"name": name}, request.client.host if request.client else None)
+    log_audit(db, org_id, "category_created", "data_category", new_cat.id, session["user_id"], {"name": name, "role": processing_role, "processor": processor_name}, request.client.host if request.client else None)
     return RedirectResponse(url="/categories", status_code=303)
 
 @router.get("/categories/edit/{id}", response_class=HTMLResponse)
@@ -229,7 +239,12 @@ def handle_edit_category(
     retention_period_label: str = Form(""),
     disposal_method: str = Form(...),
     review_frequency: str = Form(...),
-    requires_dual_approval: bool = Form(False),
+    processing_role: str = Form("controller"),
+    processor_name: str = Form(""),
+    processor_contact: str = Form(""),
+    dpa_reference: str = Form(""),
+    processor_retention_status: str = Form("compliant"),
+    requires_dual_approval: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     session = get_session(request)
@@ -246,6 +261,8 @@ def handle_edit_category(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
+    dual_bool = bool(requires_dual_approval and str(requires_dual_approval).lower() in ("on", "true", "1"))
+
     category.name = name
     category.description = description
     category.retention_reason = retention_reason
@@ -255,11 +272,16 @@ def handle_edit_category(
     category.retention_period_label = retention_period_label
     category.disposal_method = disposal_method
     category.review_frequency = review_frequency
-    category.requires_dual_approval = requires_dual_approval
+    category.processing_role = processing_role
+    category.processor_name = processor_name.strip() or None
+    category.processor_contact = processor_contact.strip() or None
+    category.dpa_reference = dpa_reference.strip() or None
+    category.processor_retention_status = processor_retention_status or "compliant"
+    category.requires_dual_approval = dual_bool
 
     db.commit()
 
-    log_audit(db, org_id, "category_updated", "data_category", id, session["user_id"], {"name": name}, request.client.host if request.client else None)
+    log_audit(db, org_id, "category_updated", "data_category", id, session["user_id"], {"name": name, "role": processing_role, "processor": processor_name}, request.client.host if request.client else None)
     return RedirectResponse(url=f"/categories/view/{id}", status_code=303)
 
 @router.post("/categories/delete/{id}")
@@ -309,15 +331,20 @@ def export_categories_csv(request: Request, db: Session = Depends(get_db)):
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["ID", "Name", "Compliance Framework", "Legal Basis", "Retention Days", "Label", "Disposal Method", "Disposal Trigger", "Dual Approval Required"])
+    writer.writerow(["ID", "Name", "Compliance Framework", "Legal Basis", "Retention Days", "Label", "Disposal Method", "Disposal Trigger", "Role", "Processor", "DPA Reference", "Dual Approval Required"])
 
     for c in categories:
         writer.writerow([
             c.id, c.name, c.compliance_framework, c.legal_basis,
             c.retention_period_days, c.retention_period_label,
             c.disposal_method, c.disposal_trigger,
+            c.processing_role or "controller",
+            c.processor_name or "",
+            c.dpa_reference or "",
             "Yes" if c.requires_dual_approval else "No"
         ])
+
+    log_audit(db, org_id, "categories_exported", "data_category", None, session["user_id"], {"count": len(categories)}, request.client.host if request.client else None)
 
     output.seek(0)
     return StreamingResponse(

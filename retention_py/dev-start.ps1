@@ -1,4 +1,4 @@
-# ADRS Python local dev — FastAPI + Jinja2, app on port 8200 (localhost + LAN).
+# SafeData Python local dev — FastAPI + Jinja2, app on port 8200 (localhost + LAN).
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 $Port = 8200
@@ -31,11 +31,11 @@ $env:APP_ENV = "local"
 $env:APP_URL = $AppUrl
 
 # If docker is running and MySQL host is up, user can run:
-# $env:DATABASE_URL = "mysql+pymysql://adrs_user:adrs_pass@localhost:3306/adrs_db"
+# $env:DATABASE_URL = "mysql+pymysql://safedata_user:safedata_pass@localhost:3306/safedata_db"
 # Default is SQLite local db: retention.db
 
 Write-Host ""
-Write-Host "Starting ADRS Python App on port $Port (all interfaces)" -ForegroundColor Green
+Write-Host "Starting SafeData Python App on port $Port (all interfaces)" -ForegroundColor Green
 Write-Host "  Local:    http://localhost:${Port}/" -ForegroundColor Yellow
 Write-Host "  LAN:      $AppUrl/" -ForegroundColor Yellow
 Write-Host "  Register: $AppUrl/register" -ForegroundColor Yellow

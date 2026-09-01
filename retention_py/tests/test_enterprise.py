@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test enterprise engine.
 Tests API keys, intake queue, auto-categorisation, consent signals, and disposal dispatch.
 """
@@ -44,8 +44,8 @@ def _seed_category(db, org_id=1, trigger="date_based"):
 class TestApiKeys:
     def test_generate_api_key_format(self):
         k = generate_api_key()
-        assert k["raw"].startswith("adrs_")
-        assert len(k["raw"]) == 53
+        assert k["raw"].startswith("SafeData_")
+        assert len(k["raw"]) == len("SafeData_") + 48
         assert len(k["hash"]) == 64
 
     def test_create_and_verify(self, db):

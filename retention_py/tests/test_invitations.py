@@ -1,9 +1,9 @@
-﻿"""
+"""
 Test invitations.
 Tests invite create, accept, and revoke.
 """
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.models import OrganizationInvitation, User
 
 
@@ -16,7 +16,7 @@ def test_create_invitation(db):
         role="data_owner",
         invited_by=1,
         token_hash="abc123hash",
-        expires_at=datetime.utcnow() + timedelta(days=7),
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=7),
     )
     db.add(invite)
     db.commit()
@@ -36,12 +36,12 @@ def test_invitation_expiry(db):
         role="data_owner",
         invited_by=1,
         token_hash="expiredhash",
-        expires_at=datetime.utcnow() - timedelta(days=1),
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1),
     )
     db.add(invite)
     db.commit()
 
-    assert invite.expires_at < datetime.utcnow()
+    assert invite.expires_at < datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def test_revoke_invitation(db):
@@ -53,12 +53,12 @@ def test_revoke_invitation(db):
         role="dpo",
         invited_by=1,
         token_hash="revokehash",
-        expires_at=datetime.utcnow() + timedelta(days=7),
+        expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=7),
     )
     db.add(invite)
     db.commit()
 
-    invite.revoked_at = datetime.utcnow()
+    invite.revoked_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
 
     refreshed = db.query(OrganizationInvitation).filter(

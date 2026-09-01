@@ -1,5 +1,5 @@
 """
-ADRS Alembic Migration Environment.
+SafeData Alembic Migration Environment.
 
 Connects Alembic to the SQLAlchemy models defined in app.models,
 enabling schema evolution for production databases.

@@ -1,11 +1,11 @@
-﻿"""
-ADRS Enterprise Engine
+"""
+SafeData Enterprise Engine
 
 Provides: API-key lifecycle (E1, SHA-256 hashed), auto-categorisation (E5 first-match-
 by-priority), async intake queue processing (E2), inbound consent signal matching (E4),
 outbound disposal dispatch queueing + sending (E3), and enterprise daily engine steps.
 
-Tier gating: callers must verify get_setting(db,'adrs_tier')==='enterprise' first.
+Tier gating: callers must verify get_setting(db,'SafeData_tier')==='enterprise' first.
 """
 import json
 import hashlib
@@ -24,9 +24,9 @@ from app.models import (
 from app.helpers import log_audit
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 #   Helper: settings reader
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 def _get_setting(db: Session, key: str, default: str = "", org_id: int = None) -> str:
     from app.models import OrganizationSetting, SystemSetting
@@ -61,13 +61,13 @@ def _set_setting(db: Session, key: str, value: str, org_id: int = None):
     db.commit()
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 #   API Keys (E1)
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 def generate_api_key() -> dict:
     """Generate a raw key + its SHA-256 hash + display prefix. Raw shown once only."""
-    raw = "adrs_" + secrets.token_hex(24)  # 53 chars, unguessable
+    raw = "SafeData_" + secrets.token_hex(24)  # 53 chars, unguessable
     return {"raw": raw, "hash": hashlib.sha256(raw.encode()).hexdigest(), "prefix": raw[:12]}
 
 
@@ -183,9 +183,9 @@ def log_integration(db: Session, system_id, api_key_id, direction: str,
             pass
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 #   Auto-Categorisation (E5) — first active matching rule by priority wins
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 def auto_categorize(db: Session, system_id: int, object_type: str, metadata: dict = None) -> int:
     """Resolve a category for an inbound object using auto_categorization_rules. Returns category_id or None."""
@@ -205,9 +205,9 @@ def auto_categorize(db: Session, system_id: int, object_type: str, metadata: dic
     return None
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 #   Intake Queue (E2) — process pending inbound records
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 def enqueue_intake(db: Session, system_id: int, api_key_id: int, batch_id: str,
                    payload: dict, org_id: int = 1) -> int:
@@ -354,9 +354,9 @@ def process_intake_queue(db: Session, limit: int = 100) -> dict:
     return r
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 #   Consent Signals (E4) — inbound consent signal matching
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 def record_consent_signal(db: Session, system_id: int, external_ref: str,
                           signal_type: str, payload: dict = None, org_id: int = 1) -> dict:
@@ -422,9 +422,9 @@ def retry_unmatched_consent_signals(db: Session) -> int:
     return matched
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 #   Outbound Disposal Dispatch (E3) — queue + send
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 def queue_disposal_dispatch(db: Session, record_id: int, method: str, org_id: int = 1) -> int:
     """Queue outbound disposal instructions for a record to every connected system. Returns count."""
@@ -441,7 +441,7 @@ def queue_disposal_dispatch(db: Session, record_id: int, method: str, org_id: in
 
     n = 0
     for system_id, base_url in systems:
-        endpoint = f"{base_url.rstrip('/')}/adrs/disposal" if base_url else None
+        endpoint = f"{base_url.rstrip('/')}/SafeData/disposal" if base_url else None
         dispatch = DisposalDispatch(
             organization_id=org_id,
             record_id=record_id,
@@ -489,9 +489,9 @@ def process_disposal_dispatches(db: Session, limit: int = 50) -> dict:
                 sig = _hmac.new(
                     system.signing_secret.encode(), d.payload.encode(), hashlib.sha256
                 ).hexdigest()
-                headers["X-ADRS-Signature"] = sig
+                headers["X-SafeData-Signature"] = sig
 
-            resp = httpx.post(d.endpoint_url, json=payload, headers=headers, timeout=15.0)
+            resp = httpx.post(d.endpoint_url, json=payload, headers=headers, timeout=20.0, follow_redirects=True)
             code = resp.status_code
 
             if 200 <= code < 300:
@@ -501,7 +501,7 @@ def process_disposal_dispatches(db: Session, limit: int = 50) -> dict:
                 d.sent_at = datetime.utcnow()
                 d.confirmed_at = datetime.utcnow()
                 d.attempts = (d.attempts or 0) + 1
-                log_integration(db, d.system_id, None, "outbound", "/adrs/disposal",
+                log_integration(db, d.system_id, None, "outbound", "/SafeData/disposal",
                                 "POST", code, None, None, 1, org_id=d.organization_id)
                 sent += 1
             else:
@@ -523,9 +523,9 @@ def process_disposal_dispatches(db: Session, limit: int = 50) -> dict:
     return {"sent": sent, "failed": failed}
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 #   Enterprise Daily Engine Steps (A/B/C)
-# ═══════════════════════════════════════════════════════════════════════════
+# ---------------------------------------------------------------------------
 
 def purge_integration_logs(db: Session) -> int:
     """Step C: purge integration_logs older than api_log_retention_days. Returns rows deleted."""

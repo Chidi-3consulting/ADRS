@@ -1,99 +1,310 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Analytics & Reports</h1>
-</div>
+<div class="container-fluid px-0">
 
-<!-- Summary Cards -->
-<div class="row g-3 mb-4">
-  <div class="col-md-2">
-    <div class="card shadow-sm text-center">
-      <div class="card-body py-3">
-        <div class="h3 mb-0">{{ total_records }}</div>
-        <div class="text-muted small">Total Records</div>
-      </div>
+  <!-- Header and Export Buttons -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 mb-1 fw-bold text-dark">Data Retention & Compliance Reports</h1>
+      <p class="text-muted mb-0 small">Audit-ready inventory, time-range filtering, and multi-format regulatory exports</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="/reports/print?range={{ filter_range }}&start_date={{ filter_start_date }}&end_date={{ filter_end_date }}&category_id={{ filter_category_id }}&role_filter={{ filter_role }}&status={{ filter_status }}" target="_blank" class="btn btn-outline-dark btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-printer"></i> Print / PDF Audit Pack
+      </a>
+      <a href="/reports/json?range={{ filter_range }}&start_date={{ filter_start_date }}&end_date={{ filter_end_date }}&category_id={{ filter_category_id }}&role_filter={{ filter_role }}&status={{ filter_status }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-file-earmark-code"></i> Export JSON
+      </a>
+      <a href="/reports/csv?range={{ filter_range }}&start_date={{ filter_start_date }}&end_date={{ filter_end_date }}&category_id={{ filter_category_id }}&role_filter={{ filter_role }}&status={{ filter_status }}" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+      </a>
     </div>
   </div>
-  {% for status, count in status_counts.items() %}
-  <div class="col-md-2">
-    <div class="card shadow-sm text-center">
-      <div class="card-body py-3">
-        <div class="h3 mb-0 text-{{ 'success' if status == 'active' else ('warning' if status == 'due_review' else ('danger' if status in ['disposal_requested','legal_hold'] else 'secondary')) }}">
-          {{ count }}
+
+  <!-- Interactive Time Range & Dimension Filter Card -->
+  <div class="card shadow-sm border-0 rounded-4 bg-white mb-4">
+    <div class="card-body p-4">
+      <form method="get" action="/reports" class="row g-3 align-items-end">
+        <!-- Quick Range Selector -->
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">Time Range</label>
+          <select name="range" class="form-select form-select-sm" id="rangeSelector" onchange="toggleCustomDates()">
+            <option value="ytd" {{ 'selected' if filter_range == 'ytd' else '' }}>Year to Date (YTD)</option>
+            <option value="30d" {{ 'selected' if filter_range == '30d' else '' }}>Last 30 Days</option>
+            <option value="90d" {{ 'selected' if filter_range == '90d' else '' }}>Last 90 Days</option>
+            <option value="1y" {{ 'selected' if filter_range == '1y' else '' }}>Last 12 Months</option>
+            <option value="all" {{ 'selected' if filter_range == 'all' else '' }}>All Time</option>
+            <option value="custom" {{ 'selected' if filter_range == 'custom' else '' }}>Custom Date Range</option>
+          </select>
         </div>
-        <div class="text-muted small">{{ status | replace('_', ' ') | title }}</div>
+
+        <!-- Custom Start Date -->
+        <div class="col-md-2" id="startDateGroup" style="{{ 'display:block;' if filter_range == 'custom' else 'display:none;' }}">
+          <label class="form-label small fw-bold text-muted">Start Date</label>
+          <input type="date" name="start_date" class="form-control form-control-sm" value="{{ filter_start_date }}">
+        </div>
+
+        <!-- Custom End Date -->
+        <div class="col-md-2" id="endDateGroup" style="{{ 'display:block;' if filter_range == 'custom' else 'display:none;' }}">
+          <label class="form-label small fw-bold text-muted">End Date</label>
+          <input type="date" name="end_date" class="form-control form-control-sm" value="{{ filter_end_date }}">
+        </div>
+
+        <!-- Category Filter -->
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted">Data Category</label>
+          <select name="category_id" class="form-select form-select-sm">
+            <option value="0">All Categories</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}" {{ 'selected' if filter_category_id == c.id else '' }}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Role / Processor Filter -->
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">Processing Role</label>
+          <select name="role_filter" class="form-select form-select-sm">
+            <option value="all" {{ 'selected' if filter_role == 'all' else '' }}>All Roles</option>
+            <option value="controller" {{ 'selected' if filter_role == 'controller' else '' }}>Controller (Internal)</option>
+            <option value="processor" {{ 'selected' if filter_role == 'processor' else '' }}>Processor (Third-Party)</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-2">
+          <label class="form-label small fw-bold text-muted">Record Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="all" {{ 'selected' if filter_status == 'all' else '' }}>All Statuses</option>
+            <option value="active" {{ 'selected' if filter_status == 'active' else '' }}>Active</option>
+            <option value="due_review" {{ 'selected' if filter_status == 'due_review' else '' }}>Due for Review</option>
+            <option value="disposal_requested" {{ 'selected' if filter_status == 'disposal_requested' else '' }}>Disposal Requested</option>
+            <option value="legal_hold" {{ 'selected' if filter_status == 'legal_hold' else '' }}>Legal Hold</option>
+            <option value="disposed" {{ 'selected' if filter_status == 'disposed' else '' }}>Disposed</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="col-md-auto d-flex gap-2">
+          <button type="submit" class="btn btn-dark btn-sm px-3">
+            <i class="bi bi-funnel"></i> Apply Filter
+          </button>
+          <a href="/reports" class="btn btn-outline-secondary btn-sm px-2" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Summary Metric Strip -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="card shadow-sm border-0 rounded-4 bg-white text-center p-3">
+        <div class="fs-3 fw-bold text-dark">{{ total_records }}</div>
+        <div class="text-muted small">Filtered Records</div>
+      </div>
+    </div>
+    {% for status, count in status_counts.items() %}
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card shadow-sm border-0 rounded-4 bg-white text-center p-3">
+          <div class="fs-3 fw-bold text-{{ 'success' if status == 'active' else ('warning' if status == 'due_review' else ('info' if status == 'disposal_requested' else ('danger' if status == 'legal_hold' else 'secondary'))) }}">
+            {{ count }}
+          </div>
+          <div class="text-muted small">{{ status | replace('_', ' ') | title }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Status Distribution Progress -->
+  {% if total_records > 0 %}
+  <div class="card shadow-sm border-0 rounded-4 bg-white mb-4">
+    <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
+      <h2 class="h6 fw-bold text-dark mb-0">Record Lifecycle Distribution</h2>
+    </div>
+    <div class="card-body p-4 pt-0">
+      <div class="progress rounded-pill overflow-hidden" style="height: 24px;">
+        {% set colors = {'active': 'success', 'due_review': 'warning', 'disposal_requested': 'info', 'legal_hold': 'danger', 'disposed': 'secondary'} %}
+        {% for status, count in status_counts.items() %}
+          {% if count > 0 %}
+            <div class="progress-bar bg-{{ colors.get(status, 'secondary') }}"
+                 role="progressbar"
+                 style="width: {{ (count / total_records * 100) | round(1) }}%"
+                 title="{{ status | replace('_', ' ') | title }}: {{ count }}">
+              {{ status | replace('_', ' ') | title }} ({{ count }})
+            </div>
+          {% endif %}
+        {% endfor %}
       </div>
     </div>
   </div>
-  {% endfor %}
-</div>
+  {% endif %}
 
-<!-- Status Distribution Bar -->
-{% if total_records > 0 %}
-<div class="card shadow-sm mb-4">
-  <div class="card-header bg-white"><h5 class="card-title mb-0">Status Distribution</h5></div>
-  <div class="card-body">
-    <div class="progress" style="height: 28px;">
-      {% set colors = {'active': 'success', 'due_review': 'warning', 'disposal_requested': 'info', 'legal_hold': 'danger', 'disposed': 'secondary'} %}
-      {% for status, count in status_counts.items() %}
-        {% if count > 0 %}
-        <div class="progress-bar bg-{{ colors.get(status, 'secondary') }}"
-             role="progressbar"
-             style="width: {{ (count / total_records * 100) | round(1) }}%"
-             title="{{ status | replace('_', ' ') | title }}: {{ count }}">
-          {{ status | replace('_', ' ') | title }} ({{ count }})
+  <!-- Categories & Processor Breakdown Table -->
+  <div class="card shadow-sm border-0 rounded-4 bg-white mb-4">
+    <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="h5 fw-bold text-dark mb-0">Category & Processor Retention Breakdown</h2>
+        <span class="small text-muted">Distribution of records across lawful categories and external processors</span>
+      </div>
+    </div>
+    <div class="card-body p-4 pt-2">
+      {% if cat_stats | length == 0 %}
+        <p class="text-muted mb-0">No data categories configured yet.</p>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle small mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Category Name</th>
+                <th>Framework</th>
+                <th>Role</th>
+                <th>Third-Party Processor</th>
+                <th>Total Records</th>
+                <th style="width: 30%;">Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in cat_stats %}
+                <tr>
+                  <td class="fw-bold text-dark">
+                    <a href="/categories/view/{{ c.id }}" class="text-dark text-decoration-none">{{ c.name }}</a>
+                  </td>
+                  <td>
+                    {% if c.framework %}
+                      {% for f in c.framework.split(',') %}
+                        <span class="badge {{ get_framework_badge(f.strip()) }} me-1">{{ f.strip() }}</span>
+                      {% endfor %}
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge bg-{{ 'secondary' if c.processing_role == 'processor' else 'light text-dark border' }}">
+                      {{ c.processing_role | title }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if c.processor_name %}
+                      <span class="badge bg-light text-dark border">{{ c.processor_name }}</span>
+                    {% else %}
+                      <span class="text-muted small">In-House</span>
+                    {% endif %}
+                  </td>
+                  <td class="fw-bold">{{ c.count }}</td>
+                  <td>
+                    {% if total_records > 0 %}
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height: 8px;">
+                          <div class="progress-bar bg-primary" style="width: {{ (c.count / total_records * 100) | round(1) }}%"></div>
+                        </div>
+                        <span class="small text-muted">{{ (c.count / total_records * 100) | round(1) }}%</span>
+                      </div>
+                    {% else %}
+                      <span class="text-muted small">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Filtered Records Sample & Audit Trail Preview -->
+  <div class="card shadow-sm border-0 rounded-4 bg-white">
+    <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="h5 fw-bold text-dark mb-0">Record Inventory Sample</h2>
+        <span class="small text-muted">Showing {{ records_sample | length }} of {{ total_records }} filtered records</span>
+      </div>
+    </div>
+    <div class="card-body p-4 pt-2">
+      {% if records_sample %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle small mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Record Reference</th>
+                <th>Category</th>
+                <th>Role / Processor</th>
+                <th>Collection Date</th>
+                <th>Retention Due</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in records_sample %}
+                <tr>
+                  <td class="fw-bold text-dark">
+                    <a href="/records/view/{{ r.id }}" class="text-dark text-decoration-none">{{ r.record_reference }}</a>
+                  </td>
+                  <td>{{ r.category.name if r.category else 'Unassigned' }}</td>
+                  <td>
+                    {% if r.processor_name %}
+                      <span class="badge bg-light text-dark border">{{ r.processor_name }}</span>
+                    {% else %}
+                      <span class="badge bg-light-subtle text-muted">Internal</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ r.collection_date }}</td>
+                  <td>{{ r.retention_end_date or 'Pending Trigger' }}</td>
+                  <td>
+                    <span class="badge bg-{{ 'success' if r.status == 'active' else ('warning text-dark' if r.status == 'due_review' else ('info' if r.status == 'disposal_requested' else ('danger' if r.status == 'legal_hold' else 'secondary'))) }}">
+                      {{ r.status | replace('_', ' ') | title }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <a href="/records/view/{{ r.id }}" class="btn btn-light btn-sm py-1 px-2 border">View Record</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+          <span class="small text-muted">Page {{ page_num }} of {{ total_pages }}</span>
+          <div class="d-flex gap-1">
+            {% if page_num > 1 %}
+              <a href="/reports?page={{ page_num - 1 }}&range={{ filter_range }}&start_date={{ filter_start_date }}&end_date={{ filter_end_date }}&category_id={{ filter_category_id }}&role_filter={{ filter_role }}&status={{ filter_status }}" class="btn btn-outline-secondary btn-sm">Previous</a>
+            {% endif %}
+            {% if page_num < total_pages %}
+              <a href="/reports?page={{ page_num + 1 }}&range={{ filter_range }}&start_date={{ filter_start_date }}&end_date={{ filter_end_date }}&category_id={{ filter_category_id }}&role_filter={{ filter_role }}&status={{ filter_status }}" class="btn btn-outline-secondary btn-sm">Next</a>
+            {% endif %}
+          </div>
         </div>
         {% endif %}
-      {% endfor %}
-    </div>
-  </div>
-</div>
-{% endif %}
 
-<!-- Category Breakdown -->
-<div class="card shadow-sm">
-  <div class="card-header bg-white"><h5 class="card-title mb-0">Records by Data Category</h5></div>
-  <div class="card-body">
-    {% if cat_stats | length == 0 %}
-    <p class="text-muted mb-0">No data categories defined yet.</p>
-    {% else %}
-    <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>Framework</th>
-            <th>Records</th>
-            <th>Distribution</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for c in cat_stats %}
-          <tr>
-            <td class="fw-semibold">{{ c.name }}</td>
-            <td>
-              {% for f in c.framework.split(',') %}
-              <span class="badge {{ get_framework_badge(f.strip()) }} me-1">{{ f.strip() }}</span>
-              {% endfor %}
-            </td>
-            <td>{{ c.count }}</td>
-            <td style="width:40%;">
-              {% if total_records > 0 %}
-              <div class="progress" style="height:18px;">
-                <div class="progress-bar bg-primary" style="width:{{ (c.count / total_records * 100) | round(1) }}%">
-                  {{ (c.count / total_records * 100) | round(1) }}%
-                </div>
-              </div>
-              {% else %}
-              <span class="text-muted small">—</span>
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-search fs-2 mb-2 d-block opacity-50"></i>
+          <div>No records match the selected filter criteria.</div>
+        </div>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
+
 </div>
+
+<script>
+function toggleCustomDates() {
+  const sel = document.getElementById("rangeSelector");
+  const startG = document.getElementById("startDateGroup");
+  const endG = document.getElementById("endDateGroup");
+  if (sel.value === "custom") {
+    startG.style.display = "block";
+    endG.style.display = "block";
+  } else {
+    startG.style.display = "none";
+    endG.style.display = "none";
+  }
+}
+</script>
 {% endblock %}

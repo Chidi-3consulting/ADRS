@@ -1,5 +1,5 @@
-﻿"""
-ADRS ROPA (Record of Processing Activities) Routes
+"""
+SafeData ROPA (Record of Processing Activities) Routes
 Ported from legacy — provides full CRUD for ROPA entries with
 controller/processor support and processor sub-entries.
 """
@@ -25,32 +25,14 @@ templates.env.globals['unread_notifications_count'] = 0
 router = APIRouter()
 
 
-# ── List all ROPA entries ──
+# ── List all ROPA entries (Redirected to Data Categories) ──
 @router.get("/ropa", response_class=HTMLResponse)
 def ropa_list(request: Request, db: Session = Depends(get_db)):
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
 
-    org_id = session["org_id"]
-    entries = db.query(RopaEntry).filter(
-        RopaEntry.organization_id == org_id
-    ).order_by(RopaEntry.created_at.desc()).all()
-
-    labels = get_country_regulation_labels(session.get("country", "OTHER"))
-
-    return templates.TemplateResponse(request=request, name="ropa.html", context={
-        "page_title": "Record of Processing Activities",
-        "active_nav": "ropa",
-        "user_name": session["user_name"],
-        "user_role": session["role"],
-        "org_name": session["org_name"],
-        "org_status": session["org_status"],
-        "org_domain": session["org_domain"],
-        "trial_days": 14,
-        "law_label": labels["law"],
-        "entries": entries,
-    })
+    return RedirectResponse(url="/categories", status_code=303)
 
 
 # ── Create ROPA entry form ──

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test recalculations.
 Tests pending recalculation workflow.
 """

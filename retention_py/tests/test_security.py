@@ -11,12 +11,14 @@ from app.models import User, Organization, LoginAttempt
 def test_password_policy():
     # Min length check (10 chars)
     assert password_policy_error("short1") is not None
-    # Missing numbers
-    assert password_policy_error("onlyletters") is not None
-    # Missing letters
-    assert password_policy_error("1234567890") is not None
+    # Missing uppercase
+    assert password_policy_error("onlyletters1!") is not None
+    # Missing lowercase
+    assert password_policy_error("ALLUPPER123!") is not None
+    # Missing special char
+    assert password_policy_error("ValidPass12") is not None
     # Valid password
-    assert password_policy_error("ValidPass123!") is None
+    assert password_policy_error("Xyq9$mNpL2!k") is None
 
 
 def test_login_throttling(db):

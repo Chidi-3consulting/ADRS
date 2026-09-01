@@ -10,12 +10,38 @@
   <div class="alert alert-success border-success shadow-sm p-4 mb-4">
     <h4 class="alert-heading text-success fw-bold"><i class="bi bi-shield-check me-2"></i> API Key Generated Successfully!</h4>
     <p class="mb-2">Copy your secret API Key now. <strong>You will not be able to see it again!</strong></p>
-    <div class="input-group my-3" style="max-width: 600px;">
-      <input type="text" class="form-control font-monospace fw-bold bg-light" id="key_input" value="{{ new_raw_key }}" readonly>
-      <button class="btn btn-primary" type="button" onclick="navigator.clipboard.writeText('{{ new_raw_key }}'); alert('API Key copied to clipboard!');">
-        <i class="bi bi-clipboard me-1"></i> Copy Key
+    <div class="input-group my-3" style="max-width: 650px;">
+      <input type="text" class="form-control font-monospace fw-bold bg-light text-dark" id="key_input" value="{{ new_raw_key }}" readonly>
+      <button class="btn btn-primary px-3 d-flex align-items-center" id="copy_btn" type="button" onclick="copyApiKey()">
+        <i class="bi bi-clipboard me-1" id="copy_icon"></i> <span id="copy_text">Copy Key</span>
       </button>
     </div>
+    <script nonce="{{ csp_nonce }}">
+      function copyApiKey() {
+        var input = document.getElementById('key_input');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        try {
+          document.execCommand('copy');
+        } catch (e) {}
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(input.value).catch(function(){});
+        }
+        var btn = document.getElementById('copy_btn');
+        var btnText = document.getElementById('copy_text');
+        var icon = document.getElementById('copy_icon');
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        icon.className = 'bi bi-check2-circle me-1';
+        btnText.innerText = 'Copied!';
+        setTimeout(function() {
+          btn.classList.remove('btn-success');
+          btn.classList.add('btn-primary');
+          icon.className = 'bi bi-clipboard me-1';
+          btnText.innerText = 'Copy Key';
+        }, 3000);
+      }
+    </script>
     <a href="/integrations/keys" class="btn btn-outline-secondary btn-sm mt-2">Done</a>
   </div>
 {% else %}

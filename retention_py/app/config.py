@@ -1,4 +1,7 @@
 import os
+import sys
+import secrets as _secrets
+import warnings
 
 # Base Directory of retention_py
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -6,9 +9,42 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Env config
 APP_ENV = os.getenv("APP_ENV", "local")  # 'production' | 'local' | 'test'
 IS_PRODUCTION = APP_ENV == "production"
-APP_NAME = os.getenv("APP_NAME", "ADRS — 3Consulting Python")
+IS_TEST = APP_ENV == "test"
+APP_NAME = os.getenv("APP_NAME", "SafeData — 3Consulting Python")
 APP_URL = os.getenv("APP_URL", "http://127.0.0.1:8200")
-SECRET_KEY = os.getenv("SECRET_KEY", "adrs_python_super_secret_session_key_3c_2026")
+
+# ── Security: Secret Key (Gap 1) ──
+# The default is ONLY for local development. In production, a cryptographically
+# random SECRET_KEY MUST be provided via environment variable.
+_DEFAULT_SECRET = "SafeData_python_super_secret_session_key_3c_2026"
+_env_secret = os.getenv("SECRET_KEY", "")
+
+if _env_secret:
+    SECRET_KEY = _env_secret
+elif IS_PRODUCTION:
+    print(
+        "\n"
+        "╔══════════════════════════════════════════════════════════════╗\n"
+        "║  FATAL: SECRET_KEY environment variable is not set.        ║\n"
+        "║                                                            ║\n"
+        "║  In production mode, you MUST provide a cryptographically  ║\n"
+        "║  random SECRET_KEY. Generate one with:                     ║\n"
+        "║                                                            ║\n"
+        "║    python -c \"import secrets; print(secrets.token_hex(64))\"  ║\n"
+        "║                                                            ║\n"
+        "║  Then set it:  export SECRET_KEY='<your-key>'              ║\n"
+        "╚══════════════════════════════════════════════════════════════╝\n",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+else:
+    SECRET_KEY = _DEFAULT_SECRET
+    if not IS_TEST:
+        warnings.warn(
+            "SafeData: Using default SECRET_KEY — acceptable for local dev only. "
+            "Set SECRET_KEY env var before deploying.",
+            stacklevel=2,
+        )
 
 # Database URI (SQLite locally, MySQL in production)
 DATABASE_URL = os.getenv(
@@ -37,6 +73,10 @@ LOGIN_WINDOW_MINUTES = 15
 
 # ── Security: Password Policy ──
 PASSWORD_MIN_LENGTH = 10
+PASSWORD_HISTORY_COUNT = 5  # Number of previous passwords to check against
+
+# ── Security: Request Size Limit (Gap 8) ──
+MAX_REQUEST_BODY_SIZE = int(os.getenv("MAX_REQUEST_BODY_SIZE", str(25 * 1024 * 1024)))  # 25 MB
 
 # ── CORS / Trusted Hosts ──
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*")  # comma-separated in production

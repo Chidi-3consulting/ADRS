@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ page_title or 'ADRS Solution' }}</title>
+  <title>{{ page_title or 'SafeData Solution' }}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/static/css/app.css">
@@ -14,7 +14,7 @@
   <nav class="sidebar" id="sidebar">
     <div class="brand pt-3">
       <i class="bi bi-shield-lock-fill"></i>
-      <span>{{ wl_name or 'ADRS' }}</span>
+      <span>{{ wl_name or 'SafeData' }}</span>
     </div>
 
     {% if org_name %}
@@ -36,15 +36,12 @@
     <!-- Navigation Groups -->
     <div class="nav-group-label">📊 Overview</div>
     <a href="/dashboard" class="{{ 'active' if active_nav == 'dashboard' else '' }}">
-      <i class="bi bi-house"></i> Dashboard
-    </a>
-    <a href="/help" class="{{ 'active' if active_nav == 'help' else '' }}">
-      <i class="bi bi-book"></i> Solution Manual & Help
+      <i class="bi bi-speedometer2"></i> Dashboard
     </a>
 
     <div class="nav-group-label">📁 Data Life Cycle</div>
     <a href="/categories" class="{{ 'active' if active_nav == 'categories' else '' }}">
-      <i class="bi bi-collection"></i> Data Categories
+      <i class="bi bi-collection"></i> Categories & Schedules
     </a>
     <a href="/records" class="{{ 'active' if active_nav == 'records' else '' }}">
       <i class="bi bi-card-list"></i> Retention Register
@@ -52,45 +49,65 @@
     <a href="/import" class="{{ 'active' if active_nav == 'import' else '' }}">
       <i class="bi bi-upload"></i> Bulk CSV Import
     </a>
-    <a href="/recalculations" class="{{ 'active' if active_nav == 'recalculations' else '' }}">
-      <i class="bi bi-calculator"></i> Pending Recalculations
-    </a>
-
     {% if user_role in ['admin', 'dpo'] %}
-      <div class="nav-group-label">🔍 Compliance & Audit</div>
-      <a href="/audit" class="{{ 'active' if active_nav == 'audit' else '' }}">
-        <i class="bi bi-shield-check"></i> Audit Log
-      </a>
-      <a href="/reports" class="{{ 'active' if active_nav == 'reports' else '' }}">
-        <i class="bi bi-graph-up"></i> Analytics & Reports
-      </a>
-      <a href="/ropa" class="{{ 'active' if active_nav == 'ropa' else '' }}">
-        <i class="bi bi-clipboard-data"></i> ROPA Register
-      </a>
-      <a href="/attachments" class="{{ 'active' if active_nav == 'attachments' else '' }}">
-        <i class="bi bi-paperclip"></i> Evidence Attachments
-      </a>
+    <a href="/attachments" class="{{ 'active' if active_nav == 'attachments' else '' }}">
+      <i class="bi bi-paperclip"></i> Evidence Attachments
+    </a>
     {% endif %}
 
-    <div class="nav-group-label">🔔 Notifications</div>
-    <a href="/notifications" class="{{ 'active' if active_nav == 'notifications' else '' }}">
-      <i class="bi bi-bell"></i> Inbox
-    </a>
+    {% if user_role in ['admin', 'dpo'] %}
+      <div class="nav-group-label">⚖️ Compliance & Governance</div>
+      <a href="/reports" class="{{ 'active' if active_nav == 'reports' else '' }}">
+        <i class="bi bi-graph-up"></i> Compliance & Reports
+      </a>
+      <a href="/recalculations" class="{{ 'active' if active_nav == 'recalculations' else '' }}">
+        <i class="bi bi-calculator"></i> Pending Recalculations
+      </a>
+      <a href="/audit" class="{{ 'active' if active_nav == 'audit' else '' }}">
+        <i class="bi bi-shield-check"></i> Audit Ledger
+      </a>
+      <a href="/notifications" class="{{ 'active' if active_nav == 'notifications' else '' }}">
+        <i class="bi bi-bell"></i> Notifications
+        {% if unread_notifications_count is defined and unread_notifications_count > 0 %}
+          <span class="badge bg-danger rounded-pill float-end">{{ unread_notifications_count }}</span>
+        {% endif %}
+      </a>
+    {% else %}
+      <div class="nav-group-label">🔔 Notifications</div>
+      <a href="/notifications" class="{{ 'active' if active_nav == 'notifications' else '' }}">
+        <i class="bi bi-bell"></i> Notifications
+        {% if unread_notifications_count is defined and unread_notifications_count > 0 %}
+          <span class="badge bg-danger rounded-pill float-end">{{ unread_notifications_count }}</span>
+        {% endif %}
+      </a>
+    {% endif %}
 
     {% if user_role == 'admin' %}
       <div class="nav-group-label">🔌 API & Integrations</div>
       <a href="/integrations" class="{{ 'active' if active_nav == 'integrations' else '' }}">
-        <i class="bi bi-hdd-network"></i> Integrations
+        <i class="bi bi-hdd-network"></i> Integration Hub
       </a>
+      <a href="/docs" target="_blank" class="">
+        <i class="bi bi-file-earmark-code"></i> API Documentation <i class="bi bi-box-arrow-up-right small ms-1" style="font-size: 0.7rem;"></i>
+      </a>
+
       <div class="nav-group-label">⚙️ Administration</div>
       <a href="/users" class="{{ 'active' if active_nav == 'users' else '' }}">
-        <i class="bi bi-people"></i> Team Users
+        <i class="bi bi-people"></i> Team & Role Access
       </a>
       <a href="/settings" class="{{ 'active' if active_nav == 'settings' else '' }}">
-        <i class="bi bi-gear"></i> Settings
+        <i class="bi bi-gear"></i> System Settings
       </a>
       <a href="/billing" class="{{ 'active' if active_nav == 'billing' else '' }}">
-        <i class="bi bi-credit-card"></i> Billing & subscription
+        <i class="bi bi-credit-card"></i> Billing & Subscription
+      </a>
+      <a href="/help" class="{{ 'active' if active_nav == 'help' else '' }}">
+        <i class="bi bi-journal-bookmark-fill"></i> Solution Manual
+      </a>
+    {% else %}
+      <div class="nav-group-label">📖 Help & Documentation</div>
+      <a href="/help" class="{{ 'active' if active_nav == 'help' else '' }}">
+        <i class="bi bi-journal-bookmark-fill"></i> Solution Manual
       </a>
     {% endif %}
 
@@ -154,18 +171,28 @@
 </div>
 
 <footer class="text-center text-muted small py-3" style="margin-left: 260px;" id="footer">
-  &copy; 2026 {{ wl_footer or '3Consulting Limited' }} · {{ wl_name or 'ADRS' }} v3.0.0
+  &copy; 2026 {{ wl_footer or '3Consulting Limited' }} · {{ wl_name or 'SafeData' }} v3.0.0
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-<script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" nonce="{{ csp_nonce }}"></script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener("DOMContentLoaded", function() {
     const toggle = document.getElementById("sidebar-toggle");
     const sidebar = document.getElementById("sidebar");
-    const footer = document.getElementById("footer");
     if (toggle && sidebar) {
         toggle.addEventListener("click", function() {
             sidebar.classList.toggle("show");
+        });
+    }
+
+    // Preserve sidebar scroll position across navigation
+    if (sidebar) {
+        const savedScroll = sessionStorage.getItem("SafeData_sidebar_scroll");
+        if (savedScroll) {
+            sidebar.scrollTop = parseInt(savedScroll, 10);
+        }
+        sidebar.addEventListener("scroll", function() {
+            sessionStorage.setItem("SafeData_sidebar_scroll", sidebar.scrollTop);
         });
     }
 });

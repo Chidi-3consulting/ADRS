@@ -1,109 +1,119 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Team Users</h1>
-  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
-    <i class="bi bi-person-plus me-1"></i> Add User
-  </button>
-</div>
+<div class="container-fluid px-0">
 
-{% if request.query_params.get('error') == 'email_exists' %}
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-  That email address is already in use.
-  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-{% endif %}
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h3 mb-0 fw-bold text-dark">Team & Role Access</h1>
+      </div>
+      <p class="text-muted small mb-0 mt-1">Manage organization operators, DPOs, and administrator role permissions</p>
+    </div>
+    <button class="btn btn-primary btn-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addUserModal">
+      <i class="bi bi-person-plus me-1"></i> Add Team Member
+    </button>
+  </div>
 
-<div class="card shadow-sm">
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Last Login</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for u in users %}
-          <tr>
-            <td>
-              <div class="fw-semibold">{{ u.name }}</div>
-            </td>
-            <td class="small">{{ u.email }}</td>
-            <td>
-              <span class="badge bg-{{ 'primary' if u.role == 'admin' else ('info' if u.role == 'dpo' else 'secondary') }}">
-                {{ u.role | upper }}
-              </span>
-            </td>
-            <td>
-              <span class="badge bg-{{ 'success' if u.is_active else 'danger' }}">
-                {{ 'Active' if u.is_active else 'Disabled' }}
-              </span>
-            </td>
-            <td class="small text-muted">
-              {{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else 'Never' }}
-            </td>
-            <td>
-              <form method="post" action="/users/{{ u.id }}/toggle" class="d-inline">
-                {{ csrf_field | safe }}
-                <button class="btn btn-outline-{{ 'danger' if u.is_active else 'success' }} btn-sm py-0 px-2"
-                        title="{{ 'Disable' if u.is_active else 'Enable' }}">
-                  <i class="bi bi-{{ 'x-circle' if u.is_active else 'check-circle' }}"></i>
-                  {{ 'Disable' if u.is_active else 'Enable' }}
-                </button>
-              </form>
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+  {% if request.query_params.get('error') == 'email_exists' %}
+  <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+    That email address is already in use.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm border-0 rounded-4 bg-white">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle small mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Last Login</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+              <tr>
+                <td>
+                  <div class="fw-semibold text-dark">{{ u.name }}</div>
+                </td>
+                <td class="font-monospace text-muted">{{ u.email }}</td>
+                <td>
+                  <span class="badge bg-{{ 'primary' if u.role == 'admin' else ('info text-dark' if u.role == 'dpo' else 'secondary') }}">
+                    {{ u.role | upper }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge bg-{{ 'success' if u.is_active else 'danger' }}">
+                    {{ 'Active' if u.is_active else 'Disabled' }}
+                  </span>
+                </td>
+                <td class="text-muted">
+                  {{ u.last_login_at.strftime('%Y-%m-%d %H:%M') if u.last_login_at else 'Never' }}
+                </td>
+                <td class="text-end">
+                  <form method="post" action="/users/{{ u.id }}/toggle" class="d-inline">
+                    {{ csrf_field | safe }}
+                    <button class="btn btn-outline-{{ 'danger' if u.is_active else 'success' }} btn-sm py-1 px-2"
+                            title="{{ 'Disable User' if u.is_active else 'Enable User' }}">
+                      <i class="bi bi-{{ 'x-circle' if u.is_active else 'check-circle' }} me-1"></i>
+                      {{ 'Disable' if u.is_active else 'Enable' }}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Add User Modal -->
-<div class="modal fade" id="addUserModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="post" action="/users/create">
-        {{ csrf_field | safe }}
-        <div class="modal-header">
-          <h5 class="modal-title">Add Team Member</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Full Name</label>
-            <input type="text" name="name" class="form-control" required>
+  <!-- Add User Modal -->
+  <div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 border-0 shadow">
+        <form method="post" action="/users/create">
+          {{ csrf_field | safe }}
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold">Add Team Member</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Email Address</label>
-            <input type="email" name="email" class="form-control" required>
+          <div class="modal-body p-4">
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted">Full Name</label>
+              <input type="text" name="name" class="form-control" required placeholder="Jane Doe">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted">Email Address</label>
+              <input type="email" name="email" class="form-control" required placeholder="jane@company.com">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted">Temporary Password</label>
+              <input type="password" name="password" class="form-control" minlength="8" required placeholder="••••••••">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted">Role Permission</label>
+              <select name="role" class="form-select">
+                <option value="data_owner">Data Owner (Department Intake)</option>
+                <option value="dpo">DPO (Data Protection Officer / Reviewer)</option>
+                <option value="admin">Administrator (Full Access)</option>
+              </select>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Temporary Password</label>
-            <input type="password" name="password" class="form-control" minlength="8" required>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create User</button>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Role</label>
-            <select name="role" class="form-select">
-              <option value="data_owner">Data Owner</option>
-              <option value="dpo">DPO (Data Protection Officer)</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create User</button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
+
 </div>
 {% endblock %}

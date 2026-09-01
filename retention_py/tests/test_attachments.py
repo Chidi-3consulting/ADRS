@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test attachments.
 Tests attachment model operations.
 """

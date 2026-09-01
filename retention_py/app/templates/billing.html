@@ -1,7 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Billing & Subscription</h1>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-2">
+    <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <h1 class="h3 mb-0 fw-bold text-dark">Billing & Subscription</h1>
+  </div>
 </div>
 
 <div class="row">
@@ -15,7 +18,7 @@
           <div class="me-4">
             <div class="h2 mb-0 text-primary">
               <i class="bi bi-shield-lock-fill"></i>
-              ADRS {{ org.tier | upper if org else 'CORE' }}
+              SafeData {{ org.tier | upper if org else 'CORE' }}
             </div>
           </div>
           <div>
@@ -48,7 +51,7 @@
   <div class="col-md-4">
     <div class="card shadow-sm mb-3 border-primary">
       <div class="card-body text-center">
-        <div class="h5 text-primary mb-1">ADRS Core</div>
+        <div class="h5 text-primary mb-1">SafeData Core</div>
         <div class="display-6 fw-bold mb-1">$399<span class="fs-6 fw-normal text-muted">/year</span></div>
         <div class="text-muted small mb-3">or $40/month</div>
         <ul class="list-unstyled text-start small mb-3">

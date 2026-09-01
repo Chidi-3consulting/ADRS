@@ -1,4 +1,4 @@
-﻿"""
+"""
 Test records CRUD.
 Tests record creation, editing, listing, and filtering.
 """

@@ -10,8 +10,8 @@ from app.models import DataRecord, SystemSetting
 from app.auth import get_session
 from app.helpers import get_country_regulation_labels, get_framework_badge
 from app.engine import (
-    compliance_metrics, compliance_score, upcoming_deadlines,
-    disposals_by_month, org_onboarding_checklist,
+    compliance_metrics, compliance_score, compliance_scorecard_details,
+    upcoming_deadlines, disposals_by_month, org_onboarding_checklist,
     sync_onboarding_notifications,
 )
 
@@ -34,7 +34,7 @@ def view_dashboard(request: Request, db: Session = Depends(get_db)):
 
     # ── Analytics (replaces inline queries) ──
     metrics = compliance_metrics(db, org_id)
-    score = compliance_score(db, org_id)
+    scorecard = compliance_scorecard_details(db, org_id)
     deadlines = upcoming_deadlines(db, org_id, limit=10)
     disposal_chart = disposals_by_month(db, org_id, months=6)
 
@@ -65,7 +65,8 @@ def view_dashboard(request: Request, db: Session = Depends(get_db)):
         "trial_days": 14,
         "law_label": labels["law"],
         "metrics": metrics,
-        "health_score": score,
+        "health_score": scorecard["overall_score"],
+        "scorecard": scorecard,
         "upcoming_deadlines": deadlines,
         "disposal_chart": disposal_chart,
         "onboarding": checklist,
@@ -79,9 +80,9 @@ def view_help(request: Request, db: Session = Depends(get_db)):
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
 
-    from app.helpers import ADRS_SUPPORTED_COUNTRIES
+    from app.helpers import SafeData_SUPPORTED_COUNTRIES
     country_code = session.get("country", "OTHER")
-    country_name = ADRS_SUPPORTED_COUNTRIES.get(country_code, "General")
+    country_name = SafeData_SUPPORTED_COUNTRIES.get(country_code, "General")
     labels = get_country_regulation_labels(country_code)
 
     return templates.TemplateResponse(request=request, name="help.html", context={

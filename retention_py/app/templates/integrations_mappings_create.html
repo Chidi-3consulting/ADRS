@@ -25,7 +25,7 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Target ADRS Category <span class="text-danger">*</span></label>
+        <label class="form-label fw-semibold">Target SafeData Category <span class="text-danger">*</span></label>
         <select name="category_id" class="form-select" required>
           {% for c in categories %}
             <option value="{{ c.id }}">{{ c.name }} ({{ c.compliance_framework }})</option>
@@ -39,8 +39,8 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">ADRS Field</label>
-        <select name="adrs_field" class="form-select">
+        <label class="form-label fw-semibold">SafeData Field</label>
+        <select name="SafeData_field" class="form-select">
           <option value="record_reference">record_reference</option>
           <option value="data_subject_type">data_subject_type</option>
           <option value="collection_date">collection_date</option>
