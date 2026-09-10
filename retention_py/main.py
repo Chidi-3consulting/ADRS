@@ -110,6 +110,12 @@ def ensure_schema_columns(bind_engine):
                 if "processor_retention_status" not in cols:
                     conn.execute(text("ALTER TABLE data_categories ADD COLUMN processor_retention_status VARCHAR(50) DEFAULT 'compliant' NULL"))
                     conn.commit()
+                if "data_classification" not in cols:
+                    conn.execute(text("ALTER TABLE data_categories ADD COLUMN data_classification VARCHAR(50) DEFAULT 'standard' NOT NULL"))
+                    conn.commit()
+                if "approval_type" not in cols:
+                    conn.execute(text("ALTER TABLE data_categories ADD COLUMN approval_type VARCHAR(50) DEFAULT 'single_approval' NOT NULL"))
+                    conn.commit()
             if inspector.has_table("data_records"):
                 cols = [c["name"] for c in inspector.get_columns("data_records")]
                 if "processor_name" not in cols:
@@ -247,6 +253,32 @@ async def intake_queue_scheduler_task():
             db.close()
 
 
+async def audit_chain_scheduler_task():
+    """Verify cryptographic SHA-256 audit chain every 6 hours and alert if compromised."""
+    while True:
+        await asyncio.sleep(21600)  # 6 hours
+        db = SessionLocal()
+        try:
+            from app.engine import verify_audit_chain, notify_role
+            result = verify_audit_chain(db)
+            if not result.get("ok"):
+                broken_id = result.get("first_broken_log_id")
+                print(f"[{datetime.now()}] CRITICAL: Cryptographic audit chain broken at log ID {broken_id}!")
+                orgs = db.query(Organization).all()
+                for org in orgs:
+                    notify_role(
+                        db, org.id, ["admin", "dpo"], "security_alert",
+                        "CRITICAL: Audit Ledger Tamper Alert",
+                        f"Cryptographic audit chain verification failed at entry #{broken_id}. Immediate compliance review required."
+                    )
+            else:
+                print(f"[{datetime.now()}] Audit chain verified: {result.get('verified_count', 0)} entries intact.")
+        except Exception as e:
+            print(f"[{datetime.now()}] Audit chain scheduler error: {e}")
+        finally:
+            db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     task1 = asyncio.create_task(retention_scheduler_task())
@@ -254,12 +286,14 @@ async def lifespan(app: FastAPI):
     task3 = asyncio.create_task(backup_scheduler_task())
     task4 = asyncio.create_task(disposal_dispatch_scheduler_task())
     task5 = asyncio.create_task(intake_queue_scheduler_task())
+    task6 = asyncio.create_task(audit_chain_scheduler_task())
     yield
     task1.cancel()
     task2.cancel()
     task3.cancel()
     task4.cancel()
     task5.cancel()
+    task6.cancel()
 
 
 # Gap 14: Only enable debug in local dev mode — never in production or staging

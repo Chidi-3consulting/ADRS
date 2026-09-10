@@ -58,3 +58,23 @@ def test_get_localized_pricing_calculation():
     us_pricing = get_localized_pricing("US")
     assert us_pricing["is_usd"] is True
     assert us_pricing["monthly"]["full_display"] == "$40/mo"
+
+
+def test_untrusted_proxy_spoof_rejection(monkeypatch):
+    """In production, spoofed geo headers from untrusted direct IPs must be ignored."""
+    import app.helpers as helpers
+
+    class ClientObj:
+        host = "198.51.100.42"  # Untrusted external IP
+
+    req = MockRequest(headers={"CF-IPCountry": "NG"})
+    req.client = ClientObj()
+
+    # Simulate production with trusted proxy set to Cloudflare internal IP 10.0.0.1
+    monkeypatch.setattr(helpers, "IS_PRODUCTION", True)
+    monkeypatch.setattr(helpers, "TRUSTED_PROXIES", "10.0.0.1, 10.0.0.2")
+
+    # Untrusted client sending CF-IPCountry: NG should fall back to default US
+    country = get_visitor_country(req)
+    assert country == "US"
+

@@ -223,6 +223,18 @@ def handle_create_record(
         CategoryRetentionRule.is_default == True
     ).first()
 
+    if notes:
+        from app.helpers import detect_pii_in_text
+        pii = detect_pii_in_text(notes)
+        if pii:
+            log_audit(db, org_id, "pii_ingestion_blocked", "data_record", None, user_id, {
+                "detected": pii
+            }, request.client.host if request.client else None)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Zero-Knowledge Protection: The notes field contains potential personal data ({', '.join(pii)}). SafeData only retains metadata references, not raw personal data."
+            )
+
     eff_proc_name = processor_name.strip() if processor_name and processor_name.strip() else (cat.processor_name if cat.processor_name else None)
 
     new_rec = DataRecord(
@@ -370,6 +382,18 @@ def handle_edit_record(
 
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
+
+    if notes:
+        from app.helpers import detect_pii_in_text
+        pii = detect_pii_in_text(notes)
+        if pii:
+            log_audit(db, org_id, "pii_ingestion_blocked", "data_record", id, session["user_id"], {
+                "detected": pii
+            }, request.client.host if request.client else None)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Zero-Knowledge Protection: The notes field contains potential personal data ({', '.join(pii)}). SafeData only retains metadata references, not raw personal data."
+            )
 
     coll_date = datetime.strptime(collection_date, "%Y-%m-%d").date()
     record.record_reference = record_reference.strip()
@@ -596,6 +620,11 @@ def handle_bulk_dispose(
     raw_ids = [int(i.strip()) for i in record_ids.split(",") if i.strip().isdigit()]
     if not raw_ids:
         return RedirectResponse(url=f"{return_url}?error=no_records_selected", status_code=303)
+
+    from app.engine import is_disposal_frozen
+    if is_disposal_frozen(db, org_id):
+        log_audit(db, org_id, "disposal_aborted_freeze", "data_record", 0, user_id, {"action": "bulk_dispose"}, ip_addr)
+        return RedirectResponse(url=f"{return_url}?error=disposal_frozen", status_code=303)
 
     today = date.today()
     disposed_count = 0

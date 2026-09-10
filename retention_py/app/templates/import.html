@@ -1,108 +1,132 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h1 class="h4 mb-0">Bulk CSV Import</h1>
-    <p class="text-muted small mb-0">Ingest data records in bulk by uploading a structured CSV file.</p>
-  </div>
-  <a href="/import/sample" class="btn btn-outline-secondary btn-sm"><i class="bi bi-download me-1"></i> Download Sample CSV</a>
-</div>
-
-{% if result %}
-  <div class="alert alert-info border-info shadow-sm p-4 mb-4">
-    <h5 class="fw-bold"><i class="bi bi-info-circle me-2"></i> Import Completed</h5>
-    <div class="row g-3 mt-1">
-      <div class="col-md-3"><strong>Total Rows:</strong> {{ result.total }}</div>
-      <div class="col-md-3 text-success"><strong>Imported:</strong> {{ result.imported }}</div>
-      <div class="col-md-3 text-warning"><strong>Duplicates Skipped:</strong> {{ result.skipped }}</div>
-      <div class="col-md-3 text-danger"><strong>Errors:</strong> {{ result.errors }}</div>
-    </div>
-    {% if result.report %}
-      <div class="mt-3">
-        <h6 class="fw-bold text-danger mb-2">Error Breakdown</h6>
-        <ul class="list-group list-group-flush small bg-white rounded border" style="max-height: 200px; overflow-y: auto;">
-          {% for err in result.report %}
-            <li class="list-group-item py-1">Line {{ err.line }}: {{ err.error }} {% if err.ref %}(Ref: {{ err.ref }}){% endif %}</li>
-          {% endfor %}
-        </ul>
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 animate-in">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="/records" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h3 mb-0 fw-bold text-dark">Bulk CSV Import</h1>
       </div>
-    {% endif %}
-  </div>
-{% endif %}
-
-<div class="row g-4 mb-4">
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header bg-light fw-bold py-3">Upload CSV File</div>
-      <div class="card-body">
-        <form method="post" action="/import" enctype="multipart/form-data">
-          {{ csrf_field | safe }}
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Select CSV File <span class="text-danger">*</span></label>
-            <input type="file" name="file" class="form-control" accept=".csv" required>
-            <div class="form-text">File must contain columns: <code>record_reference</code>, <code>category_name</code>, <code>collection_date</code>.</div>
-          </div>
-          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-upload me-1"></i> Start Import</button>
-        </form>
-      </div>
+      <p class="text-muted small mb-0 mt-1">Ingest data records in bulk by uploading a structured UTF-8 CSV file</p>
     </div>
+    <a href="/import/sample" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+      <i class="bi bi-download"></i> Download Sample CSV
+    </a>
   </div>
 
-  <div class="col-md-6">
-    <div class="card shadow-sm h-100">
-      <div class="card-header bg-light fw-bold py-3">CSV Format Instructions</div>
-      <div class="card-body small">
-        <p>Ensure your CSV file adheres to the following layout:</p>
-        <ul>
-          <li><code>record_reference</code> (Required): Unique record ID / external identifier.</li>
-          <li><code>category_name</code> (Required): Exact name of an active Data Category.</li>
-          <li><code>collection_date</code> (Required): Format <code>YYYY-MM-DD</code>.</li>
-          <li><code>data_subject_type</code> (Optional): e.g. Employee, Customer, Vendor.</li>
-          <li><code>notes</code> (Optional): Internal notes or reference details.</li>
-        </ul>
+  {% if result %}
+    <div class="alert alert-info border-0 shadow-sm p-4 mb-4 rounded-4 animate-in">
+      <h5 class="fw-bold mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Import Completed</h5>
+      <div class="row g-3 mt-1 small">
+        <div class="col-6 col-md-3"><strong>Total Rows:</strong> <span class="font-mono">{{ result.total }}</span></div>
+        <div class="col-6 col-md-3 text-success"><strong>Imported:</strong> <span class="font-mono fw-bold">{{ result.imported }}</span></div>
+        <div class="col-6 col-md-3 text-warning"><strong>Duplicates Skipped:</strong> <span class="font-mono">{{ result.skipped }}</span></div>
+        <div class="col-6 col-md-3 text-danger"><strong>Errors:</strong> <span class="font-mono">{{ result.errors }}</span></div>
       </div>
-    </div>
-  </div>
-</div>
-
-<div class="card shadow-sm">
-  <div class="card-header bg-light fw-bold py-3">Recent Import History</div>
-  <div class="card-body p-0">
-    {% if not recent_jobs %}
-      <div class="p-4 text-center text-muted">No bulk import jobs performed yet.</div>
-    {% else %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>ID</th>
-              <th>Filename</th>
-              <th>Total</th>
-              <th>Imported</th>
-              <th>Skipped</th>
-              <th>Errors</th>
-              <th>Status</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for j in recent_jobs %}
-              <tr>
-                <td>#{{ j.id }}</td>
-                <td class="fw-semibold">{{ j.filename }}</td>
-                <td>{{ j.total_rows }}</td>
-                <td class="text-success">{{ j.imported_rows }}</td>
-                <td class="text-warning">{{ j.skipped_rows }}</td>
-                <td class="text-danger">{{ j.error_rows }}</td>
-                <td><span class="badge bg-secondary">{{ j.status }}</span></td>
-                <td><small>{{ j.created_at }}</small></td>
-              </tr>
+      {% if result.report %}
+        <div class="mt-3">
+          <h6 class="fw-bold text-danger mb-2 small">Error Breakdown</h6>
+          <ul class="list-group list-group-flush small bg-white rounded-3 border font-mono" style="max-height: 200px; overflow-y: auto;">
+            {% for err in result.report %}
+              <li class="list-group-item py-1">Line {{ err.line }}: {{ err.error }} {% if err.ref %}(Ref: {{ err.ref }}){% endif %}</li>
             {% endfor %}
-          </tbody>
-        </table>
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 rounded-4 bg-white h-100 animate-in">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+          <h2 class="h5 fw-bold text-dark mb-0">Upload CSV File</h2>
+        </div>
+        <div class="card-body p-4">
+          <form method="post" action="/import" enctype="multipart/form-data">
+            {{ csrf_field | safe }}
+            <div class="mb-4">
+              <label class="form-label small fw-semibold">Select CSV File <span class="text-danger">*</span></label>
+              <input type="file" name="file" class="form-control py-2" accept=".csv" required>
+              <div class="form-text small" style="color: var(--sd-gray-500); font-size: 0.72rem;">Required columns: <code>record_reference</code>, <code>category_name</code>, <code>collection_date</code>.</div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 fw-bold">
+              <i class="bi bi-upload me-1"></i> Start Batch Intake
+            </button>
+          </form>
+        </div>
       </div>
-    {% endif %}
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 rounded-4 bg-white h-100 animate-in">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+          <h2 class="h6 fw-bold text-dark mb-0">CSV Format Specification</h2>
+        </div>
+        <div class="card-body p-4 small">
+          <p class="text-muted mb-3">Ensure your CSV file adheres strictly to the following header specification:</p>
+          <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+            <li><code class="font-mono text-primary">record_reference</code> <span class="badge bg-danger-subtle text-danger ms-1">Required</span>: Unique identifier or database ID</li>
+            <li><code class="font-mono text-primary">category_name</code> <span class="badge bg-danger-subtle text-danger ms-1">Required</span>: Exact name of an active Category</li>
+            <li><code class="font-mono text-primary">collection_date</code> <span class="badge bg-danger-subtle text-danger ms-1">Required</span>: ISO 8601 date format (<code>YYYY-MM-DD</code>)</li>
+            <li><code class="font-mono text-secondary">data_subject_type</code> <span class="badge bg-light text-muted ms-1 border">Optional</span>: e.g. Customer, Employee</li>
+            <li><code class="font-mono text-secondary">processor_name</code> <span class="badge bg-light text-muted ms-1 border">Optional</span>: Cloud vendor or sub-processor</li>
+            <li><code class="font-mono text-secondary">notes</code> <span class="badge bg-light text-muted ms-1 border">Optional</span>: Contextual retention notes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 bg-white animate-in">
+    <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
+      <h2 class="h5 fw-bold text-dark mb-0">Recent Import History</h2>
+    </div>
+    <div class="card-body p-0">
+      {% if not recent_jobs %}
+        <div class="empty-state py-5">
+          <i class="bi bi-clock-history empty-state-icon"></i>
+          <div class="empty-state-title">No Prior Import Jobs</div>
+          <p class="empty-state-description">Past CSV batch uploads and intake logs will appear here.</p>
+        </div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle small mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Job ID</th>
+                <th>Filename</th>
+                <th>Total</th>
+                <th>Imported</th>
+                <th>Skipped</th>
+                <th>Errors</th>
+                <th>Status</th>
+                <th class="text-end pe-3">Date (UTC)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for j in recent_jobs %}
+                <tr>
+                  <td class="font-mono text-muted">#{{ j.id }}</td>
+                  <td class="fw-semibold text-dark">{{ j.filename }}</td>
+                  <td class="font-mono">{{ j.total_rows }}</td>
+                  <td class="font-mono text-success fw-bold">{{ j.imported_rows }}</td>
+                  <td class="font-mono text-warning">{{ j.skipped_rows }}</td>
+                  <td class="font-mono text-danger">{{ j.error_rows }}</td>
+                  <td>
+                    <span class="badge bg-{{ 'success' if j.status == 'completed' else ('danger' if j.status == 'failed' else 'secondary') }}">
+                      {{ j.status | upper }}
+                    </span>
+                  </td>
+                  <td class="text-end pe-3 font-mono text-muted">{{ j.created_at }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -11,71 +11,147 @@
       </div>
       <p class="text-muted small mb-0 mt-1">Live tracking and governance of individual personal data references and statutory countdowns</p>
     </div>
-    <div class="d-flex gap-2">
-      <a href="/records/export" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-        <i class="bi bi-download"></i> Export CSV
-      </a>
+    <div class="d-flex gap-2 flex-wrap">
+      <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1" data-bs-toggle="collapse" data-bs-target="#manualIntakeCollapse" aria-expanded="false" aria-controls="manualIntakeCollapse">
+        <i class="bi bi-plus-lg"></i> Intake Record
+      </button>
       <a href="/import" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
         <i class="bi bi-upload"></i> Bulk CSV Intake
+      </a>
+      <a href="/records/export" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+        <i class="bi bi-download"></i> Export CSV
       </a>
     </div>
   </div>
 
   <!-- KPI Cards -->
   <div class="row row-cols-2 row-cols-md-6 g-2 mb-3">
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-3 bg-white h-100">
+    <div class="col animate-in animate-stagger-1">
+      <div class="card h-100 stat-card-gradient success">
         <div class="card-body py-2 px-3 text-center">
-          <div class="text-muted small" style="font-size: 0.75rem;">Active</div>
-          <div class="h4 mb-0 fw-bold text-success">{{ kpi.active or 0 }}</div>
+          <div class="stat-card-label">Active</div>
+          <div class="stat-card-value text-success" style="font-size: var(--sd-text-2xl);">{{ kpi.active or 0 }}</div>
         </div>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-3 bg-white h-100">
+    <div class="col animate-in animate-stagger-2">
+      <div class="card h-100 stat-card-gradient yellow">
         <div class="card-body py-2 px-3 text-center">
-          <div class="text-muted small" style="font-size: 0.75rem;">Due Review</div>
-          <div class="h4 mb-0 fw-bold text-warning">{{ kpi.due_review or 0 }}</div>
+          <div class="stat-card-label">Due Review</div>
+          <div class="stat-card-value text-warning" style="font-size: var(--sd-text-2xl);">{{ kpi.due_review or 0 }}</div>
         </div>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-3 bg-white h-100">
+    <div class="col animate-in animate-stagger-3">
+      <div class="card h-100 stat-card-gradient danger">
         <div class="card-body py-2 px-3 text-center">
-          <div class="text-muted small" style="font-size: 0.75rem;">Overdue</div>
-          <div class="h4 mb-0 fw-bold text-danger">{{ kpi.overdue or 0 }}</div>
+          <div class="stat-card-label">Overdue</div>
+          <div class="stat-card-value text-danger" style="font-size: var(--sd-text-2xl);">{{ kpi.overdue or 0 }}</div>
         </div>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-3 bg-white h-100">
+    <div class="col animate-in animate-stagger-4">
+      <div class="card h-100 stat-card-gradient info">
         <div class="card-body py-2 px-3 text-center">
-          <div class="text-muted small" style="font-size: 0.75rem;">On Hold</div>
-          <div class="h4 mb-0 fw-bold text-primary">{{ kpi.on_hold or 0 }}</div>
+          <div class="stat-card-label">On Hold</div>
+          <div class="stat-card-value" style="font-size: var(--sd-text-2xl); color: var(--sd-info);">{{ kpi.on_hold or 0 }}</div>
         </div>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-3 bg-white h-100">
+    <div class="col animate-in animate-stagger-5">
+      <div class="card h-100 stat-card-gradient teal">
         <div class="card-body py-2 px-3 text-center">
-          <div class="text-muted small" style="font-size: 0.75rem;">Awaiting Approval</div>
-          <div class="h4 mb-0 fw-bold text-info">{{ kpi.awaiting_approval or 0 }}</div>
+          <div class="stat-card-label">Awaiting Approval</div>
+          <div class="stat-card-value" style="font-size: var(--sd-text-2xl); color: var(--sd-teal);">{{ kpi.awaiting_approval or 0 }}</div>
         </div>
       </div>
     </div>
-    <div class="col">
-      <div class="card shadow-sm border-0 rounded-3 bg-white h-100">
+    <div class="col animate-in animate-stagger-6">
+      <div class="card h-100 stat-card-gradient secondary">
         <div class="card-body py-2 px-3 text-center">
-          <div class="text-muted small" style="font-size: 0.75rem;">Disposed (mo)</div>
-          <div class="h4 mb-0 fw-bold text-secondary">{{ kpi.disposed_month or 0 }}</div>
+          <div class="stat-card-label">Disposed (mo)</div>
+          <div class="stat-card-value" style="font-size: var(--sd-text-2xl);">{{ kpi.disposed_month or 0 }}</div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Collapsible Manual Intake Form (Full Width) -->
+  <div class="collapse mb-3" id="manualIntakeCollapse">
+    <div class="card shadow-sm border-0 rounded-4 bg-white">
+      <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-plus-circle text-primary me-2"></i>Manual Record Intake</h2>
+          <span class="small text-muted">Register an individual personal data reference into the statutory retention schedule</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-toggle="collapse" data-bs-target="#manualIntakeCollapse" aria-label="Close intake"></button>
+      </div>
+      <div class="card-body p-4">
+        {% if user_role == 'data_owner' %}
+          <div class="alert alert-info py-2 small rounded-3 mb-3">
+            <i class="bi bi-info-circle me-1"></i> As a Data Owner you may register records in your assigned categories. Your DPO is notified automatically. Collection date is set to today.
+          </div>
+        {% endif %}
+        <form method="POST" action="/records/create">
+          {{ csrf_field | safe }}
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">Data Category *</label>
+              <select name="category_id" id="category_id" class="form-select form-select-sm" required>
+                <option value="">Select category…</option>
+                {% for cat in categories %}
+                  <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.compliance_framework }})</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">Record Reference / Unique ID *</label>
+              <input type="text" name="record_reference" class="form-control form-control-sm" required placeholder="e.g. USER-40291, INV-2026-09">
+              <div class="small text-muted" style="font-size: 0.7rem; margin-top: 2px;">Reference identifier in your internal database or cloud system.</div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">Data Subject Type</label>
+              <input type="text" name="data_subject_type" class="form-control form-control-sm" placeholder="e.g. Customer, Employee, Contractor">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">Third-Party Processor (Optional)</label>
+              <input type="text" name="processor_name" class="form-control form-control-sm" placeholder="e.g. AWS, Salesforce (or leave blank for category default)">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">Collection Date | Retention Start Date *</label>
+              {% if user_role == 'data_owner' %}
+                <input type="text" class="form-control form-control-sm text-muted bg-light" value="{{ today_str }} (today)" disabled>
+                <input type="hidden" name="collection_date" value="{{ today_str }}">
+              {% else %}
+                <input type="date" name="collection_date" class="form-control form-control-sm" required value="{{ today_str }}">
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">Context Notes</label>
+              <textarea name="notes" class="form-control form-control-sm" rows="1" placeholder="Record context notes (no personal data)..."></textarea>
+              <div class="form-text small text-warning" style="font-size: 0.7rem; margin-top: 2px;">
+                <i class="bi bi-shield-lock-fill me-1"></i><strong>Zero-Knowledge:</strong> No personal identity data.
+              </div>
+            </div>
+
+            <div class="col-12 d-flex justify-content-end gap-2 pt-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#manualIntakeCollapse">Cancel</button>
+              <button type="submit" class="btn btn-primary btn-sm fw-bold px-4">Register Intake Record</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Records Register List & Filters (Full Width) -->
   <div class="row g-3">
-    <!-- Left Side: Records List with Filters -->
-    <div class="col-lg-8">
+    <div class="col-12">
       <form class="card shadow-sm border-0 rounded-4 bg-white mb-3" method="get" action="/records">
         <div class="card-body row g-2 align-items-end p-3">
           <div class="col-md-4">
@@ -108,7 +184,7 @@
       </form>
 
       <div class="card shadow-sm border-0 rounded-4 bg-white">
-        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3 px-4">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3 px-4 flex-wrap gap-2">
           <span class="fw-bold text-dark mb-0" style="font-size:0.9rem;">Records Inventory ({{ total_count }} total)</span>
           {% if total_pages > 1 %}
           <nav>
@@ -151,16 +227,16 @@
             <table class="table table-hover mb-0 align-middle small">
               <thead class="table-light">
                 <tr>
-                  <th style="width: 36px;" class="ps-3">
+                  <th style="width: 36px;" class="ps-3 text-nowrap">
                     <input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="Select all visible">
                   </th>
-                  <th>Reference</th>
-                  <th>Category</th>
-                  <th>Role / Processor</th>
-                  <th>Collected At</th>
-                  <th>Retention End</th>
-                  <th>Status</th>
-                  <th class="text-end pe-3">Actions</th>
+                  <th class="text-nowrap" style="min-width: 140px;">Reference</th>
+                  <th class="text-nowrap" style="min-width: 160px;">Category</th>
+                  <th class="text-nowrap" style="min-width: 130px;">Role / Processor</th>
+                  <th class="text-nowrap" style="min-width: 110px;">Collected At</th>
+                  <th class="text-nowrap" style="min-width: 130px;">Retention End</th>
+                  <th class="text-nowrap" style="min-width: 110px;">Status</th>
+                  <th class="text-end pe-3 text-nowrap" style="width: 80px;">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -175,23 +251,23 @@
                     {% endif %}
                   </td>
                   <td>
-                    <a href="/records/view/{{ rec.id }}" class="fw-bold text-dark text-decoration-none">{{ rec.record_reference }}</a>
+                    <a href="/records/view/{{ rec.id }}" class="fw-bold text-dark text-decoration-none font-mono break-words">{{ rec.record_reference }}</a>
                     {% if rec.created_by_owner %}
                       <span class="ms-1" title="Added by Data Owner">👤</span>
                     {% endif %}
                   </td>
                   <td>
-                    <span class="badge bg-light text-dark border">{{ rec.category.name if rec.category else 'Unassigned' }}</span>
+                    <span class="badge bg-light text-dark border break-words text-start">{{ rec.category.name if rec.category else 'Unassigned' }}</span>
                   </td>
                   <td>
                     {% if rec.processor_name %}
-                      <span class="badge bg-light text-dark border">{{ rec.processor_name }}</span>
+                      <span class="badge bg-light text-dark border break-words text-start">{{ rec.processor_name }}</span>
                     {% else %}
                       <span class="badge bg-light-subtle text-muted">Internal</span>
                     {% endif %}
                   </td>
-                  <td>{{ rec.collection_date }}</td>
-                  <td>
+                  <td class="font-mono">{{ rec.collection_date }}</td>
+                  <td class="font-mono">
                     {% if rec.retention_end_date %}
                       <span class="{{ 'text-danger fw-bold' if is_expired and rec.status != 'disposed' else '' }}">{{ rec.retention_end_date }}</span>
                     {% else %}
@@ -221,9 +297,13 @@
                 </tr>
                 {% else %}
                 <tr>
-                  <td colspan="8" class="text-center py-5 text-muted">
-                    <i class="bi bi-file-earmark-lock fs-1 d-block mb-3 opacity-50"></i>
-                    No matching records in inventory.
+                  <td colspan="8" class="p-0">
+                    <div class="empty-state py-5">
+                      <i class="bi bi-file-earmark-lock empty-state-icon"></i>
+                      <div class="empty-state-title">No Matching Records</div>
+                      <p class="empty-state-description">No records match the current filter or search criteria. Try clearing filters or intake a new record.</p>
+                      <a href="/records" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+                    </div>
                   </td>
                 </tr>
                 {% endfor %}
@@ -233,71 +313,13 @@
         </div>
       </div>
     </div>
-
-    <!-- Right Side: Manual Intake Form -->
-    <div class="col-lg-4">
-      <div class="card shadow-sm border-0 rounded-4 bg-white">
-        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 fw-bold">Manual Record Intake</div>
-        <div class="card-body p-4">
-          {% if user_role == 'data_owner' %}
-            <div class="alert alert-info py-2 small rounded-3">
-              As a Data Owner you may register records in your assigned categories. Your DPO is notified automatically. Collection date is set to today.
-            </div>
-          {% endif %}
-          <form method="POST" action="/records/create">
-            {{ csrf_field | safe }}
-            <div class="mb-3">
-              <label class="form-label small fw-bold text-muted">Data Category *</label>
-              <select name="category_id" id="category_id" class="form-select form-select-sm" required>
-                <option value="">Select category…</option>
-                {% for cat in categories %}
-                  <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.compliance_framework }})</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label small fw-bold text-muted">Record Reference / Unique ID *</label>
-              <input type="text" name="record_reference" class="form-control form-control-sm" required placeholder="e.g. USER-40291, INV-2026-09">
-              <div class="small text-muted" style="font-size: 0.7rem; margin-top: 2px;">Reference identifier in your internal database or cloud system.</div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label small fw-bold text-muted">Data Subject Type</label>
-              <input type="text" name="data_subject_type" class="form-control form-control-sm" placeholder="e.g. Customer, Employee, Contractor">
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label small fw-bold text-muted">Third-Party Processor (Optional)</label>
-              <input type="text" name="processor_name" class="form-control form-control-sm" placeholder="e.g. AWS, Salesforce (or leave blank for category default)">
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label small fw-bold text-muted">Collection Date *</label>
-              {% if user_role == 'data_owner' %}
-                <input type="text" class="form-control form-control-sm text-muted bg-light" value="{{ today_str }} (today)" disabled>
-                <input type="hidden" name="collection_date" value="{{ today_str }}">
-              {% else %}
-                <input type="date" name="collection_date" class="form-control form-control-sm" required value="{{ today_str }}">
-              {% endif %}
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label small fw-bold text-muted">Notes</label>
-              <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="Record context notes..."></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100 fw-bold btn-sm">Register Intake Record</button>
-          </form>
-        </div>
-      </div>
-    </div>
+  </div>
   </div>
 
 </div>
 
 <!-- Bulk Safe Disposal Step-Up Re-Authentication Modal -->
-<div class="modal fade" id="bulkStepUpModal" tabindex="-1" aria-labelledby="bulkStepUpModalLabel" aria-hidden="true">
+<div class="modal fade modal-destructive" id="bulkStepUpModal" tabindex="-1" aria-labelledby="bulkStepUpModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow">
       <div class="modal-header border-0 pb-0">
@@ -312,8 +334,8 @@
         <input type="hidden" name="return_url" value="/records">
         
         <div class="modal-body pt-3 pb-2">
-          <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 rounded-3 py-2 small mb-3">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> You are about to permanently purge <strong id="modalSelectedCount">0</strong> selected data records.
+          <div class="alert alert-danger py-2 small mb-3">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> You are about to permanently and irreversibly purge <strong id="modalSelectedCount">0</strong> data records.
           </div>
           <p class="small text-muted mb-3">
             This action generates individual cryptographic SHA-256 destruction certificates and dispatches real-time outbound deletion webhooks to connected cloud databases.

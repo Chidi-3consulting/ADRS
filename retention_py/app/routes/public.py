@@ -174,8 +174,9 @@ def handle_2fa(
         clear_session(redir)
         return redir
 
+    from app.auth import decrypt_totp_secret
     ok = False
-    if totp_verify(user.twofa_secret, code):
+    if totp_verify(decrypt_totp_secret(user.twofa_secret), code):
         ok = True
     else:
         # Try recovery codes
@@ -494,11 +495,54 @@ def handle_register(
     # Gap 3: Record initial password in history
     record_password_history(db, user.id, pwd)
 
+    # ── Automatic welcome email (sent by 3Consulting's platform SMTP) ──
+    # Runs in a background thread so it never delays the redirect.
+    def _send_welcome(to: str, name: str, org: str, country: str):
+        from app.helpers import send_system_email
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e;">
+          <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:32px 40px;border-radius:12px 12px 0 0;">
+            <h1 style="color:#fff;margin:0;font-size:24px;">Welcome to SafeData 🎉</h1>
+            <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;">Your organisation is ready for compliance governance.</p>
+          </div>
+          <div style="background:#fff;padding:32px 40px;border:1px solid #e8e8f0;border-top:none;border-radius:0 0 12px 12px;">
+            <p style="font-size:16px;">Hi <strong>{name}</strong>,</p>
+            <p>Your organisation <strong>{org}</strong> has been successfully registered on SafeData — the data retention &amp; governance platform by <strong>3Consulting</strong>.</p>
+            <p>Here's what to do next:</p>
+            <ol style="line-height:1.8;color:#444;">
+              <li>Log in and complete your <strong>compliance setup checklist</strong> on the dashboard</li>
+              <li>Review your auto-provisioned <strong>data categories</strong> for {country}</li>
+              <li>Add your team members under <strong>Settings → Users</strong></li>
+              <li>Import or create your first <strong>data records</strong></li>
+            </ol>
+            <div style="background:#f0f4ff;border-left:4px solid #667eea;padding:16px 20px;border-radius:6px;margin:24px 0;">
+              <p style="margin:0;font-size:14px;color:#444;">
+                Your 14-day free trial is now active. Our team will be in touch with guidance.<br>
+                Need help? Reply to this email — we're here for you.
+              </p>
+            </div>
+            <p style="color:#888;font-size:13px;margin-top:32px;">
+              — The SafeData Team, 3Consulting Limited<br>
+              <a href="https://safedata.3consulting.com" style="color:#667eea;">safedata.3consulting.com</a>
+            </p>
+          </div>
+        </div>
+        """
+        send_system_email(None, to, f"Welcome to SafeData — {org} is ready!", html)
+
+    import threading
+    threading.Thread(
+        target=_send_welcome,
+        args=(email, user_name, org_name, country),
+        daemon=True
+    ).start()
+
     session_data = build_session_data(user, org)
 
     redir = RedirectResponse(url="/dashboard", status_code=303)
     set_session(redir, session_data)
     return redir
+
 
 
 @router.get("/logout")

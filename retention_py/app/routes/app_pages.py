@@ -23,7 +23,7 @@ from app.models import (
     IntakeQueue, DisposalDispatch, IntegrationLog, WebhookEndpoint,
     AutoCategorizationRule, FieldMapping, OrganizationInvitation
 )
-from app.auth import get_session, hash_password, set_session
+from app.auth import get_session, hash_password, set_session, encrypt_totp_secret, decrypt_totp_secret
 from app.helpers import get_country_regulation_labels, get_framework_badge, send_system_email, log_audit
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
@@ -482,18 +482,9 @@ SETTINGS_SECTIONS = {
             "consent_disposal_days": {"label": "Post-Consent Withdrawal Days", "type": "number", "placeholder": "30"},
         }
     },
-    "email": {
-        "label": "Email / SMTP",
-        "description": "Configure SMTP for retention alerts and notifications.",
-        "keys": {
-            "smtp_host": {"label": "SMTP Host", "type": "text", "placeholder": "mail.yourdomain.com"},
-            "smtp_port": {"label": "SMTP Port", "type": "number", "placeholder": "587"},
-            "smtp_user": {"label": "SMTP Username", "type": "text", "placeholder": ""},
-            "smtp_pass": {"label": "SMTP Password", "type": "password", "placeholder": ""},
-            "smtp_from_name": {"label": "Sender Name", "type": "text", "placeholder": "SafeData Notifications"},
-            "smtp_from_email": {"label": "Sender Email", "type": "text", "placeholder": "no-reply@yourdomain.com"},
-        }
-    },
+    # Email/SMTP is a platform infrastructure setting owned by 3Consulting.
+    # It is configured via environment variables on the hosting platform (Render),
+    # NOT stored in or exposed through the application UI.
     "notifications": {
         "label": "Notification Rules",
         "description": "Control which events trigger alerts.",
@@ -674,7 +665,7 @@ async def save_settings_post(request: Request, db: Session = Depends(get_db)):
             import json
             rc = generate_recovery_codes(8)
             user.twofa_enabled = True
-            user.twofa_secret = setup_secret
+            user.twofa_secret = encrypt_totp_secret(setup_secret)
             user.twofa_recovery = json.dumps(rc["hashed"])
             db.commit()
 

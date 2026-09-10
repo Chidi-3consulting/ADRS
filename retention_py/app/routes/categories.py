@@ -153,6 +153,8 @@ def handle_create_category(
     processor_contact: str = Form(""),
     dpa_reference: str = Form(""),
     processor_retention_status: str = Form("compliant"),
+    data_classification: str = Form("standard"),
+    approval_type: str = Form("single_approval"),
     requires_dual_approval: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
@@ -166,7 +168,15 @@ def handle_create_category(
     frameworks = get_country_regulations(country)
     framework_string = ",".join(frameworks)
 
-    dual_bool = bool(requires_dual_approval and str(requires_dual_approval).lower() in ("on", "true", "1"))
+    # Enforce classification rules:
+    if data_classification in ("special_category", "children"):
+        approval_type = "dual_approval"
+    elif data_classification in ("confidential", "financial_aml") and approval_type == "auto_disposal":
+        approval_type = "single_approval"
+
+    dual_bool = (approval_type == "dual_approval") or bool(requires_dual_approval and str(requires_dual_approval).lower() in ("on", "true", "1"))
+    if dual_bool:
+        approval_type = "dual_approval"
 
     new_cat = DataCategory(
         organization_id=org_id,
@@ -179,6 +189,8 @@ def handle_create_category(
         retention_period_label=retention_period_label,
         disposal_method=disposal_method,
         disposal_trigger=disposal_trigger,
+        data_classification=data_classification,
+        approval_type=approval_type,
         requires_dual_approval=dual_bool,
         review_frequency=review_frequency,
         processing_role=processing_role,
@@ -244,6 +256,8 @@ def handle_edit_category(
     processor_contact: str = Form(""),
     dpa_reference: str = Form(""),
     processor_retention_status: str = Form("compliant"),
+    data_classification: str = Form("standard"),
+    approval_type: str = Form("single_approval"),
     requires_dual_approval: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
@@ -261,7 +275,15 @@ def handle_edit_category(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    dual_bool = bool(requires_dual_approval and str(requires_dual_approval).lower() in ("on", "true", "1"))
+    # Enforce classification rules:
+    if data_classification in ("special_category", "children"):
+        approval_type = "dual_approval"
+    elif data_classification in ("confidential", "financial_aml") and approval_type == "auto_disposal":
+        approval_type = "single_approval"
+
+    dual_bool = (approval_type == "dual_approval") or bool(requires_dual_approval and str(requires_dual_approval).lower() in ("on", "true", "1"))
+    if dual_bool:
+        approval_type = "dual_approval"
 
     category.name = name
     category.description = description
@@ -277,6 +299,8 @@ def handle_edit_category(
     category.processor_contact = processor_contact.strip() or None
     category.dpa_reference = dpa_reference.strip() or None
     category.processor_retention_status = processor_retention_status or "compliant"
+    category.data_classification = data_classification
+    category.approval_type = approval_type
     category.requires_dual_approval = dual_bool
 
     db.commit()

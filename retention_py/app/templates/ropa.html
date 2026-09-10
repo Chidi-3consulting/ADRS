@@ -57,9 +57,15 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="7" class="text-center py-5 text-muted">
-              <i class="bi bi-clipboard-data fs-1 d-block mb-3 opacity-50"></i>
-              No ROPA entries yet. Create your first processing activity record.
+            <td colspan="7" class="p-0">
+              <div class="empty-state py-5">
+                <i class="bi bi-clipboard-data empty-state-icon"></i>
+                <div class="empty-state-title">No ROPA Entries Configured</div>
+                <p class="empty-state-description">Maintain Article 30 Records of Processing Activities documentation for all personal data operations.</p>
+                {% if user_role in ['admin', 'dpo'] %}
+                  <a href="/ropa/create" class="btn btn-primary btn-sm">Create First ROPA Entry</a>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% endfor %}

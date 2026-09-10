@@ -6,7 +6,7 @@ import os
 from datetime import date
 
 from app.database import get_db
-from app.models import DataRecord, SystemSetting
+from app.models import DataRecord
 from app.auth import get_session
 from app.helpers import get_country_regulation_labels, get_framework_badge
 from app.engine import (
@@ -48,11 +48,9 @@ def view_dashboard(request: Request, db: Session = Depends(get_db)):
         else:
             checklist = None  # hide when fully completed
 
-    # Fetch SMTP status warnings
-    smtp_host = db.query(SystemSetting).filter(SystemSetting.setting_key == "smtp_host").first()
-    smtp_warning = not smtp_host or smtp_host.setting_value == "mail.yourdomain.com" or smtp_host.setting_value == ""
 
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
+
 
     return templates.TemplateResponse(request=request, name="dashboard.html", context={
         "page_title": "Compliance Dashboard",
@@ -70,7 +68,6 @@ def view_dashboard(request: Request, db: Session = Depends(get_db)):
         "upcoming_deadlines": deadlines,
         "disposal_chart": disposal_chart,
         "onboarding": checklist,
-        "smtp_warning": smtp_warning
     })
 
 

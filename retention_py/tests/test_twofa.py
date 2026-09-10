@@ -65,3 +65,23 @@ def test_consume_recovery_code():
 
     # Invalid code
     assert consume_recovery_code(result["hashed"], "INVALID-CODE") is None
+
+
+def test_totp_secret_encryption_at_rest():
+    """Secrets must be encrypted with Fernet and decryptable to original base32."""
+    from app.auth import encrypt_totp_secret, decrypt_totp_secret
+
+    plain_secret = totp_generate_secret()
+    encrypted = encrypt_totp_secret(plain_secret)
+
+    # Must be encrypted (Fernet format starts with gAAAAA)
+    assert encrypted != plain_secret
+    assert encrypted.startswith("gAAAAA")
+
+    # Decrypt must recover the exact plaintext
+    decrypted = decrypt_totp_secret(encrypted)
+    assert decrypted == plain_secret
+
+    # Backward compatibility with unencrypted legacy base32 secrets
+    assert decrypt_totp_secret(plain_secret) == plain_secret
+

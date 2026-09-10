@@ -89,3 +89,18 @@ COOKIE_SAMESITE = "lax"
 # ── Backup ──
 BACKUP_PATH = os.path.join(BASE_DIR, "storage", "backups")
 os.makedirs(BACKUP_PATH, exist_ok=True)
+
+# ── Platform Email (SMTP) ──
+# Owned by 3Consulting as the platform operator.
+# Set these as environment variables on Render — never stored in the app DB.
+# Clients never see or configure these; emails are sent on their behalf automatically.
+SMTP_HOST     = os.getenv("SMTP_HOST", "")
+SMTP_PORT     = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER     = os.getenv("SMTP_USER", "")
+SMTP_PASS     = os.getenv("SMTP_PASS", "")
+SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", "noreply@3consulting.com")
+SMTP_FROM_NAME  = os.getenv("SMTP_FROM_NAME", "SafeData by 3Consulting")
+SMTP_SECURE   = os.getenv("SMTP_SECURE", "tls")  # 'tls' | 'ssl' | 'none'
+# Reply-To address — clients can reply to support without exposing noreply@
+# Set to your support/team email, e.g. support@3consulting.com
+SMTP_REPLY_TO = os.getenv("SMTP_REPLY_TO", "")

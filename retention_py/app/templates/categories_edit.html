@@ -90,7 +90,7 @@
           <div class="col-md-6">
             <label class="form-label small fw-bold text-muted">Disposal Trigger *</label>
             <select name="disposal_trigger" class="form-select" required>
-              <option value="date_based" {{ 'selected' if category.disposal_trigger == 'date_based' else '' }}>Date-based — countdown from collection date</option>
+              <option value="date_based" {{ 'selected' if category.disposal_trigger == 'date_based' else '' }}>Date-based — countdown from Collection Date | Retention Start Date</option>
               <option value="consent_withdrawal" {{ 'selected' if category.disposal_trigger == 'consent_withdrawal' else '' }}>Consent withdrawal — countdown begins when subject withdraws</option>
             </select>
           </div>
@@ -126,17 +126,37 @@
           </div>
         </div>
 
-        <div class="form-check p-3 bg-light rounded-3 border mb-4">
-          <input class="form-check-input ms-0 me-2" type="checkbox" name="requires_dual_approval" id="requires_dual_approval" {{ 'checked' if category.requires_dual_approval else '' }}>
-          <label class="form-check-label fw-bold text-dark" for="requires_dual_approval">
-            Enable Four-Eyes (Dual-Approval) Safeguard
-          </label>
-          <div class="small text-muted ms-4">
-            Requires two distinct authorized users (DPO and Admin) to sign off before any record in this category can be permanently purged.
+        <hr class="my-4 text-muted opacity-25">
+
+        <!-- 4. Data Classification & Approval Governance -->
+        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-shield-check text-primary me-2"></i> 4. Data Classification & Approval Governance</h2>
+        
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Data Classification / Sensitivity *</label>
+            <select name="data_classification" id="data_classification" class="form-select" required>
+              <option value="standard" {{ 'selected' if category.data_classification == 'standard' else '' }}>Standard Operational Data (Marketing, Webinars, Enquiries, General)</option>
+              <option value="confidential" {{ 'selected' if category.data_classification == 'confidential' else '' }}>Confidential / Commercial / HR Data (Contracts, Employee Files)</option>
+              <option value="financial_aml" {{ 'selected' if category.data_classification == 'financial_aml' else '' }}>Financial, Tax & Banking Data (Invoices, KYC, AML Statutory)</option>
+              <option value="special_category" {{ 'selected' if category.data_classification == 'special_category' else '' }}>Special Category / Sensitive Personal Data (Health, Biometrics, Religious)</option>
+              <option value="children" {{ 'selected' if category.data_classification == 'children' else '' }}>Children's / Minors' Data (Under 13/18 Years)</option>
+            </select>
+            <div class="form-text small" id="classification_hint">Standard data supports automated disposal, single approval, or dual approval.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Approval Governance Tier *</label>
+            <select name="approval_type" id="approval_type" class="form-select" required>
+              <option value="auto_disposal" {{ 'selected' if category.approval_type == 'auto_disposal' else '' }}>⚡ Auto-Disposal (Fully automated hands-free sanitization upon expiry)</option>
+              <option value="single_approval" {{ 'selected' if category.approval_type == 'single_approval' else '' }}>👤 Single Approval (Requires 1 authorized DPO/Admin sign-off)</option>
+              <option value="dual_approval" {{ 'selected' if category.approval_type == 'dual_approval' else '' }}>👥 Dual Approval (Four-Eyes: Requires 2 independent sign-offs)</option>
+            </select>
+            <div class="form-text small" id="approval_hint">Controls whether destruction happens automatically or requires human review.</div>
           </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <input type="hidden" name="requires_dual_approval" id="requires_dual_approval" value="{{ '1' if category.requires_dual_approval else '0' }}">
+
+        <div class="d-flex gap-2 mt-4">
           <button type="submit" class="btn btn-primary px-4">Save Policy Changes</button>
           <a href="/categories/view/{{ category.id }}" class="btn btn-outline-secondary">Cancel</a>
         </div>
@@ -145,4 +165,51 @@
   </div>
 
 </div>
+
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+  const classSelect = document.getElementById('data_classification');
+  const appSelect = document.getElementById('approval_type');
+  const dualHidden = document.getElementById('requires_dual_approval');
+  const classHint = document.getElementById('classification_hint');
+  const appHint = document.getElementById('approval_hint');
+
+  function updateGovernance() {
+    const val = classSelect.value;
+    const autoOpt = appSelect.querySelector('option[value="auto_disposal"]');
+    const singleOpt = appSelect.querySelector('option[value="single_approval"]');
+    const dualOpt = appSelect.querySelector('option[value="dual_approval"]');
+
+    if (val === 'special_category' || val === 'children') {
+      autoOpt.disabled = true;
+      singleOpt.disabled = true;
+      dualOpt.disabled = false;
+      appSelect.value = 'dual_approval';
+      classHint.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-lock-fill"></i> High-risk / Special Category data strictly enforces Four-Eyes (Dual Approval).</span>';
+      appHint.textContent = 'Locked to Dual Approval under GDPR Art. 9 / NDPA safeguards.';
+    } else if (val === 'confidential' || val === 'financial_aml') {
+      autoOpt.disabled = true;
+      singleOpt.disabled = false;
+      dualOpt.disabled = false;
+      if (appSelect.value === 'auto_disposal') appSelect.value = 'single_approval';
+      classHint.innerHTML = '<span class="text-warning text-dark fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> Statutory & financial records require human review before disposal.</span>';
+      appHint.textContent = 'Auto-Disposal disabled. Single or Dual approval allowed.';
+    } else {
+      // standard operational
+      autoOpt.disabled = false;
+      singleOpt.disabled = false;
+      dualOpt.disabled = false;
+      classHint.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Standard operational data supports Auto-Disposal, Single Approval, or Dual Approval.</span>';
+      appHint.textContent = 'Select your desired governance policy for this category.';
+    }
+    dualHidden.value = (appSelect.value === 'dual_approval') ? '1' : '0';
+  }
+
+  classSelect.addEventListener('change', updateGovernance);
+  appSelect.addEventListener('change', function() {
+    dualHidden.value = (appSelect.value === 'dual_approval') ? '1' : '0';
+  });
+  updateGovernance();
+});
+</script>
 {% endblock %}

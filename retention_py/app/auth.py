@@ -18,8 +18,36 @@ from app.config import (
     LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MINUTES, PASSWORD_MIN_LENGTH,
     PASSWORD_HISTORY_COUNT, IS_TEST,
 )
+import base64
+import hashlib
+from cryptography.fernet import Fernet
 
 serializer = URLSafeSerializer(SECRET_KEY, salt="SafeData-session-salt")
+
+# ── TOTP Secret Encryption at Rest (AES-128-CBC + HMAC-SHA256) ──
+
+def _get_totp_fernet_key() -> bytes:
+    digest = hashlib.sha256(f"SafeData_TOTP_KEY_{SECRET_KEY}".encode()).digest()
+    return base64.urlsafe_b64encode(digest)
+
+def encrypt_totp_secret(secret_b32: str) -> str:
+    """Encrypt TOTP secret at rest using Fernet."""
+    if not secret_b32:
+        return ""
+    f = Fernet(_get_totp_fernet_key())
+    return f.encrypt(secret_b32.strip().encode()).decode()
+
+def decrypt_totp_secret(stored_secret: str) -> str:
+    """Decrypt TOTP secret. Backward-compatible with plaintext base32 secrets."""
+    if not stored_secret:
+        return ""
+    if not stored_secret.startswith("gAAAAA"):
+        return stored_secret
+    try:
+        f = Fernet(_get_totp_fernet_key())
+        return f.decrypt(stored_secret.encode()).decode()
+    except Exception:
+        return stored_secret
 
 
 # ── Password Hashing (bcrypt) ──
@@ -370,7 +398,7 @@ def verify_stepup_authentication(db: Session, user_id: int, auth_credential: str
 
     # 1. If user has 2FA enabled, check TOTP code or recovery code first
     if user.twofa_enabled and user.twofa_secret:
-        if totp_verify(user.twofa_secret, cred):
+        if totp_verify(decrypt_totp_secret(user.twofa_secret), cred):
             return True, "OK"
         if user.twofa_recovery:
             try:

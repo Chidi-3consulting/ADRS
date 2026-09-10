@@ -449,7 +449,11 @@ def queue_disposal_dispatch(db: Session, record_id: int, method: str, org_id: in
             dispatch_type=method,
             external_ref=record.record_reference,
             endpoint_url=endpoint,
-            payload=json.dumps({"action": method, "external_ref": record.record_reference}),
+            payload=json.dumps({
+                "action": method,
+                "record_reference": record.record_reference,
+                "external_ref": record.record_reference
+            }),
             status="pending",
         )
         db.add(dispatch)
@@ -511,12 +515,43 @@ def process_disposal_dispatches(db: Session, limit: int = 50) -> dict:
                 d.response_body = resp.text[:2000]
                 d.sent_at = datetime.utcnow()
                 failed += 1
+                if d.status == "failed":
+                    from app.engine import notify_role
+                    sys_name = system.name if system else "Connected System"
+                    notify_role(
+                        db, d.organization_id, ["admin", "dpo"], "webhook_failure",
+                        "Disposal Webhook Delivery Failure",
+                        f"Outbound disposal webhook for record #{d.record_id} ({d.external_ref}) to '{sys_name}' has failed after {d.attempts} attempts.",
+                        related_record_id=d.record_id
+                    )
+                    log_audit(db, d.organization_id, "disposal_dispatch_failed", "data_record", d.record_id, None, {
+                        "system": sys_name,
+                        "endpoint": d.endpoint_url,
+                        "attempts": d.attempts,
+                        "response_code": code
+                    }, "127.0.0.1")
         except Exception as e:
             d.attempts = (d.attempts or 0) + 1
             d.status = "failed" if d.attempts >= retry_limit else "pending"
             d.response_body = str(e)[:2000]
             d.sent_at = datetime.utcnow()
             failed += 1
+            if d.status == "failed":
+                from app.engine import notify_role
+                system = db.query(ConnectedSystem).filter(ConnectedSystem.id == d.system_id).first()
+                sys_name = system.name if system else "Connected System"
+                notify_role(
+                    db, d.organization_id, ["admin", "dpo"], "webhook_failure",
+                    "Disposal Webhook Delivery Failure",
+                    f"Outbound disposal webhook for record #{d.record_id} ({d.external_ref}) to '{sys_name}' encountered an exception after {d.attempts} attempts: {str(e)[:150]}",
+                    related_record_id=d.record_id
+                )
+                log_audit(db, d.organization_id, "disposal_dispatch_failed", "data_record", d.record_id, None, {
+                    "system": sys_name,
+                    "endpoint": d.endpoint_url,
+                    "attempts": d.attempts,
+                    "error": str(e)[:200]
+                }, "127.0.0.1")
 
         db.commit()
 

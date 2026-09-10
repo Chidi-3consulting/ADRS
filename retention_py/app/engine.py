@@ -76,18 +76,93 @@ def notify_role(
     db: Session, org_id: int, roles: list, notif_type: str,
     subject: str, message: str, related_record_id: int = None,
 ) -> int:
-    """Notify every active user holding any of the given roles. Returns count."""
+    """
+    Notify every active user holding any of the given roles with an in-app
+    notification. For critical event types, also sends an email to each user
+    so they don't miss it even if they haven't logged in.
+
+    Critical types that trigger email:
+        escalation_alert, disposal_approval_needed, security_alert, quarterly_review
+    """
+    # Critical types that warrant an email — not just an in-app bell
+    EMAIL_TYPES = {
+        "escalation_alert",
+        "disposal_approval_needed",
+        "security_alert",
+        "quarterly_review",
+    }
+
     users = db.query(User).filter(
         User.organization_id == org_id,
         User.is_active == True,
         User.deleted_at == None,
         User.role.in_(roles),
     ).all()
+
     count = 0
     for u in users:
         create_notification(db, org_id, u.id, notif_type, subject, message, related_record_id)
         count += 1
+
+        # ── Email for critical events ──
+        if notif_type in EMAIL_TYPES and u.email:
+            _send_event_email(u.email, u.name, subject, message, notif_type)
+
     return count
+
+
+def _send_event_email(to_email: str, user_name: str, subject: str, message: str, notif_type: str):
+    """
+    Fire a compliance alert email in a background thread.
+    Called by notify_role() for critical event types only.
+    """
+    import threading
+
+    def _send():
+        from app.helpers import send_system_email
+
+        # Colour-code the alert bar by type
+        accent = {
+            "escalation_alert":       "#ef4444",   # red
+            "disposal_approval_needed": "#f59e0b", # amber
+            "security_alert":         "#7c3aed",   # purple
+            "quarterly_review":       "#3b82f6",   # blue
+        }.get(notif_type, "#667eea")
+
+        label = {
+            "escalation_alert":       "🚨 Escalation Alert",
+            "disposal_approval_needed": "⏳ Approval Required",
+            "security_alert":         "🔐 Security Alert",
+            "quarterly_review":       "📋 Quarterly Review",
+        }.get(notif_type, "📌 SafeData Notification")
+
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e;">
+          <div style="background:{accent};padding:24px 32px;border-radius:12px 12px 0 0;">
+            <h1 style="color:#fff;margin:0;font-size:20px;">{label}</h1>
+          </div>
+          <div style="background:#fff;padding:28px 32px;border:1px solid #e8e8f0;
+                      border-top:none;border-radius:0 0 12px 12px;">
+            <p style="font-size:15px;">Hi <strong>{user_name}</strong>,</p>
+            <div style="background:#f8f9ff;border-left:4px solid {accent};
+                        padding:14px 18px;border-radius:6px;margin:16px 0;">
+              <p style="margin:0;font-size:14px;color:#333;">{message}</p>
+            </div>
+            <p style="font-size:14px;color:#555;">
+              Please log in to your SafeData dashboard to review and take action.
+            </p>
+            <p style="color:#aaa;font-size:12px;margin-top:28px;border-top:1px solid #eee;padding-top:16px;">
+              This is an automated compliance alert from SafeData by 3Consulting.<br>
+              You are receiving this because you hold an admin or DPO role in your organisation.
+            </p>
+          </div>
+        </div>
+        """
+        send_system_email(None, to_email, f"SafeData Alert: {subject}", html)
+
+    threading.Thread(target=_send, daemon=True).start()
+
+
 
 
 # ── Retention End Date Calculation ──
@@ -139,7 +214,11 @@ def queue_disposal_dispatch(db: Session, record_id: int, method: str):
                 external_ref=record.record_reference,
                 endpoint_url=sys.base_url,
                 status="pending",
-                payload=json.dumps({"action": method, "record_reference": record.record_reference}),
+                payload=json.dumps({
+                    "action": method,
+                    "record_reference": record.record_reference,
+                    "external_ref": record.record_reference
+                }),
             )
             db.add(dispatch)
     db.commit()
@@ -152,14 +231,30 @@ def queue_disposal_dispatch(db: Session, record_id: int, method: str):
         pass
 
 
+# ── Emergency Freeze Helper ──
+
+def is_disposal_frozen(db: Session, org_id: int = None) -> bool:
+    """
+    Check if the emergency disposal freeze is active globally or for an organization.
+    When active, all automated and manual record disposals are strictly halted.
+    """
+    if get_setting(db, "disposal_freeze", "0").lower() in ("1", "true", "yes", "on"):
+        return True
+    if org_id is not None and get_org_setting(db, org_id, "disposal_freeze", "0").lower() in ("1", "true", "yes", "on"):
+        return True
+    return False
+
+
 # ── Execute Disposal ──
 
-def execute_disposal(db: Session, record_id: int, actor_id: int = None, ip_address: str = "127.0.0.1") -> bool:
+def execute_disposal(
+    db: Session, record_id: int, actor_id: int = None,
+    ip_address: str = "127.0.0.1", dry_run: bool = False
+) -> bool:
     """
     Execute disposal of a single record. Transactional, idempotent, legal-hold-safe.
-    Uses a nested savepoint (SAVEPOINT) for atomicity and re-reads the record fresh
-    to avoid race conditions — ) + FOR UPDATE pattern.
-    Returns True if disposed now, False if skipped.
+    Supports dry_run simulation mode (returns True if eligible without mutating DB or firing webhooks).
+    Halts immediately if the Emergency Freeze switch is active.
     """
     try:
         db.begin_nested()  # SAVEPOINT for atomic disposal
@@ -175,12 +270,24 @@ def execute_disposal(db: Session, record_id: int, actor_id: int = None, ip_addre
             db.rollback()  # Release savepoint
             return False
 
+        # Emergency Freeze Guard
+        if not dry_run and is_disposal_frozen(db, record.organization_id):
+            db.rollback()
+            log_audit(db, record.organization_id, "disposal_aborted_freeze", "data_record",
+                      record.id, actor_id, {"reason": "Emergency disposal freeze is active"}, ip_address)
+            return False
+
         cat = db.query(DataCategory).filter(DataCategory.id == record.category_id).first()
         rule = db.query(CategoryRetentionRule).filter(
             CategoryRetentionRule.id == record.retention_rule_id
         ).first() if record.retention_rule_id else None
 
         method = rule.disposal_method if (rule and rule.disposal_method) else cat.disposal_method
+
+        # Dry-run simulation mode: rollback and return True without modifying data
+        if dry_run:
+            db.rollback()
+            return True
 
         _now = datetime.now(timezone.utc).replace(tzinfo=None)
         if method == "anonymise":
@@ -221,19 +328,24 @@ def execute_disposal(db: Session, record_id: int, actor_id: int = None, ip_addre
 #   Main Retention Engine
 # ═══════════════════════════════════════════════════════════════════════════
 
-def run_retention_checks(db: Session, org_id: int) -> dict:
+def run_retention_checks(db: Session, org_id: int, dry_run: bool = False) -> dict:
     """
     Orchestrate the full daily retention engine for one organisation.
+    Supports dry_run simulation and respects the emergency disposal freeze.
     Returns a summary of counts. 
     """
+    frozen = is_disposal_frozen(db, org_id)
     results = {
         "flagged": 0,
         "consent_disposed": 0,
         "auto_disposed": 0,
         "skipped_dual": 0,
+        "skipped_frozen": 0,
         "escalated": 0,
         "review_notifications": 0,
         "follow_ups": 0,
+        "disposal_frozen": frozen,
+        "dry_run": dry_run,
     }
 
     # Settings
@@ -294,8 +406,11 @@ def run_retention_checks(db: Session, org_id: int) -> dict:
         trigger = rule.disposal_trigger if (rule and rule.disposal_trigger) else cat.disposal_trigger
 
         if trigger == "consent_withdrawal":
-            if execute_disposal(db, r.id):
-                results["consent_disposed"] += 1
+            if frozen:
+                results["skipped_frozen"] += 1
+            else:
+                if execute_disposal(db, r.id, dry_run=dry_run):
+                    results["consent_disposed"] += 1
 
     # ── Step 3: Auto-dispose overdue date-based records (B5 dual-approval skip) ──
     overdue_records = db.query(DataRecord).join(
@@ -316,14 +431,25 @@ def run_retention_checks(db: Session, org_id: int) -> dict:
         ).first() if r.retention_rule_id else None
 
         trigger = rule.disposal_trigger if (rule and rule.disposal_trigger) else cat.disposal_trigger
-        requires_dual = rule.requires_dual_approval if (rule and rule.requires_dual_approval is not None) else cat.requires_dual_approval
+        app_type = getattr(cat, "approval_type", None)
+        if not app_type:
+            requires_dual = rule.requires_dual_approval if (rule and rule.requires_dual_approval is not None) else cat.requires_dual_approval
+            app_type = "dual_approval" if requires_dual else "single_approval"
 
         if trigger == "date_based":
-            if requires_dual:
+            if app_type == "auto_disposal":
+                if frozen:
+                    results["skipped_frozen"] += 1
+                else:
+                    if execute_disposal(db, r.id, dry_run=dry_run):
+                        results["auto_disposed"] += 1
+            else:
                 results["skipped_dual"] += 1
-                continue  # NEVER auto-dispose sensitive records (B5)
-            if execute_disposal(db, r.id):
-                results["auto_disposed"] += 1
+                continue
+
+    if results["skipped_frozen"] > 0:
+        log_audit(db, org_id, "disposal_aborted_freeze", "organization", org_id, None,
+                  {"skipped_frozen_records": results["skipped_frozen"]}, None)
 
     if results["skipped_dual"] > 0:
         log_audit(db, org_id, "record_flagged_review", "data_record", None, None,
@@ -549,7 +675,7 @@ def verify_audit_chain(db: Session, org_id: int = None) -> dict:
         query = query.filter(AuditLog.organization_id == org_id)
 
     rows = query.all()
-    expected_prev = "0" * 64
+    expected_prev = rows[0].prev_hash if rows and rows[0].prev_hash else ("0" * 64)
     checked = 0
 
     for r in rows:
@@ -1122,6 +1248,7 @@ def upcoming_deadlines(db: Session, org_id: int, limit: int = 15) -> list:
     for r, cat in rows:
         days_rem = (r.retention_end_date - today).days if r.retention_end_date else None
         result.append({
+            "id": r.id,
             "record_id": r.id,
             "reference": r.record_reference,
             "category": cat.name if cat else "—",
@@ -1356,16 +1483,12 @@ def verify_audit_chain(db: Session, org_id: int = None, limit: int = 5000) -> di
     """
     import hashlib as _hashlib
 
-    q = db.query(AuditLog)
-    if org_id is not None:
-        q = q.filter(AuditLog.organization_id == org_id)
-
-    # Only verify most recent `limit` entries for performance
-    all_logs = q.order_by(AuditLog.id.asc()).limit(limit).all()
+    # Walk the continuous cryptographic chain to maintain parent-child hash continuity
+    all_logs = db.query(AuditLog).order_by(AuditLog.id.asc()).limit(limit).all()
 
     chain_ok = True
     first_broken_id = None
-    prev_h = "0" * 64
+    prev_h = all_logs[0].prev_hash if all_logs and all_logs[0].prev_hash else ("0" * 64)
     verified = 0
 
     for entry in all_logs:
@@ -1407,7 +1530,8 @@ def verify_audit_chain(db: Session, org_id: int = None, limit: int = 5000) -> di
                 break
 
         prev_h = entry.row_hash
-        verified += 1
+        if org_id is None or entry.organization_id == org_id:
+            verified += 1
 
     return {
         # New structured keys (used by API endpoints and P1 fix in app_pages.py)

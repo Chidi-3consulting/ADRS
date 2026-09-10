@@ -63,6 +63,7 @@ def test_auto_disposal_standard_category(db):
         retention_period_days=30,
         disposal_method="delete",
         disposal_trigger="date_based",
+        approval_type="auto_disposal",
         requires_dual_approval=False
     )
     db.add(cat)

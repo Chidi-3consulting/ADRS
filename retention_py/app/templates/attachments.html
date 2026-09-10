@@ -55,10 +55,11 @@
           </table>
         </div>
       {% else %}
-        <div class="text-center py-5 text-muted">
-          <i class="bi bi-paperclip fs-1 d-block mb-3 opacity-50"></i>
-          <div class="fw-semibold text-dark">No Attachments Uploaded</div>
-          <p class="small text-muted mb-0">Open any record details page to upload statutory proof or DPA evidence.</p>
+        <div class="empty-state py-5">
+          <i class="bi bi-paperclip empty-state-icon"></i>
+          <div class="empty-state-title">No Attachments Uploaded</div>
+          <p class="empty-state-description">Open any record details page to attach statutory proof, DPA agreements, or compliance verification certificates.</p>
+          <a href="/records" class="btn btn-outline-secondary btn-sm">View Retention Register</a>
         </div>
       {% endif %}
     </div>

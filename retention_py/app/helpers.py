@@ -2,6 +2,7 @@ import hashlib
 import time
 from sqlalchemy.orm import Session
 from app.models import DataCategory, AuditLog
+from app.config import IS_PRODUCTION, TRUSTED_PROXIES
 
 COUNTRY_REGULATION_MAP = {
     'NG': ['NDPR'],
@@ -172,6 +173,17 @@ def get_visitor_country(request) -> str:
             for c_code, curr in COUNTRY_TO_CURRENCY.items():
                 if curr == param_curr.upper():
                     return c_code
+
+        # Proxy trust verification: In production, verify headers come from trusted proxy
+        import app.helpers as _h
+        _is_prod = getattr(_h, "IS_PRODUCTION", IS_PRODUCTION)
+        _trusted = getattr(_h, "TRUSTED_PROXIES", TRUSTED_PROXIES)
+        if _is_prod and _trusted:
+            trusted_set = {p.strip() for p in _trusted.split(",") if p.strip()}
+            client_ip = request.client.host if hasattr(request, "client") and request.client else ""
+            if client_ip and client_ip not in trusted_set:
+                # Direct untrusted connection: do not trust edge headers
+                return "US"
 
         # 2. Cloudflare Country Header
         cf_country = request.headers.get("CF-IPCountry") if hasattr(request, "headers") else None
@@ -757,67 +769,70 @@ def consume_recovery_code(hashed_codes: list, candidate: str) -> list:
     return None
 
 def send_system_email(db: Session, to_email: str, subject: str, html_body: str) -> bool:
+    """
+    Send a transactional email from the SafeData platform.
+
+    Credentials come from environment variables (SMTP_HOST, SMTP_PORT, SMTP_USER,
+    SMTP_PASS, SMTP_FROM_EMAIL, SMTP_FROM_NAME, SMTP_SECURE) set by 3Consulting on
+    the hosting platform (e.g. Render).  They are NOT stored in or read from the
+    application database — clients never configure or see these settings.
+
+    In local/dev mode (SMTP_HOST not set), emails are printed to the console log.
+    """
     import smtplib
     import os
-    from datetime import datetime
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
-    from app.models import SystemSetting
-    from app.config import LOG_PATH
+    from app.config import (
+        SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
+        SMTP_FROM_EMAIL, SMTP_FROM_NAME, SMTP_SECURE, SMTP_REPLY_TO, LOG_PATH
+    )
 
-    # Fetch settings
-    settings = {}
-    for row in db.query(SystemSetting).filter(SystemSetting.setting_key.like("smtp%")).all():
-        settings[row.setting_key] = row.setting_value
-    
-    host = settings.get("smtp_host", "")
-    if not host or "yourdomain" in host.lower():
-        # Log to console
-        print(f"--- EMAIL CONSOLE LOG (SMTP not configured) ---")
-        print(f"To: {to_email}")
-        print(f"Subject: {subject}")
-        print(f"Body: {html_body[:200]}...")
-        print(f"------------------------------------------------")
+    # ── Dev / local fallback: log to console when SMTP is not configured ──
+    if not SMTP_HOST:
+        print("--- EMAIL CONSOLE LOG (SMTP_HOST not set — local dev mode) ---")
+        print(f"To:       {to_email}")
+        print(f"Subject:  {subject}")
+        print(f"Reply-To: {SMTP_REPLY_TO or '(none)'}")
+        print(f"Body:     {html_body[:300]}...")
+        print("--------------------------------------------------------------")
         return True
 
-    from_email = settings.get("smtp_from_email", "no-reply@localhost")
-    from_name = settings.get("smtp_from_name", "SafeData")
-    
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = f"{from_name} <{from_email}>"
-        msg["To"] = to_email
+        msg["From"]    = f"{SMTP_FROM_NAME} <{SMTP_FROM_EMAIL}>"
+        msg["To"]      = to_email
+        # Reply-To lets clients reply to support@ without exposing noreply@
+        if SMTP_REPLY_TO:
+            msg["Reply-To"] = SMTP_REPLY_TO
         msg.attach(MIMEText(html_body, "html"))
-        
-        port = int(settings.get("smtp_port", "587"))
-        user = settings.get("smtp_user", "") or settings.get("smtp_username", "")
-        password = settings.get("smtp_pass", "") or settings.get("smtp_password", "")
-        secure = settings.get("smtp_secure", "tls") or settings.get("smtp_encryption", "tls")
 
-        # Connect
-        if secure == "ssl":
-            server = smtplib.SMTP_SSL(host, port, timeout=10)
+        if SMTP_SECURE == "ssl":
+            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=10)
         else:
-            server = smtplib.SMTP(host, port, timeout=10)
-            if secure == "tls":
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10)
+            if SMTP_SECURE == "tls":
                 server.starttls()
 
-        if user and password:
-            server.login(user, password)
-            
-        server.sendmail(from_email, to_email, msg.as_string())
+        if SMTP_USER and SMTP_PASS:
+            server.login(SMTP_USER, SMTP_PASS)
+
+        server.sendmail(SMTP_FROM_EMAIL, to_email, msg.as_string())
         server.quit()
         return True
+
     except Exception as e:
-        print(f"Mail delivery failed: {e}")
+        print(f"[send_system_email] delivery failed → {e}")
         log_file = os.path.join(LOG_PATH, "mail_errors.log")
         try:
+            from datetime import datetime
             with open(log_file, "a") as f:
-                f.write(f"[{datetime.now().isoformat()}] {e}\n")
+                f.write(f"[{datetime.now().isoformat()}] to={to_email} err={e}\n")
         except Exception:
             pass
         return False
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -892,3 +907,36 @@ def email_team_invite(name: str, org_name: str, role: str, invite_link: str) -> 
         '<p>This link expires in 7 days. If you were not expecting this, you can ignore this email.</p>'
     )
     return (f"You're invited to SafeData — {org_name}", email_layout('Team invitation', body))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#   Zero-Knowledge Architecture: PII Detection & Guard
+# ═══════════════════════════════════════════════════════════════════════════
+
+def detect_pii_in_text(text: str) -> list:
+    """
+    Detects obvious personal identification patterns in text (emails, credit cards, national IDs/SSNs).
+    Used to enforce SafeData's Zero-Knowledge guarantee on free-text metadata fields.
+    """
+    import re
+    if not text or not str(text).strip():
+        return []
+
+    findings = []
+    # 1. Email address pattern
+    if re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b', text):
+        findings.append("email_address")
+
+    # 2. Credit Card number pattern (13 to 19 digits)
+    card_match = re.search(r'\b(?:\d[ -]*?){13,19}\b', text)
+    if card_match:
+        digits_only = re.sub(r'\D', '', card_match.group(0))
+        if len(digits_only) in (13, 14, 15, 16, 17, 18, 19) and digits_only.startswith(('4', '5', '3', '6')):
+            findings.append("payment_card")
+
+    # 3. National ID / US SSN (XXX-XX-XXXX)
+    if re.search(r'\b\d{3}-\d{2}-\d{4}\b', text):
+        findings.append("national_id_ssn")
+
+    return findings
+
