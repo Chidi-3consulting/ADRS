@@ -26,49 +26,49 @@ SafeData automatically provisions jurisdiction-specific retention categories whe
 
 ---
 
-## 2. Platform Edition Architecture: Core vs. Enterprise
+## 2. Unified Standalone SaaS Architecture
 
-SafeData is delivered in two distinct operational tiers to accommodate varying organisational maturity and IT integration capabilities:
+SafeData is delivered as a **unified, full standalone SaaS application**. Rather than segmenting capabilities across arbitrary tiers, every tenant receives the complete, end-to-end governance and automation suite out of the box.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                           SafeData Platform                                 │
+│              SafeData Unified Standalone SaaS Platform                 │
 ├────────────────────────────────────┬────────────────────────────────────┤
-│             SafeData Core              │          SafeData Enterprise           │
-│   (Standalone Compliance Portal)   │    (Automated Integration Engine)  │
+│   Compliance & Governance Portal   │    Automated Integration Engine    │
 ├────────────────────────────────────┼────────────────────────────────────┤
-│ • Manual Data Intake via UI        │ • Everything in Core PLUS:         │
-│ • Scheduled Background Enforcement │ • REST API Integration Layer       │
-│ • Role-Based Web Interface         │ • Real-time Data Intake Queue      │
-│ • DSAR & Legal Hold Management     │ • Automated Outbound Webhook       │
-│ • RoPA & Compliance Reporting      │   Disposal Instructions            │
-│ • Breach Incident Management       │ • Inbound Consent Signal Matching  │
-│ • DPIA Risk Assessments            │ • Multi-system Auto-Categorization │
-│ • Ideal for zero-IT-footprint orgs │ • Ideal for Banks, Fintechs,      │
-│ • Rapid deployment (4–6 weeks)     │   Telcos, Large Enterprises        │
+│ • Full Records Lifecycle & Register│ • High-Throughput REST API v1      │
+│ • Country-Aware Retention Engine   │ • Async Data Intake Queue          │
+│ • Dual-Approval Deletion Locks     │ • Rule-Based Auto-Categorisation   │
+│ • Legal Holds & Consent Receipts   │ • Outbound Disposal Webhooks       │
+│ • DSAR 30-Day Tracking (6 Types)   │ • Real-time Consent Signals        │
+│ • Article 30 RoPA & Processor DPA  │ • Connected External Systems Hub   │
+│ • Breach Register (72h Countdown)  │ • Sliding-Window Rate Limiting     │
+│ • DPIA Risk Scoring Assessments    │ • Real-Time Integration Audit Logs │
+│ • Tamper-Evident Hash Chain        │ • Outbound Ops Webhooks (Slack/etc)│
+│ • 8-Chapter Solution Manual        │ • Two-Pass Validated Bulk Import   │
 └────────────────────────────────────┴────────────────────────────────────┘
 ```
 
-### Detailed Tier Comparison Matrix
+### Complete Platform Capability Matrix
 
-| Feature / Capability | SafeData Core | SafeData Enterprise |
-| :--- | :---: | :---: |
-| **Data Inventory Registration** | Manual (Web UI) / Bulk CSV | REST API + Auto-Categorization Rules |
-| **Retention Enforcement** | Automated (Background Scheduler) | Automated (Background Scheduler) |
-| **Dual-Approval Safeguards** | Yes | Yes |
-| **Legal Hold Management** | Yes | Yes |
-| **DSAR Tracking (6 Request Types)** | Yes | Yes |
-| **Record of Processing (RoPA)** | Yes | Yes |
-| **Breach Incident Management** | Yes | Yes |
-| **DPIA Risk Assessments** | Yes | Yes |
-| **Consent Receipt Tracking** | Yes | Yes |
-| **Tamper-Evident Audit Trail** | Yes (Hash-Chained) | Yes (Hash-Chained) |
-| **Country-Aware Compliance Reports** | Yes | Yes |
-| **Outbound System Disposal** | Internal State Change | Automated Dispatch Webhooks |
-| **Inbound Consent Events** | DPO Manual Input | REST API Real-Time Intake |
-| **Connected External Systems** | N/A | Unlimited via API Keys |
-| **System Rate Limiting & Logs** | N/A | Included |
-| **Webhook Endpoints** | N/A | Configurable per Event Type |
+Every licensed organisation workspace has direct access to the entire governance ecosystem:
+
+| Governance Domain | Technical Capability | Execution Method |
+| :--- | :--- | :--- |
+| **Data Inventory Registration** | Manual Web UI, 2-Pass Bulk CSV, or REST API v1 | Immediate / Asynchronous Queue |
+| **Retention Enforcement** | Automated 9-Step Background Engine | Native FastAPI Lifespan Loop |
+| **Disposal Safeguards** | Dual-Approval Four-Eyes Review on Sensitive/AML Data | Mandatory Two-Officer Sign-off |
+| **Emergency Controls** | Disposal Freeze (`is_disposal_frozen`) & Dry-Run Simulation | Instant Administrative Toggle |
+| **Processor Oversight** | Controller vs. Third-Party Processor DPA Tracking | Dedicated Category & RoPA Linkage |
+| **Legal Hold Management** | Litigation / Regulatory Audit Freezing & Lifting | Full Audit-Attributed Workflow |
+| **Subject Rights (DSAR)** | 6 Statutory Request Types with Identity Verification | 30-Day Automated Countdown |
+| **Article 30 RoPA** | Processing Activities Register with Sub-Processors | Exportable Regulatory Register |
+| **Incident Management** | Security Breach Log with Statutory Notifications | 72-Hour Notification Countdown |
+| **Risk Assessments** | DPIA Matrix (Necessity, Likelihood, Severity) | Automated Risk Level Scoring |
+| **Consent Governance** | Digital Consent Certificates & Inbound Revocations | SHA-256 Receipts & Signal Matching |
+| **Cryptographic Proof** | Tamper-Evident Hash-Chained Audit Ledger | SHA-256 Re-Verification Tool |
+| **External Integration** | Outbound Webhook Dispatch (`/SafeData/disposal`) | Asynchronous Dispatcher with Retries |
+| **API Management** | Unlimited API Keys with SHA-256 Storage & Permissions | Bearer / `X-API-Key` Authenticated |
 
 ---
 
@@ -84,11 +84,10 @@ SafeData operates as a fully multi-tenant platform. Each tenant is an **Organisa
 | `slug` | URL-safe unique identifier |
 | `primary_domain` | Verified email domain for the organisation |
 | `country` | ISO 3166-1 alpha-2 code (40+ countries supported) |
-| `tier` | `core` or `enterprise` |
 | `status` | `active`, `trial`, or `suspended` |
 | `subscription_status` | `trial`, `active`, `past_due`, or `cancelled` |
 | `billing_email` | Email for payment notifications |
-| `enterprise_licence_key` | Licence key for enterprise tier activation |
+| `enterprise_licence_key` | Offline activation licence key |
 | `trial_ends_at` | 14-day trial expiration timestamp |
 
 ### Platform Administration

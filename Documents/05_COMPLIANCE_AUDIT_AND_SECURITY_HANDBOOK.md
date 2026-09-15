@@ -368,5 +368,5 @@ SafeData enforces subscription status and trial expiry at the middleware level:
 - **Subscription Status**: `trial`, `active`, `past_due`, or `cancelled` — stored in `Organization.subscription_status`.
 - **Organisation Status**: `active`, `trial`, or `suspended`.
 - **Enforcement**: The `SessionEnforcementMiddleware` checks subscription status on every authenticated request. Suspended organisations or expired trials are redirected to `/billing`.
-- **Enterprise Licence Keys**: Platform Admins can generate enterprise licence keys (`EnterpriseLicenceKey` model) which organisations redeem to upgrade from Core to Enterprise tier.
+- **Enterprise Licence Keys**: Platform Admins can generate offline activation licence keys (`EnterpriseLicenceKey` model) which organisations can redeem to activate extended platform capabilities.
 - **Setup-Complete Guard**: Until the initial system configuration is completed (`setup_complete` system setting), all users are redirected to `/setup`.

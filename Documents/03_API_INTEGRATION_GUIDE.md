@@ -1,15 +1,15 @@
-# SafeData Enterprise REST API — Developer Integration Guide
+# SafeData REST API — Developer Integration Guide
 
-This guide provides technical specifications, authentication requirements, endpoint schemas, and code samples for integrating external enterprise software (CRMs, Core Banking Systems, HR Portals) with the **SafeData Enterprise REST API**.
+This guide provides technical specifications, authentication requirements, endpoint schemas, and code samples for integrating external systems (CRMs, Core Banking Systems, HR Portals, ERPs) with the **SafeData REST API**.
 
 ---
 
 ## 1. Authentication & API Key Management
 
-The SafeData REST API uses **Bearer Token Authentication** backed by SHA-256 API Key verification.
+The SafeData REST API uses **Bearer Token Authentication** (or `X-API-Key`) backed by SHA-256 API Key verification.
 
 ### 1.1 Generating API Keys
-1. Log in to the SafeData Enterprise Web Portal as an **Admin**.
+1. Log in to the SafeData Web Portal as an **Admin**.
 2. Navigate to **Integrations → API Keys** (`/integrations/keys`).
 3. Click **Create API Key**. Select the Target Connected System, set a name, configure permissions, set rate limit (requests per minute), and optionally set an expiry date.
 4. The system generates a raw API key prefixed with `SafeData_` (e.g., `SafeData_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4`).

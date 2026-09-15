@@ -149,10 +149,8 @@ async def lifespan(app: FastAPI):
 | **Retention Engine** | Every **10 minutes** (`sleep(600)`) | `run_retention_checks()` | `app.engine` | Iterates all organisations. Flags `due_review`, processes consent withdrawals, auto-disposes non-dual-approval records, sends escalations and follow-ups. |
 | **Housekeeping** | Every **1 hour** (`sleep(3600)`) | `run_housekeeping()` | `app.engine` | Prunes: login attempts older than 7 days, expired password resets older than 7 days, read notifications older than 180 days. |
 | **Database Backup** | Every **24 hours** (`sleep(86400)`) | `backup_database()` | `app.backups` | Dumps the full database to `storage/backups/SafeData_backup_{timestamp}.sql`. Prunes backups older than 30 days. |
-| **Disposal Dispatch** | Every **10 minutes** (`sleep(600)`) | `process_disposal_dispatches()` | `app.enterprise` | Enterprise only. Sends outbound webhook disposal instructions to connected external systems. |
-| **Intake Queue** | Every **5 minutes** (`sleep(300)`) | `process_intake_queue()` | `app.enterprise` | Enterprise only. Processes inbound API intake buffer records with auto-categorisation. |
-
-> **Note**: Tasks 4 and 5 (disposal dispatch and intake queue) are gated behind the `SafeData_tier = "enterprise"` system setting. They execute as no-ops for Core tier organisations.
+| **Disposal Dispatch** | Every **10 minutes** (`sleep(600)`) | `process_disposal_dispatches()` | `app.enterprise` | Sends outbound webhook disposal instructions to connected external systems when `disposal_dispatches` records are pending. Runs as a no-op when no connected systems are configured. |
+| **Intake Queue** | Every **5 minutes** (`sleep(300)`) | `process_intake_queue()` | `app.enterprise` | Processes inbound API intake buffer records with auto-categorisation. Runs as a no-op when no intake queue items are pending. |
 
 ### Housekeeping Detail
 

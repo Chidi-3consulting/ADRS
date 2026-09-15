@@ -28,27 +28,28 @@ SafeData automatically provisions jurisdiction-specific retention categories and
 
 ---
 
-## Operational Tiers
+## Unified Standalone SaaS Architecture
 
-### 1. SafeData Core (Compliance & Governance Portal)
-Standalone multi-tenant portal for compliance officers, DPOs, and department heads:
-* **Pre-seeded Regulatory Library:** Automatically provisions categories tailored to the organisation's country upon registration.
-* **Controller vs. Third-Party Processor Governance:** Track internal data controller categories as well as third-party processor vendors (e.g. cloud providers, outsourced payroll) with DPA contract references and compliance statuses.
-* **Full Records Lifecycle:** Active records, retention date calculations, status workflows, and disposal options (`delete` with soft-delete/purge, `anonymise` with PII wiping, `archive`).
-* **Critical Dual-Approval Safeguard:** Sensitive, confidential, AML, and special category data flagged with `requires_dual_approval` is **never** auto-disposed; it requires explicit two-person authorization.
-* **Legal Hold & Consent Management:** Freeze records during audits or litigation; manage consent withdrawals and issue cryptographic consent receipts.
-* **Data Subject Access Requests (DSAR):** Track 6 request types with an automated 30-day statutory countdown and identity verification.
-* **Compliance Modules:** Article 30 RoPA (Record of Processing Activities) with sub-processor mapping, DPIA risk scoring assessments, and Article 33/34 Data Breach Incident register with a 72-hour statutory notification clock.
-* **Interactive 8-Chapter Solution Manual:** Built-in operational manual rendered at `/help`.
+SafeData is a complete, full-featured standalone SaaS platform. All capabilities—from the interactive compliance portal and automated background engine to the REST API, intake queues, outbound disposal webhooks, and cryptographic ledger—are unified into a single cohesive workspace for every tenant.
+
+### Core Capabilities Included in Every Workspace:
+
+* **Automated Retention Lifecycle Engine:** Daily background evaluation flags records entering review windows, calculates statutory dates, batches owner notifications, and purges expired records.
+* **Critical Dual-Approval Safeguards:** High-risk, confidential, AML, and special category records requiring dual approval are **never** auto-disposed; they require explicit two-officer authorization.
+* **Emergency Disposal Freeze & Dry-Run Mode:** Instantly halt all disposal actions across the organization during active litigation/audits (`is_disposal_frozen`), or simulate retention runs via dry-run mode (`dry_run=True`).
+* **Controller vs. Third-Party Processor Tracking:** Monitor internal data controller collections alongside third-party vendors (e.g., cloud hosts, CRM, outsourced payroll) with DPA contract references and compliance verification statuses.
+* **REST API v1 Suite:** Cryptographically secured (`X-API-Key` or `Authorization: Bearer`) with SHA-256 hashed keys, granular permissions scoping, and sliding-window rate limiting.
+* **Asynchronous Intake Queue:** High-throughput batch data ingestion ($\le 500$ records per call) with automated priority-ordered categorisation rules and field mappings.
+* **Outbound Disposal Dispatch Webhooks:** Automated notifications (`POST {base_url}/SafeData/disposal`) instructing source systems (CRM, Core Banking, HR) to delete external copies upon verified disposal.
+* **Real-Time Consent Signals:** Listen for external consent revocations matched by `external_ref` to trigger statutory disposal countdown clocks automatically.
+* **Data Subject Access Requests (DSAR):** Track 6 request types (*Access, Rectification, Erasure, Restriction, Portability, Objection*) with mandatory identity verification and automated 30-day statutory countdowns.
+* **Comprehensive Regulatory Registers:**
+  * **Article 30 RoPA:** Record of Processing Activities register with third-party processor mappings (`RopaProcessor`).
+  * **DPIA Risk Engine:** Data Protection Impact Assessments with necessity, proportionality, likelihood, and severity scoring.
+  * **Article 33/34 Breach Register:** Incident logging with automated **72-hour statutory notification countdowns**, severity grading, and authority/subject notification timestamps.
+  * **Consent Receipts:** Digital consent certificates with cryptographic SHA-256 receipt hashes.
+* **Interactive 8-Chapter Solution Manual:** Built-in operational handbook rendered at `/help`.
 * **Two-Pass Validated Bulk Import:** Dry-run CSV validation before committing records to the register.
-
-### 2. SafeData Enterprise (Automated Integration Engine)
-Everything in Core, plus enterprise-scale automation and external system synchronization:
-* **REST API v1:** Bearer Token & `X-API-Key` authentication with SHA-256 key hashing (raw keys never stored), permissions scoping, and sliding-window rate limiting.
-* **Asynchronous Intake Queue:** High-throughput batch data ingestion ($\le 500$ records per batch) with automated rule-based categorisation by priority.
-* **Real-Time Consent Signals:** External consent revocation webhooks matched against existing records by `external_ref`.
-* **Outbound Disposal Dispatch:** Automated webhooks (`POST {base_url}/SafeData/disposal`) dispatching disposal instructions back to connected source systems (CRM, Core Banking, HR).
-* **Integration Management Hub:** Connected systems registry, API key management, field mapping rules, and real-time integration logs.
 
 ---
 

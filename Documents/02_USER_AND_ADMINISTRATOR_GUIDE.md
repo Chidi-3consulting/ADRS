@@ -12,9 +12,9 @@ SafeData strictly enforces Role-Based Access Control (RBAC). Every user belongs 
 | :--- | :---: | :---: | :---: | :---: |
 | **Manage Users & Invite New Members** | ✅ | ❌ | ❌ | ✅ |
 | **Configure System & SMTP Settings** | ✅ | ❌ | ❌ | ✅ |
-| **Manage Tier & Licence Upgrades** | ✅ | ❌ | ❌ | ✅ |
-| **Billing & Subscription Management** | ✅ | ❌ | ❌ | ✅ |
-| **API Keys & Connected Systems (Enterprise)** | ✅ | ❌ | ❌ | ✅ |
+| **Subscription & Licence Management** | ✅ | ❌ | ❌ | ✅ |
+| **Billing & Payment Management** | ✅ | ❌ | ❌ | ✅ |
+| **API Keys & Connected Systems** | ✅ | ❌ | ❌ | ✅ |
 | **Create & Edit Data Categories** | ✅ | ✅ | ❌ | ✅ |
 | **Manage Category Retention Rules** | ✅ | ✅ | ❌ | ✅ |
 | **Place & Lift Legal Holds** | ✅ | ✅ | ❌ | ✅ |
@@ -27,7 +27,7 @@ SafeData strictly enforces Role-Based Access Control (RBAC). Every user belongs 
 | **Trigger Category Recalculations** | ✅ | ✅ | ❌ | ✅ |
 | **View Audit Trail & Export Reports** | ✅ | ✅ | ❌ | ✅ |
 | **Manage All Organisations (Platform)** | ❌ | ❌ | ❌ | ✅ |
-| **Generate Enterprise Licence Keys** | ❌ | ❌ | ❌ | ✅ |
+| **Generate Platform Licence Keys** | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
