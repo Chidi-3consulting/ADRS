@@ -56,9 +56,26 @@ def _patched_template_response(self, request, name, context=None, *args, **kwarg
                 db_s.close()
         except Exception:
             context.setdefault("unread_notifications_count", 0)
+        # Calculate dynamic trial_days remaining from trial_ends_at
+        sub_status = session.get("subscription_status", "trial")
+        trial_ends = session.get("trial_ends_at")
+        if sub_status == "trial":
+            if trial_ends:
+                try:
+                    ends_dt = datetime.fromisoformat(trial_ends) if isinstance(trial_ends, str) else trial_ends
+                    diff = (ends_dt - datetime.utcnow()).total_seconds()
+                    days_left = max(0, int(diff // 86400) + (1 if diff % 86400 > 0 else 0))
+                    context["trial_days"] = days_left
+                except Exception:
+                    context["trial_days"] = 14
+            else:
+                context["trial_days"] = 14
+        else:
+            context["trial_days"] = None
     else:
         context["is_platform_admin"] = False
         context.setdefault("unread_notifications_count", 0)
+        context["trial_days"] = None
     # Inject CSRF token/field for templates
     context.setdefault("csrf_token", getattr(request.state, "csrf_token", ""))
     context.setdefault("csrf_field", getattr(request.state, "csrf_field", ""))

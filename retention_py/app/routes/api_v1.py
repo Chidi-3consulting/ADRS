@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Header, status
+from fastapi import APIRouter, Request, Response, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 import hashlib
+import json
 from datetime import datetime
 from pydantic import BaseModel
 from typing import List, Optional
 
 from app.database import get_db
-from app.models import ApiKey, ConnectedSystem, DataRecord, DataCategory, IntegrationLog
+from app.models import ApiKey, ConnectedSystem, DataRecord, DataCategory, IntegrationLog, ConsentSignal
 from app.engine import calculate_retention_end_date
 from app.enterprise import within_rate_limit, api_key_can, log_integration
+from app.helpers import log_audit
 
 router = APIRouter()
 
@@ -83,9 +85,15 @@ class IngestRecordRequest(BaseModel):
 class IngestBatchRequest(BaseModel):
     records: List[IngestRecordRequest]
 
-class ConsentWithdrawalRequest(BaseModel):
+class ConsentSignalRequest(BaseModel):
     record_reference: str
     category_id: Optional[int] = None
+    signal_type: Optional[str] = "withdrawal"
+    withdrawn_at: Optional[str] = None
+    notes: Optional[str] = None
+
+# Backward-compatibility alias
+ConsentWithdrawalRequest = ConsentSignalRequest
 
 @router.get("/health")
 def api_health():
@@ -226,14 +234,26 @@ def api_ingest_batch(
         "duplicates_skipped": duplicates
     }
 
-@router.post("/consent/withdraw")
-def api_consent_withdraw(
-    payload: ConsentWithdrawalRequest,
-    authorization: str = Header(None),
+@router.post("/consent/signal")
+def api_consent_signal(
+    payload: ConsentSignalRequest,
+    authorization: Optional[str] = Header(None),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
     db: Session = Depends(get_db)
 ):
-    api_key = authenticate_api_key(db, authorization, required_permission="consent")
+    api_key = authenticate_api_key(db, authorization=authorization, x_api_key=x_api_key, required_permission="consent")
     org_id = api_key.organization_id
+
+    # Parse signal timestamp if provided, else use current UTC
+    withdrawn_dt = datetime.utcnow()
+    if payload.withdrawn_at:
+        try:
+            withdrawn_dt = datetime.fromisoformat(payload.withdrawn_at.replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            try:
+                withdrawn_dt = datetime.strptime(payload.withdrawn_at, "%Y-%m-%d")
+            except Exception:
+                pass
 
     # Find record reference
     query = db.query(DataRecord).filter(
@@ -242,21 +262,103 @@ def api_consent_withdraw(
     )
     if payload.category_id:
         query = query.filter(DataRecord.category_id == payload.category_id)
-        
+
     records = query.all()
     if not records:
-        raise HTTPException(status_code=404, detail="No matching records found.")
+        # Record unmatched signal in ConsentSignal if connected system is known
+        if api_key.system_id:
+            signal = ConsentSignal(
+                organization_id=org_id,
+                system_id=api_key.system_id,
+                external_ref=payload.record_reference,
+                signal_type=payload.signal_type or "withdrawal",
+                raw_payload=payload.model_dump_json(),
+                status="unmatched",
+            )
+            db.add(signal)
+            db.commit()
+        raise HTTPException(status_code=404, detail="No matching records found for provided reference.")
 
     updated_count = 0
     for r in records:
         if r.status != "disposed" and not r.consent_withdrawn_at:
-            r.consent_withdrawn_at = datetime.utcnow()
+            r.consent_withdrawn_at = withdrawn_dt
+            r.consent_withdrawn_by = None  # Inbound signal from external system, not an internal user
             calculate_retention_end_date(db, r)
             updated_count += 1
+            log_audit(
+                db, org_id, "consent_withdrawn", "data_record", r.id, None,
+                {
+                    "source": "api_signal",
+                    "external_ref": payload.record_reference,
+                    "signal_type": payload.signal_type or "withdrawal",
+                    "disposal_due": r.retention_end_date.strftime("%Y-%m-%d") if r.retention_end_date else None,
+                }
+            )
 
+    # Record matched signal if connected system is linked
+    if api_key.system_id:
+        signal = ConsentSignal(
+            organization_id=org_id,
+            system_id=api_key.system_id,
+            external_ref=payload.record_reference,
+            signal_type=payload.signal_type or "withdrawal",
+            raw_payload=payload.model_dump_json(),
+            status="processed" if updated_count > 0 else "matched",
+            record_id=records[0].id if records else None,
+            processed_at=datetime.utcnow() if updated_count > 0 else None,
+        )
+        db.add(signal)
+
+    # Log integration API call
+    log = IntegrationLog(
+        organization_id=org_id,
+        system_id=api_key.system_id,
+        api_key_id=api_key.id,
+        direction="inbound",
+        endpoint="/api/v1/consent/signal",
+        method="POST",
+        status_code=200,
+        request_body=payload.model_dump_json(),
+        response_body=json.dumps({"status": "success", "updated_records": updated_count}),
+        records_affected=updated_count,
+    )
+    db.add(log)
     db.commit()
 
-    return {"status": "success", "updated_records": updated_count}
+    return {
+        "status": "success",
+        "signal_type": payload.signal_type or "withdrawal",
+        "updated_records": updated_count,
+        "records": [
+            {
+                "id": r.id,
+                "record_reference": r.record_reference,
+                "retention_end_date": r.retention_end_date.strftime("%Y-%m-%d") if r.retention_end_date else None,
+                "status": r.status,
+            }
+            for r in records
+        ],
+    }
+
+
+@router.post("/consent/withdraw", deprecated=True)
+def api_consent_withdraw(
+    payload: ConsentWithdrawalRequest,
+    response: Response,
+    authorization: Optional[str] = Header(None),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    db: Session = Depends(get_db)
+):
+    """Backward-compatible endpoint. Clients should migrate to /api/v1/consent/signal."""
+    response.headers["Deprecation"] = "true"
+    response.headers["Link"] = '</api/v1/consent/signal>; rel="successor-version"'
+    return api_consent_signal(
+        payload=payload,
+        authorization=authorization,
+        x_api_key=x_api_key,
+        db=db
+    )
 
 @router.get("/records/status")
 def api_record_status(

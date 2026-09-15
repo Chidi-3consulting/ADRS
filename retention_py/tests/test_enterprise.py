@@ -162,3 +162,62 @@ class TestConsentSignals:
         system = _seed_system(db)
         result = record_consent_signal(db, system.id, "NOMATCH-001", "withdrawal")
         assert result["matched"] is False
+
+    def test_api_consent_signal_endpoint(self, db, client):
+        system = _seed_system(db)
+        key_res = create_api_key(db, system.id, "Consent Key", ["consent"], 60, 1)
+        cat = _seed_category(db, trigger="consent_withdrawal")
+        record = DataRecord(
+            organization_id=1, category_id=cat.id,
+            record_reference="API-CONSENT-001", status="active",
+        )
+        db.add(record)
+        db.commit()
+
+        # Call POST /api/v1/consent/signal
+        resp = client.post(
+            "/api/v1/consent/signal",
+            headers={"X-API-Key": key_res["raw"]},
+            json={
+                "record_reference": "API-CONSENT-001",
+                "signal_type": "withdrawal",
+                "withdrawn_at": "2026-09-14T08:00:00Z",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "success"
+        assert data["updated_records"] == 1
+
+        db.refresh(record)
+        assert record.consent_withdrawn_at is not None
+        assert record.consent_withdrawn_by is None
+        assert record.retention_end_date is not None
+
+    def test_api_consent_withdraw_deprecation(self, db, client):
+        system = _seed_system(db)
+        key_res = create_api_key(db, system.id, "Consent Key", ["consent"], 60, 1)
+        cat = _seed_category(db, trigger="consent_withdrawal")
+        record = DataRecord(
+            organization_id=1, category_id=cat.id,
+            record_reference="API-CONSENT-002", status="active",
+        )
+        db.add(record)
+        db.commit()
+
+        # Call deprecated POST /api/v1/consent/withdraw
+        resp = client.post(
+            "/api/v1/consent/withdraw",
+            headers={"X-API-Key": key_res["raw"]},
+            json={"record_reference": "API-CONSENT-002"},
+        )
+        assert resp.status_code == 200
+        assert resp.headers.get("Deprecation") == "true"
+
+    def test_manual_consent_routes_removed(self, client):
+        # Confirm manual UI routes no longer exist
+        r1 = client.post("/records/consent/1")
+        assert r1.status_code == 404
+        r2 = client.post("/records/consent_withdraw/1")
+        assert r2.status_code == 404
+

@@ -26,7 +26,11 @@
       <div class="org-context-meta">
         <span class="badge bg-{{ 'success' if org_status == 'active' else 'warning text-dark' }} badge-sm">{{ org_status | upper }}</span>
         {% if trial_days is not none %}
-          <span class="badge bg-warning text-dark badge-sm">{{ trial_days }}d trial</span>
+          {% if trial_days > 0 %}
+            <span class="badge bg-warning text-dark badge-sm">{{ trial_days }}d trial</span>
+          {% else %}
+            <span class="badge bg-danger text-white badge-sm">Trial Expired</span>
+          {% endif %}
         {% endif %}
       </div>
       <div class="org-context-domain">@{{ org_domain }}</div>

@@ -288,12 +288,12 @@
             </p>
           </div>
           <div class="col-md-6">
-            <h4 class="h6 fw-bold text-dark mb-2"><i class="bi bi-person-x-fill text-warning me-2"></i> Consent Withdrawal Handling</h4>
+            <h4 class="h6 fw-bold text-dark mb-2"><i class="bi bi-broadcast text-warning me-2"></i> Consent Withdrawal Governance</h4>
             <p class="small text-secondary">
-              Under GDPR and modern data privacy laws, data subjects have the right to withdraw consent at any time.
+              Under global data privacy laws (GDPR, NDPR, CCPA, etc.), data subjects have the right to withdraw consent at any time. Consent decisions are managed by your customer-facing applications and CRM.
             </p>
             <p class="small text-secondary">
-              Clicking <strong>"Withdraw Consent"</strong> overrides standard 5-year or 7-year schedules and sets a configurable grace period (e.g., 30 days) to allow orderly purge across all operational backups.
+              When a subject withdraws consent, your system emits an API signal (<code>POST /api/v1/consent/signal</code>). SafeData captures the signal, calculates the configurable post-withdrawal grace period (e.g., 30 days), and strictly governs the resulting disposal obligation and audit proof.
             </p>
           </div>
         </div>

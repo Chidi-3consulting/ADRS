@@ -76,7 +76,9 @@
       <div class="card-body">
         <h2 class="h6 text-muted mb-3 fw-bold">Subscription</h2>
         <p class="mb-2">Status: <span class="badge bg-{{ 'success' if org.status == 'active' else 'warning text-dark' }}">{{ org.status | upper }}</span></p>
-        <p class="mb-0 small text-muted">Trial: 14 days remaining</p>
+        {% if org.status == 'trial' or org.subscription_status == 'trial' %}
+          <p class="mb-0 small text-muted">Trial: {% if trial_days is not none and trial_days > 0 %}{{ trial_days }} days remaining{% else %}<span class="text-danger fw-bold">Expired</span>{% endif %}</p>
+        {% endif %}
         <a href="/billing" class="btn btn-outline-primary btn-sm mt-3">Manage Billing</a>
       </div>
     </div>

@@ -459,6 +459,7 @@ def handle_register(
         return _error("This email address is already registered.")
 
     # ── Create organisation ──
+    now_utc = datetime.utcnow()
     org = Organization(
         name=org_name,
         slug=re.sub(r'[^a-z0-9]+', '-', org_name.lower()).strip('-')[:50],
@@ -466,7 +467,8 @@ def handle_register(
         country=country,
         tier="core",
         status="trial",
-        subscription_status="trial"
+        subscription_status="trial",
+        trial_ends_at=now_utc + timedelta(days=14),
     )
     db.add(org)
     db.commit()
@@ -679,14 +681,16 @@ def handle_setup(
 
     # Create organization
     import secrets as _secrets
+    now_utc = datetime.utcnow()
     org = Organization(
         name=org_name,
         slug=org_name.lower().replace(" ", "-")[:50],
         primary_domain=f"{org_name.lower().replace(' ', '-')}.SafeData.local",
         country="NG",
         tier="core",
-        status="active",
+        status="trial",
         subscription_status="trial",
+        trial_ends_at=now_utc + timedelta(days=14),
     )
     db.add(org)
     db.commit()

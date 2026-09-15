@@ -292,14 +292,26 @@
             </form>
           {% endif %}
 
-          <!-- Consent Withdrawal -->
-          {% if not record.consent_withdrawn_at %}
-            <form method="post" action="/records/consent_withdraw/{{ record.id }}">
-              {{ csrf_field | safe }}
-              <button class="btn btn-outline-warning text-dark btn-sm w-100" onclick="return confirm('Record data subject consent withdrawal?')">
-                <i class="bi bi-person-x me-1"></i> Record Consent Withdrawal
-              </button>
-            </form>
+          <!-- Consent Lifecycle Tracking (Read-Only Governance) -->
+          {% if record.category.disposal_trigger == 'consent_withdrawal' or record.consent_withdrawn_at %}
+            <div class="p-3 bg-light rounded-3 border small">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                {% if record.consent_withdrawn_at %}
+                  <span class="badge bg-warning text-dark"><i class="bi bi-broadcast me-1"></i>Signal Received</span>
+                  <span class="fw-bold text-dark">Consent Withdrawn</span>
+                {% else %}
+                  <span class="badge bg-secondary"><i class="bi bi-hourglass-split me-1"></i>Awaiting Signal</span>
+                  <span class="fw-bold text-dark">Consent Active</span>
+                {% endif %}
+              </div>
+              <p class="text-muted mb-0" style="font-size: 0.8rem; line-height: 1.35;">
+                {% if record.consent_withdrawn_at %}
+                  Signal recorded from connected system on {{ record.consent_withdrawn_at.strftime('%Y-%m-%d') }}. SafeData is governing disposal countdown due {{ record.retention_end_date.strftime('%Y-%m-%d') if record.retention_end_date else 'TBD' }}.
+                {% else %}
+                  Consent lifecycle is managed in your connected source systems (CRM/portal). When a withdrawal signal is received via API, SafeData initiates the disposal timeline.
+                {% endif %}
+              </p>
+            </div>
           {% endif %}
         </div>
       </div>

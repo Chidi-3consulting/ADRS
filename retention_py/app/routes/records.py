@@ -513,35 +513,6 @@ def handle_approve_disposal(
 
     return RedirectResponse(url=f"/records/view/{id}", status_code=303)
 
-@router.post("/records/consent/{id}")
-def handle_consent_withdrawal(id: int, request: Request, db: Session = Depends(get_db)):
-    session = get_session(request)
-    if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
-        return RedirectResponse(url="/login", status_code=303)
-
-    org_id = session["org_id"]
-    user_id = session["user_id"]
-
-    record = db.query(DataRecord).filter(
-        DataRecord.id == id,
-        DataRecord.organization_id == org_id,
-        DataRecord.deleted_at == None
-    ).first()
-
-    if not record:
-        raise HTTPException(status_code=404, detail="Record not found")
-
-    consent_disposal_days = int(_get_org_setting(db, org_id, "consent_disposal_days", "30"))
-    record.consent_withdrawn_at = datetime.utcnow()
-    record.consent_withdrawn_by = user_id
-    record.retention_end_date = date.today() + timedelta(days=consent_disposal_days)
-    db.commit()
-
-    log_audit(db, org_id, "consent_withdrawn", "data_record", id, user_id, {
-        "disposal_due": record.retention_end_date.strftime("%Y-%m-%d")
-    }, request.client.host if request.client else None)
-
-    return RedirectResponse(url=f"/records/view/{id}", status_code=303)
 
 @router.post("/records/dispose/{id}")
 def handle_request_disposal(
@@ -780,25 +751,6 @@ def handle_disposal_reject(
     reject_disposal(
         db, session["org_id"], id, session["user_id"],
         reason=reason or "", ip=request.client.host if request.client else None
-    )
-    return RedirectResponse(url=f"/records/view/{id}", status_code=303)
-
-
-@router.post("/records/consent_withdraw/{id}")
-def handle_consent_withdrawal(
-    id: int,
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    """B1 consent withdrawal action."""
-    session = get_session(request)
-    if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
-        return RedirectResponse(url="/login", status_code=303)
-
-    from app.engine import log_consent_withdrawal
-    log_consent_withdrawal(
-        db, session["org_id"], id, session["user_id"],
-        ip=request.client.host if request.client else None
     )
     return RedirectResponse(url=f"/records/view/{id}", status_code=303)
 

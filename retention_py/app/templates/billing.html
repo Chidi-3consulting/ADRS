@@ -12,6 +12,22 @@
     </div>
   </div>
 
+  {% if request.query_params.get('trial_expired') %}
+    <div class="alert alert-danger d-flex align-items-center mb-4 rounded-3 shadow-sm border-0">
+      <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+      <div>
+        <strong>Your 14-day free trial has expired.</strong> Full access to data retention schedules and actions is temporarily paused. Please choose a subscription plan below to reactivate your workspace.
+      </div>
+    </div>
+  {% elif request.query_params.get('suspended') %}
+    <div class="alert alert-danger d-flex align-items-center mb-4 rounded-3 shadow-sm border-0">
+      <i class="bi bi-slash-circle-fill fs-4 me-3"></i>
+      <div>
+        <strong>Tenant Suspended.</strong> Your organization account has been suspended. Please contact support or update your billing details below.
+      </div>
+    </div>
+  {% endif %}
+
   <div class="row g-4">
     <div class="col-lg-7">
       <div class="card shadow-sm border-0 rounded-4 bg-white mb-4 animate-in">
@@ -74,7 +90,7 @@
 
           {% if org and org.subscription_status == 'trial' %}
             <div class="alert alert-warning py-2 small mb-0 rounded-3 text-start">
-              <i class="bi bi-clock-history me-1"></i> You are currently operating under a 14-day trial period.
+              <i class="bi bi-clock-history me-1"></i> You are currently operating under a trial period ({% if trial_days is not none and trial_days > 0 %}{{ trial_days }} days remaining{% else %}Trial Expired{% endif %}).
             </div>
           {% endif %}
         </div>
