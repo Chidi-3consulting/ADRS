@@ -1724,3 +1724,46 @@ footer#footer {
   }
   .skeleton { animation: none; background: var(--sd-gray-100); }
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   27. DARK SURFACE & PUBLIC CONTRAST SAFEGUARDS
+   ────────────────────────────────────────────────────────────────── */
+
+/* Ensure text on dark backgrounds in public views never inherits default dark gray/black headings */
+.public-page .text-white,
+.public-page .text-white h1,
+.public-page .text-white h2,
+.public-page .text-white h3,
+.public-page .text-white h4,
+.public-page .text-white h5,
+.public-page .text-white h6,
+.public-page .text-white .h1,
+.public-page .text-white .h2,
+.public-page .text-white .h3,
+.public-page .text-white .h4,
+.public-page .text-white .h5,
+.public-page .text-white .h6,
+.public-page .text-white .display-1,
+.public-page .text-white .display-2,
+.public-page .text-white .display-3,
+.public-page .text-white .display-4,
+.public-page .text-white .display-5,
+.public-page .text-white .display-6,
+.public-page .auth-card h1,
+.public-page .auth-card h2,
+.public-page .auth-card h3,
+.public-page .auth-card h4,
+.public-page .auth-card h5,
+.public-page .auth-card h6 {
+  --bs-heading-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Ensure secondary text on dark surfaces meets WCAG AA 4.5:1+ contrast */
+.public-page .text-white .text-secondary,
+.public-page .text-white .text-muted,
+.public-page section[style*="#141426"] p,
+.public-page .auth-card p.small {
+  color: #cbd5e1 !important;
+}
+
