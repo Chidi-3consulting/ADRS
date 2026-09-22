@@ -282,6 +282,35 @@ class SessionEnforcementMiddleware(BaseHTTPMiddleware):
         # ── Update last_activity ──
         session["last_activity"] = now
 
+        # ── Freshness re-sync: re-read security-relevant claims from the DB ──
+        # (session cookies last up to 8h; role / org status / verification / 2FA
+        # changes must take effect without waiting for session expiry)
+        try:
+            from app.models import User, Organization
+            from app.database import SessionLocal
+            from app.auth import clear_session as _clear_session
+            _db = SessionLocal()
+            try:
+                u = _db.query(User).filter(User.id == session.get("user_id")).first()
+                o = _db.query(Organization).filter(Organization.id == session.get("org_id")).first()
+                if not u or not u.is_active or not o:
+                    # Account or org deleted/deactivated → force re-login
+                    response = RedirectResponse(url="/login?expired=1", status_code=303)
+                    _clear_session(response)
+                    return response
+                session["role"] = u.role
+                session["is_platform_admin"] = bool(u.is_platform_admin)
+                session["must_change_password"] = bool(u.must_change_password)
+                session["twofa_enabled"] = bool(u.twofa_enabled)
+                session["email_verified"] = u.email_verified_at is not None
+                session["org_status"] = o.status
+                session["subscription_status"] = o.subscription_status or "trial"
+                session["trial_ends_at"] = o.trial_ends_at.isoformat() if o.trial_ends_at else None
+            finally:
+                _db.close()
+        except Exception:
+            pass  # Never break the request because the freshness check failed
+
         # ── Enforce must_change_password ──
         if session.get("must_change_password") and not _path_is(path, "/profile", "/logout"):
             response = RedirectResponse(url="/profile?required=1", status_code=303)

@@ -617,7 +617,6 @@ def handle_bulk_dispose(
         is_due = (
             (rec.retention_end_date and rec.retention_end_date <= today)
             or rec.status in ("due_disposal", "expired")
-            or session.get("role") in ("admin", "dpo")
         )
 
         if not is_due:
@@ -823,7 +822,7 @@ async def handle_attachment_upload(
 @router.get("/attachments/download/{id}")
 def handle_attachment_download(id: int, request: Request, db: Session = Depends(get_db)):
     session = get_session(request)
-    if not session or "user_id" not in session:
+    if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
         return RedirectResponse(url="/login", status_code=303)
 
     org_id = session["org_id"]
@@ -887,6 +886,11 @@ def export_records_csv(request: Request, db: Session = Depends(get_db)):
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
+
+    # RBAC: full-register export is restricted to admins and DPOs —
+    # data_owner is category-scoped elsewhere and must not bypass that here.
+    if session.get("role") not in ("admin", "dpo"):
+        raise HTTPException(status_code=403, detail="Only administrators and DPOs can export the full register.")
 
     org_id = session["org_id"]
     records = db.query(DataRecord).filter(

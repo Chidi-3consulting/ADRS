@@ -664,51 +664,6 @@ def audit_norm_details(details) -> str:
     return json.dumps(details, sort_keys=True, ensure_ascii=False)
 
 
-def verify_audit_chain(db: Session, org_id: int = None) -> dict:
-    """
-    Walk the audit_log hash chain and verify integrity.
-    Returns {'ok': bool, 'checked': int, 'broken_at': int|None}.
-    Uses legacy-compatible canonical format for hash verification.
-    """
-    query = db.query(AuditLog).order_by(AuditLog.id.asc())
-    if org_id:
-        query = query.filter(AuditLog.organization_id == org_id)
-
-    rows = query.all()
-    expected_prev = rows[0].prev_hash if rows and rows[0].prev_hash else ("0" * 64)
-    checked = 0
-
-    for r in rows:
-        # Check prev_hash link
-        prev_hash = r.prev_hash or ("0" * 64)
-        if prev_hash != expected_prev:
-            return {"ok": False, "checked": checked, "broken_at": r.id}
-
-        # Recompute row_hash using legacy-compatible canonical format
-        details_str = audit_norm_details(r.details)
-        created_at_str = r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else ""
-        payload = "|".join([
-            str(r.organization_id), r.action, r.entity_type,
-            str(r.entity_id) if r.entity_id is not None else "",
-            str(r.performed_by) if r.performed_by is not None else "",
-            details_str, str(r.ip_address or ""), prev_hash, created_at_str,
-        ])
-        computed = hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-        if r.row_hash and r.row_hash != computed:
-            return {"ok": False, "checked": checked, "broken_at": r.id}
-
-        expected_prev = r.row_hash or expected_prev
-        checked += 1
-
-    return {"ok": True, "checked": checked, "broken_at": None}
-
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-#   Outbound Webhook Dispatch 
-# ═══════════════════════════════════════════════════════════════════════════
-
 def webhook_matches(event_types: str, event: str) -> bool:
     """True if an endpoint's event_types ('*' or CSV) subscribes to the event."""
     event_types = (event_types or "").strip()

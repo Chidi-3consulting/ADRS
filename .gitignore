@@ -20,6 +20,10 @@ retention_py/storage/
 # SQLite databases (local dev)
 retention_py/*.db
 
+# Local debug scratch dir and bundled binaries
+retention_py/scratch/
+retention_py/cloudflared.exe
+
 # Test/debug artifacts (Playwright, screenshots)
 .playwright-mcp/
 audit-*.png

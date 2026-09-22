@@ -2,17 +2,20 @@ from fastapi import APIRouter, Request, Response, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 import hashlib
 import json
-from datetime import datetime
-from pydantic import BaseModel
+from datetime import datetime, date, timedelta, timezone
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from app.database import get_db
-from app.models import ApiKey, ConnectedSystem, DataRecord, DataCategory, IntegrationLog, ConsentSignal
-from app.engine import calculate_retention_end_date
+from app.models import ApiKey, ConnectedSystem, DataRecord, DataCategory, IntegrationLog, ConsentSignal, Organization
+from app.engine import calculate_retention_end_date, execute_disposal, is_disposal_frozen
 from app.enterprise import within_rate_limit, api_key_can, log_integration
 from app.helpers import log_audit
 
 router = APIRouter()
+
+# Maximum records accepted in a single batch ingest call
+MAX_BATCH_SIZE = 500
 
 # Helper to authenticate API Key (supports Authorization: Bearer and X-API-Key)
 def authenticate_api_key(
@@ -22,7 +25,7 @@ def authenticate_api_key(
     required_permission: Optional[str] = None,
 ) -> ApiKey:
     raw_key = ""
-    if authorization and authorization.startswith("Bearer "):
+    if authorization and authorization.startswith("Bearer ") and len(authorization) > 7:
         raw_key = authorization.split(" ", 1)[1].strip()
     elif authorization and not authorization.startswith("Bearer "):
         raw_key = authorization.strip()
@@ -30,6 +33,7 @@ def authenticate_api_key(
         raw_key = x_api_key.strip()
 
     if not raw_key:
+        _log_api_auth_failure(db, None, "missing_key")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing or invalid API Key. Provide 'Authorization: Bearer <key>' or 'X-API-Key: <key>'."
@@ -43,6 +47,7 @@ def authenticate_api_key(
     ).first()
 
     if not api_key:
+        _log_api_auth_failure(db, None, "invalid_key")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or revoked API Key."
@@ -50,20 +55,32 @@ def authenticate_api_key(
 
     # Check expiration
     if api_key.expires_at and api_key.expires_at < datetime.utcnow():
+        _log_api_auth_failure(db, api_key, "expired_key")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API Key has expired."
         )
 
-    # Gap 4: Enforce rate limiting (60 requests per minute per key)
-    if not within_rate_limit(db, api_key.id, limit_per_min=60):
+    # Enforce tenant account status: suspended / expired-trial orgs lose API access
+    org = db.query(Organization).filter(Organization.id == api_key.organization_id).first()
+    if not org or org.status == "suspended":
+        _log_api_auth_failure(db, api_key, "org_suspended")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Organisation account is suspended. Contact support."
+        )
+
+    # Enforce rate limiting using the key's configured per-minute limit
+    limit = api_key.rate_limit_per_min or 60
+    if not within_rate_limit(db, api_key.id, limit_per_min=limit):
+        _log_api_rate_limit(db, api_key)
         raise HTTPException(
             status_code=429,
-            detail="Rate limit exceeded. Maximum 60 requests per minute.",
+            detail=f"Rate limit exceeded. Maximum {limit} requests per minute.",
             headers={"Retry-After": "60"},
         )
 
-    # Gap 11: Enforce permission scoping
+    # Enforce permission scoping
     if required_permission and not api_key_can(api_key, required_permission):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -75,6 +92,41 @@ def authenticate_api_key(
     db.commit()
     return api_key
 
+
+def _log_api_auth_failure(db: Session, api_key, reason: str):
+    """Record failed API authentication attempts so brute-force probing is visible."""
+    try:
+        log_integration(
+            db,
+            api_key.system_id if api_key else None,
+            api_key.id if api_key else None,
+            direction="inbound",
+            endpoint="/api/v1/auth",
+            method="AUTH",
+            status_code=401,
+            error=f"auth_failed:{reason}",
+        )
+    except Exception:
+        pass
+
+
+def _log_api_rate_limit(db: Session, api_key):
+    """Record a rate-limited rejection."""
+    try:
+        log_integration(
+            db,
+            api_key.system_id,
+            api_key.id,
+            direction="inbound",
+            endpoint="/api/v1/rate_limited",
+            method="RATE",
+            status_code=429,
+            error="rate_limit_exceeded",
+        )
+    except Exception:
+        pass
+
+
 class IngestRecordRequest(BaseModel):
     record_reference: str
     category_id: int
@@ -83,7 +135,7 @@ class IngestRecordRequest(BaseModel):
     notes: Optional[str] = None
 
 class IngestBatchRequest(BaseModel):
-    records: List[IngestRecordRequest]
+    records: List[IngestRecordRequest] = Field(..., max_length=MAX_BATCH_SIZE)
 
 class ConsentSignalRequest(BaseModel):
     record_reference: str
@@ -429,8 +481,24 @@ def api_records_disposed(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
 ):
+    """
+    Confirm external disposal of records by reference.
+
+    Governance rules enforced:
+      - Disposal freeze: rejected while the emergency freeze is active.
+      - Dual approval: sensitive (dual-approval) categories can NOT be disposed
+        via API; a 409 instructs the caller to use the two-officer workflow.
+      - Legal hold: held records are always skipped.
+    """
     api_key = authenticate_api_key(db, authorization, required_permission="dispose")
     org_id = api_key.organization_id
+
+    # Emergency disposal freeze applies to API-driven disposal too
+    if is_disposal_frozen(db, org_id):
+        raise HTTPException(
+            status_code=423,
+            detail="Disposal is frozen organisation-wide (litigation/audit hold). Request rejected."
+        )
 
     # Find matching records
     records = db.query(DataRecord).filter(
@@ -442,8 +510,28 @@ def api_records_disposed(
     if not records:
         raise HTTPException(status_code=404, detail="No active record matched this reference.")
 
+    # Dual-approval categories must never be disposed through a single API call
+    dual_records = [
+        r for r in records
+        if r.category and r.category.requires_dual_approval
+    ]
+    if dual_records:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"{len(dual_records)} matched record(s) belong to dual-approval categories and "
+                "cannot be disposed via API. Use the two-officer approval workflow in SafeData."
+            )
+        )
+
     disposed_count = 0
+    skipped_held = 0
     for r in records:
+        if r.status == "disposed":
+            continue
+        if r.legal_hold:
+            skipped_held += 1
+            continue
         if execute_disposal(db, r.id, actor_id=None, ip_address="API"):
             disposed_count += 1
 
@@ -451,7 +539,8 @@ def api_records_disposed(
         "status": "processed",
         "external_ref": payload.external_ref,
         "matched_count": len(records),
-        "disposed_count": disposed_count
+        "disposed_count": disposed_count,
+        "skipped_legal_hold": skipped_held
     }
 
 @router.post("/records/terminate")
@@ -512,9 +601,10 @@ def api_records_terminate(
 
 # ═══════════════════════════════════════════════════════════════════════════
 #   A1: Real-time Dashboard Metrics JSON endpoint
+#   (router is mounted at /api/v1 — do NOT repeat the prefix here)
 # ═══════════════════════════════════════════════════════════════════════════
 
-@router.get("/api/v1/dashboard/metrics")
+@router.get("/dashboard/metrics")
 def get_dashboard_metrics(
     request: Request,
     db: Session = Depends(get_db),
@@ -525,10 +615,6 @@ def get_dashboard_metrics(
     Returns live KPI counts for the calling API key's organization.
     Useful for embedding SafeData metrics in external dashboards.
     """
-    from datetime import datetime, date, timezone
-    from app.engine import compliance_metrics, disposals_by_month
-    from sqlalchemy import func
-
     api_key = authenticate_api_key(db, authorization, x_api_key, required_permission="read")
     org_id = api_key.organization_id
 
@@ -556,7 +642,7 @@ def get_dashboard_metrics(
 #   A2: Disposal Workflow Analytics endpoint
 # ═══════════════════════════════════════════════════════════════════════════
 
-@router.get("/api/v1/disposal/analytics")
+@router.get("/disposal/analytics")
 def get_disposal_analytics(
     request: Request,
     db: Session = Depends(get_db),
@@ -567,7 +653,6 @@ def get_disposal_analytics(
     Returns disposal workflow analytics: success rate, avg time-to-disposal,
     pending approval aging, and method breakdown.
     """
-    from datetime import datetime, timezone
     from sqlalchemy import func
 
     api_key = authenticate_api_key(db, authorization, x_api_key, required_permission="read")
@@ -632,7 +717,7 @@ def get_disposal_analytics(
 #   A3: Audit Chain Integrity Verification endpoint
 # ═══════════════════════════════════════════════════════════════════════════
 
-@router.get("/api/v1/audit/verify")
+@router.get("/audit/verify")
 def verify_audit_integrity(
     request: Request,
     db: Session = Depends(get_db),
@@ -643,9 +728,6 @@ def verify_audit_integrity(
     Runs SHA-256 HMAC chain verification on the calling org's audit log.
     Returns chain integrity status — suitable for compliance evidence.
     """
-    from datetime import datetime, timezone
-    from app.engine import verify_audit_chain
-
     api_key = authenticate_api_key(db, authorization, x_api_key, required_permission="read")
     org_id = api_key.organization_id
 
