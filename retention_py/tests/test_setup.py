@@ -36,10 +36,17 @@ def test_setup_incomplete_with_wrong_value(db):
     assert setup_is_complete(db) is False
 
 
-def test_setup_get_page(client):
+def test_setup_get_page(client, db):
     """GET /setup should return 200 when setup is not complete."""
+    _clear_setup_flag(db)
     response = client.get("/setup", follow_redirects=False)
-    assert response.status_code in [200, 303]
+    assert response.status_code == 200
+
+
+def test_setup_get_redirects_when_complete(client):
+    """GET /setup should redirect (303) once setup is complete."""
+    response = client.get("/setup", follow_redirects=False)
+    assert response.status_code == 303
 
 
 def test_setup_post_validation(client):

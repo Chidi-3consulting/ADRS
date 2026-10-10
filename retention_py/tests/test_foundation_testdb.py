@@ -1,4 +1,4 @@
-﻿import app.database as database
+import app.database as database
 
 
 def test_app_engine_is_the_test_database():
