@@ -4,11 +4,7 @@ SafeData Python Engine — main application entry point.
 Registers FastAPI app with:
   - Security middleware (headers with nonce CSP, CSRF, session enforcement)
   - All route blueprints
-  - Background scheduler tasks:
-      * Retention engine + housekeeping (from original)
-      * Backup cron (Gap 6)
-      * Disposal dispatch cron (Gap 7)
-      * Intake queue processor (Gap 8)
+  - (Background jobs run in the separate worker: python -m app.worker)
   - Custom error handlers (404, 500)
   - Static file serving
 """
@@ -21,9 +17,7 @@ from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 import os
-import asyncio
 from datetime import datetime
-from contextlib import asynccontextmanager
 
 from app.database import SessionLocal
 from app.auth import get_session, build_session_data
@@ -92,142 +86,6 @@ from app.routes import (
     public, dashboard, categories, records, api_v1, app_pages, platform,
     integrations_routes, recalculations, import_records, ropa
 )
-from app.engine import run_retention_checks, run_housekeeping
-from app.models import Organization
-
-# ══════════════════════════════════════════════════════════════════════
-#   Background Schedulers
-# ══════════════════════════════════════════════════════════════════════
-
-async def retention_scheduler_task():
-    """Run retention engine checks every 10 minutes."""
-    while True:
-        await asyncio.sleep(600)  # 10 minutes
-        db = SessionLocal()
-        try:
-            orgs = db.query(Organization).all()
-            for org in orgs:
-                run_retention_checks(db, org.id)
-        except Exception as e:
-            print(f"[{datetime.now()}] Scheduler error: {e}")
-        finally:
-            db.close()
-
-
-async def housekeeping_scheduler_task():
-    """Run housekeeping once per hour."""
-    while True:
-        await asyncio.sleep(3600)  # 1 hour
-        db = SessionLocal()
-        try:
-            result = run_housekeeping(db)
-            print(f"[{datetime.now()}] Housekeeping: {result}")
-        except Exception as e:
-            print(f"[{datetime.now()}] Housekeeping error: {e}")
-        finally:
-            db.close()
-
-
-async def backup_scheduler_task():
-    """Run database backup once per day (Gap 6)."""
-    while True:
-        await asyncio.sleep(86400)  # 24 hours
-        db = SessionLocal()
-        try:
-            from app.backups import backup_database, prune_backups
-            from app.config import BACKUP_PATH
-            result = backup_database(db, BACKUP_PATH)
-            print(f"[{datetime.now()}] Backup: {result['status']} — {result['file']}")
-            pruned = prune_backups(db, BACKUP_PATH, days=30)
-            if pruned:
-                print(f"[{datetime.now()}] Pruned {pruned} old backup(s)")
-        except Exception as e:
-            print(f"[{datetime.now()}] Backup error: {e}")
-        finally:
-            db.close()
-
-
-async def disposal_dispatch_scheduler_task():
-    """Process outbound disposal dispatches every 10 minutes (Gap 7)."""
-    while True:
-        await asyncio.sleep(600)  # 10 minutes
-        db = SessionLocal()
-        try:
-            from app.engine import get_setting
-            if get_setting(db, "SafeData_tier", "core") == "enterprise":
-                from app.enterprise import process_disposal_dispatches
-                result = process_disposal_dispatches(db, 50)
-                if result["sent"] or result["failed"]:
-                    print(f"[{datetime.now()}] Disposal dispatch: sent {result['sent']}, failed {result['failed']}")
-        except Exception as e:
-            print(f"[{datetime.now()}] Disposal dispatch error: {e}")
-        finally:
-            db.close()
-
-
-async def intake_queue_scheduler_task():
-    """Process intake queue every 5 minutes (Gap 8)."""
-    while True:
-        await asyncio.sleep(300)  # 5 minutes
-        db = SessionLocal()
-        try:
-            from app.engine import get_setting
-            if get_setting(db, "SafeData_tier", "core") == "enterprise":
-                from app.enterprise import process_intake_queue
-                result = process_intake_queue(db, 100)
-                if result["processed"]:
-                    print(f"[{datetime.now()}] Intake: processed {result['processed']}, "
-                          f"created {result['created']}, dup {result['duplicate']}, "
-                          f"failed {result['failed']}")
-        except Exception as e:
-            print(f"[{datetime.now()}] Intake queue error: {e}")
-        finally:
-            db.close()
-
-
-async def audit_chain_scheduler_task():
-    """Verify cryptographic SHA-256 audit chain every 6 hours and alert if compromised."""
-    while True:
-        await asyncio.sleep(21600)  # 6 hours
-        db = SessionLocal()
-        try:
-            from app.engine import verify_audit_chain, notify_role
-            result = verify_audit_chain(db)
-            if not result.get("ok"):
-                broken_id = result.get("first_broken_log_id")
-                print(f"[{datetime.now()}] CRITICAL: Cryptographic audit chain broken at log ID {broken_id}!")
-                orgs = db.query(Organization).all()
-                for org in orgs:
-                    notify_role(
-                        db, org.id, ["admin", "dpo"], "security_alert",
-                        "CRITICAL: Audit Ledger Tamper Alert",
-                        f"Cryptographic audit chain verification failed at entry #{broken_id}. Immediate compliance review required."
-                    )
-            else:
-                print(f"[{datetime.now()}] Audit chain verified: {result.get('verified_count', 0)} entries intact.")
-        except Exception as e:
-            print(f"[{datetime.now()}] Audit chain scheduler error: {e}")
-        finally:
-            db.close()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    task1 = asyncio.create_task(retention_scheduler_task())
-    task2 = asyncio.create_task(housekeeping_scheduler_task())
-    task3 = asyncio.create_task(backup_scheduler_task())
-    task4 = asyncio.create_task(disposal_dispatch_scheduler_task())
-    task5 = asyncio.create_task(intake_queue_scheduler_task())
-    task6 = asyncio.create_task(audit_chain_scheduler_task())
-    yield
-    task1.cancel()
-    task2.cancel()
-    task3.cancel()
-    task4.cancel()
-    task5.cancel()
-    task6.cancel()
-
-
 # Gap 14: Only enable debug in local dev mode — never in production or staging
 app = FastAPI(
     title="SafeData — Data Retention & Governance Platform",
@@ -235,7 +93,6 @@ app = FastAPI(
     docs_url="/api/docs" if not IS_PRODUCTION else None,
     redoc_url="/api/redoc" if not IS_PRODUCTION else None,
     debug=(APP_ENV == "local"),
-    lifespan=lifespan
 )
 
 

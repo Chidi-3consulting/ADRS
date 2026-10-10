@@ -47,4 +47,5 @@ Set-Location $Root
 # `python -m app.cli adopt-legacy-db` once before this script is used.
 Write-Host "Applying database migrations..." -ForegroundColor Cyan
 python -m app.cli migrate
+Start-Process python -ArgumentList "-m","app.worker" -NoNewWindow
 python main.py

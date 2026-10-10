@@ -659,4 +659,22 @@ class LoginAttempt(Base):
     created_at = Column(DateTime, default=func.now(), nullable=False)
 
 
+class JobRun(Base):
+    __tablename__ = "job_runs"
 
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    job_name = Column(String(64), nullable=False, index=True)
+    holder = Column(String(128), nullable=False)
+    status = Column(Enum("running", "success", "failed", name="job_run_status"), nullable=False, default="running")
+    started_at = Column(DateTime, nullable=False)
+    finished_at = Column(DateTime, nullable=True)
+    detail = Column(JSON, nullable=True)
+    error = Column(Text, nullable=True)
+
+
+class JobLock(Base):
+    __tablename__ = "job_locks"
+
+    job_name = Column(String(64), primary_key=True)
+    holder = Column(String(128), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
