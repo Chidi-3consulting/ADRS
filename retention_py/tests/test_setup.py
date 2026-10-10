@@ -7,13 +7,20 @@ from app.auth import setup_is_complete
 from app.models import SystemSetting
 
 
+def _clear_setup_flag(db):
+    db.query(SystemSetting).filter(SystemSetting.setting_key == "setup_complete").delete()
+    db.commit()
+
+
 def test_setup_not_complete_initially(db):
     """Setup should not be complete without the system setting."""
+    _clear_setup_flag(db)
     assert setup_is_complete(db) is False
 
 
 def test_setup_complete_after_flag(db):
     """Setup should be complete after setting the flag."""
+    _clear_setup_flag(db)
     db.add(SystemSetting(setting_key="setup_complete", setting_value="1"))
     db.commit()
 
@@ -22,6 +29,7 @@ def test_setup_complete_after_flag(db):
 
 def test_setup_incomplete_with_wrong_value(db):
     """Setup should not be complete if value is not '1'."""
+    _clear_setup_flag(db)
     db.add(SystemSetting(setting_key="setup_complete", setting_value="0"))
     db.commit()
 

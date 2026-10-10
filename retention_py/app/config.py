@@ -75,6 +75,9 @@ LOGIN_WINDOW_MINUTES = 15
 PASSWORD_MIN_LENGTH = 10
 PASSWORD_HISTORY_COUNT = 5  # Number of previous passwords to check against
 
+# bcrypt cost: 12 in real environments; 4 in tests (bcrypt minimum) for speed.
+BCRYPT_ROUNDS = int(os.getenv("BCRYPT_ROUNDS", "4" if IS_TEST else "12"))
+
 # ── Security: Request Size Limit (Gap 8) ──
 MAX_REQUEST_BODY_SIZE = int(os.getenv("MAX_REQUEST_BODY_SIZE", str(25 * 1024 * 1024)))  # 25 MB
 

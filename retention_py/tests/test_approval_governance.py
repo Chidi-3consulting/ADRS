@@ -1,17 +1,10 @@
 import pytest
 from datetime import date, timedelta
-from app.database import SessionLocal
 from app.models import DataCategory, DataRecord, Organization
 from app.engine import run_retention_checks
 
-def test_approval_governance_tiers():
-    db = SessionLocal()
-    org = db.query(Organization).first()
-    if not org:
-        org = Organization(name="Test Org", country="ZA")
-        db.add(org)
-        db.commit()
-        db.refresh(org)
+def test_approval_governance_tiers(db):
+    org = db.get(Organization, 1)  # seeded by the db fixture
 
     # 1. Category with auto_disposal
     cat_auto = DataCategory(
@@ -92,4 +85,3 @@ def test_approval_governance_tiers():
     db.delete(cat_single)
     db.delete(cat_dual)
     db.commit()
-    db.close()

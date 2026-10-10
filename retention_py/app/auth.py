@@ -54,7 +54,8 @@ def decrypt_totp_secret(stored_secret: str) -> str:
 
 def hash_password(password: str) -> str:
     passwd_bytes = password.encode('utf-8')
-    salt = bcrypt.gensalt()
+    from app.config import BCRYPT_ROUNDS
+    salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
     hashed = bcrypt.hashpw(passwd_bytes, salt)
     return hashed.decode('utf-8')
 
