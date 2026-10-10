@@ -64,7 +64,7 @@ Retention-policy generator) are included across products per plan (see §6.2).
 | D8 | DPIA / Gap | In-app tools **and** paid 3Consulting expert services; a free public gap check as lead magnet. |
 | D9 | Pricing shape | Product × plan (Starter/Growth/Enterprise, sized by entities/users/records/data subjects) × **regional band** (A 100%, B 60%, C 40%, D 25%, World Bank income groups). Fixed, rounded per-currency price books. Monthly and yearly (yearly = 10× monthly). Equity programmes (NGO/education/public sector; establishing-org discount). **Never price on number of categories.** |
 | D10 | Currency | Visitor currency auto-detected from IP (Cloudflare `CF-IPCountry`, trusted only from Cloudflare; GeoLite2 fallback); display "local · ≈ USD"; optional override picker. Charged band = verified billing country. |
-| D11 | Payments | Gateway-agnostic billing layer. **Paystack** for African billing countries (NGN/GHS/KES/ZAR/USD); **Stripe** elsewhere. Stripe does not onboard Nigeria-registered companies, so: **launch on Paystack** (existing Nigerian entity, international cards enabled) to sell worldwide from day one; **in parallel register a UK private limited company** to own the Stripe account (trust signal for a privacy product, UK/EU buyers prefer UK/EU contracting entities, Stripe UK supports 135+ currencies and Stripe Tax). Use **Stripe Atlas (US Delaware)** instead only if raising US venture capital or targeting US buyers first. Routing switches by configuration once Stripe is live. Tax structure confirmed by an accountant before trading through the UK entity. |
+| D11 | Payments | Gateway-agnostic billing layer. **Paystack** for African billing countries (NGN/GHS/KES/ZAR/USD); **Stripe** elsewhere. Stripe does not onboard Nigeria-registered companies, so: **launch on Paystack** (existing Nigerian entity, international cards enabled) to sell worldwide from day one; **in parallel register a UK private limited company** to own the Stripe account (trust signal for a privacy product, UK/EU buyers prefer UK/EU contracting entities, Stripe UK supports 135+ currencies and Stripe Tax). Use **Stripe Atlas (US Delaware)** instead only if raising US venture capital or targeting US buyers first. Routing switches by configuration once Stripe is live. Tax structure confirmed by an accountant before trading through the UK entity. **The seller is always a company, never an individual**: a personal/sole-trader Stripe account in a director's name is not used (eligibility depends on residence; it mixes personal and company revenue, weakens B2B/DPA trust, and creates a single point of failure). The director's identity verifies the company account instead. **Merchant of Record (e.g. Paddle)** is evaluated in Phase 0 as an alternative to the UK entity, subject to confirming payouts to Nigeria; supported as a third gateway adapter if adopted. |
 | D12 | Trial | Free public gap check (no account) + 14-day full-Suite trial, no card. Then read-only, never data-hostage. |
 | D13 | Hosting | Managed cloud, EU region (Render Frankfurt; DigitalOcean App Platform as alternative): web + worker + managed PostgreSQL + EU object storage, behind Cloudflare. Docker image for portability. |
 | D14 | Domain | Launch on **safedata.3consult-ng.com**; register a standalone domain now to protect the name; domain is configuration; built-in 301 migration mode. |
@@ -266,6 +266,15 @@ country (`PAYSTACK_COUNTRIES` config). Webhooks: signature verification, idempot
 Stripe Tax for VAT/GST and reverse charge; Nigerian VAT on Paystack invoices. Invoices:
 PDF, sequential numbering per selling entity.
 
+### 6.4a Billing-exempt organisations
+- **Internal:** 3Consulting's own Group is never billed: no checkout, no reminders, no plan
+  limits, no lifecycle transitions. Used for 3Consulting's own compliance, demos and training.
+- **Complimentary:** Platform Owner/Super Admin may comp any organisation (pilots, partners,
+  sponsored NGOs) with a chosen plan, optional end date and reason; reminders start 14 days
+  before the end date. Every grant, change and expiry is audit-logged on the platform.
+- Implemented as `organizations.billing_mode ∈ {standard, internal, complimentary}` plus
+  `comp_plan_id`, `comp_ends_at`, `comp_reason`, `comp_granted_by`.
+
 ### 6.5 Subscription lifecycle and reminders
 States: `trialing → active → past_due (7-day grace) → read_only → cancelled → scheduled_deletion → deleted`.
 - Read-only: view, export, approvals, legal holds and dual-approval safeguards keep working;
@@ -462,7 +471,7 @@ are built.
 
 | # | Decision | Recommendation |
 |---|---|---|
-| S1 | Legal entity for Stripe | Form a **UK private limited company** to own the Stripe account (see D11); Stripe Atlas (US) only if US fundraising is planned. Paystack covers launch meanwhile, so this does not block go-live. |
+| S1 | Legal entity for Stripe | Form a **UK private limited company** with the director's identity verifying a Stripe **business** account (see D11); not a personal account. Stripe Atlas (US) only if US fundraising is planned. If Phase 0 confirms Paddle (Merchant of Record) pays out to Nigeria, it may replace the UK entity. Paystack covers launch meanwhile, so this does not block go-live. |
 | S2 | Plan limits and Band A prices | Adopt the §6.1 drafts as launch prices; review after the first 20 paying customers or 90 days, whichever comes first, using real usage data. |
 | S3 | Standalone domain | Register the best available short `.com` for SafeData now, plus defensive `.co.uk` and `.ng` variants (low annual cost). Keep it parked until migration. |
 | S4 | Old `.db` files in Git history (F19) | Phase 0 inspects the blobs first. If they hold only seed/test data and the repository is private, **keep history** (no rewrite). If any real personal data is found, rewrite history with `git filter-repo`, force-push, rotate every secret, and have collaborators re-clone. |
