@@ -28,6 +28,8 @@ from contextlib import asynccontextmanager
 from app.database import SessionLocal
 from app.auth import get_session, build_session_data
 from app.config import APP_ENV, IS_PRODUCTION, IS_TEST, ALLOWED_HOSTS
+from app.core.logging import RequestIdMiddleware, configure_logging
+configure_logging(json_output=IS_PRODUCTION)
 
 # ── Patch TemplateResponse to inject common context (incl. CSP nonce) ──
 _original_template_response = Jinja2Templates.TemplateResponse
@@ -250,6 +252,7 @@ app.add_middleware(SessionEnforcementMiddleware)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestSizeLimitMiddleware)
+app.add_middleware(RequestIdMiddleware)
 
 # Gap 9: Trusted Host validation — prevent Host header attacks in production
 if ALLOWED_HOSTS and ALLOWED_HOSTS != "*":
