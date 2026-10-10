@@ -64,7 +64,7 @@ Retention-policy generator) are included across products per plan (see §6.2).
 | D8 | DPIA / Gap | In-app tools **and** paid 3Consulting expert services; a free public gap check as lead magnet. |
 | D9 | Pricing shape | Product × plan (Starter/Growth/Enterprise, sized by entities/users/records/data subjects) × **regional band** (A 100%, B 60%, C 40%, D 25%, World Bank income groups). Fixed, rounded per-currency price books. Monthly and yearly (yearly = 10× monthly). Equity programmes (NGO/education/public sector; establishing-org discount). **Never price on number of categories.** |
 | D10 | Currency | Visitor currency auto-detected from IP (Cloudflare `CF-IPCountry`, trusted only from Cloudflare; GeoLite2 fallback); display "local · ≈ USD"; optional override picker. Charged band = verified billing country. |
-| D11 | Payments | Gateway-agnostic billing layer. **Paystack** for African billing countries (NGN/GHS/KES/ZAR/USD); **Stripe** elsewhere (requires a non-Nigerian 3Consulting entity or Stripe Atlas). |
+| D11 | Payments | Gateway-agnostic billing layer. **Paystack** for African billing countries (NGN/GHS/KES/ZAR/USD); **Stripe** elsewhere. Stripe does not onboard Nigeria-registered companies, so: **launch on Paystack** (existing Nigerian entity, international cards enabled) to sell worldwide from day one; **in parallel register a UK private limited company** to own the Stripe account (trust signal for a privacy product, UK/EU buyers prefer UK/EU contracting entities, Stripe UK supports 135+ currencies and Stripe Tax). Use **Stripe Atlas (US Delaware)** instead only if raising US venture capital or targeting US buyers first. Routing switches by configuration once Stripe is live. Tax structure confirmed by an accountant before trading through the UK entity. |
 | D12 | Trial | Free public gap check (no account) + 14-day full-Suite trial, no card. Then read-only, never data-hostage. |
 | D13 | Hosting | Managed cloud, EU region (Render Frankfurt; DigitalOcean App Platform as alternative): web + worker + managed PostgreSQL + EU object storage, behind Cloudflare. Docker image for portability. |
 | D14 | Domain | Launch on **safedata.3consult-ng.com**; register a standalone domain now to protect the name; domain is configuration; built-in 301 migration mode. |
@@ -458,20 +458,32 @@ Each phase receives its own implementation plan (writing-plans) before work star
 Phase 0 and Phase 1 run first; Phase 0 documents are produced while Phase 1 foundations
 are built.
 
-## 15. Stakeholder decisions still open
-1. Which non-Nigerian legal entity (or Stripe Atlas) operates the Stripe account.
-2. Final plan limits and Band A prices (drafts in §6.1).
-3. Standalone domain name to register.
-4. Whether to rewrite Git history to purge old `.db` files (F19).
-5. IP ownership/assignment of SafeData between 3Consulting and contributors (buyer due
-   diligence will ask).
-6. Support model and hours (email only vs chat; SLA for Enterprise).
+## 15. Stakeholder decisions still open (each with the recommended answer)
 
-## 16. Risks
-| Risk | Mitigation |
-|---|---|
-| Scope is large | Phased plans; each phase shippable; Phase 1 unblocks the rest. |
-| Hierarchy migration corrupts tenant data | Reversible Alembic migration, dry-run on a copy of production data, row-count and isolation assertions. |
-| Pricing perceived unfair or gamed | Band from verified billing country; review queue; equity programmes; frozen local prices. |
-| Legal-content inaccuracy | Rules files carry citations; legal pack and jurisdiction content reviewed by counsel; help marked "guidance, not legal advice". |
-| Stripe unavailable to the Nigerian entity | Gateway abstraction; Paystack accepts international cards as an interim. |
+| # | Decision | Recommendation |
+|---|---|---|
+| S1 | Legal entity for Stripe | Form a **UK private limited company** to own the Stripe account (see D11); Stripe Atlas (US) only if US fundraising is planned. Paystack covers launch meanwhile, so this does not block go-live. |
+| S2 | Plan limits and Band A prices | Adopt the §6.1 drafts as launch prices; review after the first 20 paying customers or 90 days, whichever comes first, using real usage data. |
+| S3 | Standalone domain | Register the best available short `.com` for SafeData now, plus defensive `.co.uk` and `.ng` variants (low annual cost). Keep it parked until migration. |
+| S4 | Old `.db` files in Git history (F19) | Phase 0 inspects the blobs first. If they hold only seed/test data and the repository is private, **keep history** (no rewrite). If any real personal data is found, rewrite history with `git filter-repo`, force-push, rotate every secret, and have collaborators re-clone. |
+| S5 | IP ownership | Put a written IP assignment or licence in place between 3Consulting and every contributor before selling; Phase 0 also produces a third-party dependency licence inventory. Commercial terms with contributors are a separate business matter. |
+| S6 | Support model | Launch with email + in-app support requests, business hours (WAT), first response within 1 business day; Enterprise SLA with 4-hour response for critical issues; live chat after launch once volume justifies it. |
+
+## 16. Risks (with the recommended mitigation for each)
+
+| # | Risk | Recommended mitigation |
+|---|---|---|
+| R1 | Programme scope is large | Strict phase gates with written exit criteria (§14). **Launch cut-line:** Phases 0–3 plus Consent capture/withdrawal from Phase 4 form a sellable launch; the rest ships in order after go-live. Definition of done includes tests, docs and re-audit item. |
+| R2 | **Retention engine disposes of data wrongly** (the highest product-liability risk) | Keep and extend the dual-approval safeguard and its regression test; dry-run mode, emergency freeze and legal holds on every disposal path; SafeData records and instructs disposal but source-system deletion is confirmed back, never assumed; disposal evidence kept; liability cap in Terms; professional indemnity insurance. |
+| R3 | Cross-tenant data leak | Central scoped-query layer + global SQLAlchemy tenant filter + an automated isolation test for every tenant-owned model + penetration test before first enterprise sale. |
+| R4 | SafeData itself is breached | Data minimisation (D15); app-level encryption for emails, TOTP secrets and API secrets; 2FA mandatory for Owners, Admins, Privacy Officers and platform staff; least-privilege roles; Cloudflare WAF; written incident-response plan using SafeData's own breach register and 72-hour workflow; cyber insurance. |
+| R5 | Hierarchy migration corrupts tenant data | Full database snapshot before migrating; reversible Alembic revision; rehearsal on an anonymised copy of production in staging; row-count, ownership and isolation assertions; documented rollback runbook; run in a maintenance window. |
+| R6 | Legal-content inaccuracy | Rules files carry citations and a review-by date; jurisdiction content and legal pack reviewed by qualified counsel before launch; help labelled "guidance, not legal advice"; disclaimer in Terms; professional indemnity insurance. |
+| R7 | Laws change after launch | Rules as versioned data with owners and review dates; quarterly legal-content review; customer-facing change log and in-app notice when a rule affecting their schedule changes; affected records queued in the existing recalculation flow, never silently re-dated. |
+| R8 | Stripe unavailable to the Nigerian entity | Go live on Paystack with international cards enabled (worldwide sales from day one); form a UK Ltd in parallel and connect Stripe when approved; the gateway abstraction makes the switch configuration-only. Phase 3 builds and tests both adapters regardless. |
+| R9 | Pricing perceived unfair or gamed | Band from verified billing country cross-checked with card country and tax ID; review queue instead of silent blocking; equity programmes; frozen, rounded local prices; published pricing principles on the pricing page. |
+| R10 | Currency volatility (e.g. naira devaluation) | Quarterly price-book review with a documented trigger (move >10% in reference FX); Paystack USD settlement option; yearly plans locked at purchase price for their term. |
+| R11 | Payment fraud and chargebacks | 3-D Secure on all card payments; Stripe Radar and Paystack fraud tools; trial requires no card, so stolen cards gain nothing; clear billing descriptor ("SAFEDATA 3CONSULTING"). |
+| R12 | Hosting outage or vendor lock-in | Docker image + standard PostgreSQL + S3-compatible storage; off-site encrypted backups with a separate provider; tested runbook to restore on an alternative provider within the 4-hour RTO; public status page. |
+| R13 | Key-person dependency | Developer docs, ADRs, CI, runbooks and a clean architecture so a second developer can onboard from the docs alone; Platform Owner plus at least one further Super Admin with personal logins; break-glass codes stored offline. |
+| R14 | Slow adoption / low conversion | Free public gap check (lead magnet and SEO), no-card trial, establishing-organisation discount, 3Consulting's existing consulting clients as first channel, funnel analytics (privacy-respecting, first-party only) reviewed monthly. |
