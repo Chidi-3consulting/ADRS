@@ -1,9 +1,17 @@
 from sqlalchemy import (
-    Column, Integer, String, Text, Enum, ForeignKey, 
+    Column, Integer, String, Text, ForeignKey, 
     DateTime, Date, Boolean, JSON, func, Table
 )
+from sqlalchemy import Enum as _SAEnum
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+def Enum(*values, **kw):  # noqa: N802 - drop-in replacement for sqlalchemy.Enum
+    """Portable enum: VARCHAR + CHECK constraint on every database."""
+    kw.setdefault("native_enum", False)
+    kw.setdefault("create_constraint", True)
+    return _SAEnum(*values, **kw)
 
 class Organization(Base):
     __tablename__ = "organizations"

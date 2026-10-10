@@ -14,15 +14,14 @@ from alembic import context
 # Add the project root to sys.path so we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import Base
-from app.config import DATABASE_URL
+from app.database import Base, _db_url as APP_DB_URL
 import app.models  # noqa: F401 — ensure all models are registered
 
 # Alembic Config object
 config = context.config
 
 # Override the sqlalchemy.url from the app config
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+config.set_main_option("sqlalchemy.url", config.get_main_option("sqlalchemy.url_override") or APP_DB_URL)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
@@ -40,6 +39,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_as_batch=url.startswith("sqlite"),
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -47,13 +47,19 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode — connects to DB and applies directly."""
+    section = dict(config.get_section(config.config_ini_section, {}))
+    section.pop("sqlalchemy.url_override", None)  # our own option, not an engine kwarg
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        section,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            render_as_batch=connection.dialect.name == "sqlite",
+        )
         with context.begin_transaction():
             context.run_migrations()
 

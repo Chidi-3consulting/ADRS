@@ -43,4 +43,8 @@ Write-Host "  Press Ctrl+C to stop" -ForegroundColor DarkGray
 Write-Host ""
 
 Set-Location $Root
+# Existing local retention.db created by the old app (import-time create_all) must run
+# `python -m app.cli adopt-legacy-db` once before this script is used.
+Write-Host "Applying database migrations..." -ForegroundColor Cyan
+python -m app.cli migrate
 python main.py

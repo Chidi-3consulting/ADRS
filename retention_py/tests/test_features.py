@@ -77,7 +77,7 @@ def test_recalculations_approval_flow(client, db):
 
     # Directly execute recalculation approval
     rec.retention_end_date = recalc.new_retention_end_date
-    recalc.status = "approved"
+    recalc.status = "recalculate"  # valid enum value; CHECK constraint now enforced
     db.commit()
 
     db.refresh(rec)
