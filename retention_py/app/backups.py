@@ -3,6 +3,7 @@ SQLite → iterdump SQL; PostgreSQL → pg_dump custom format (pg_dump 16 is in 
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 from datetime import timedelta
 
@@ -17,6 +18,15 @@ log = logging.getLogger("safedata.backups")
 PREFIX = "backups/"
 
 
+def _pg_dump_command(url) -> tuple[list[str], dict]:
+    """Build pg_dump argv + env; the password travels only in PGPASSWORD, never in argv."""
+    env = {**os.environ}
+    if url.password:
+        env["PGPASSWORD"] = url.password
+    safe = url.set(drivername="postgresql")._replace(password=None).render_as_string(hide_password=False)
+    return ["pg_dump", "--format=custom", "--no-owner", "--dbname", safe], env
+
+
 def _dump(db: Session) -> tuple[bytes, str]:
     engine = db.get_bind()
     if engine.dialect.name == "sqlite":
@@ -26,9 +36,14 @@ def _dump(db: Session) -> tuple[bytes, str]:
         finally:
             raw.close()
     if engine.dialect.name == "postgresql":
-        url = engine.url.set(drivername="postgresql").render_as_string(hide_password=False)
-        out = subprocess.run(["pg_dump", "--format=custom", "--no-owner", url],
-                             check=True, capture_output=True, timeout=1800)
+        cmd, env = _pg_dump_command(engine.url)
+        try:
+            out = subprocess.run(cmd, check=True, capture_output=True, timeout=1800, env=env)
+        except subprocess.CalledProcessError as exc:
+            tail = (exc.stderr or b"").decode("utf-8", errors="replace")[-2000:]
+            raise RuntimeError(f"pg_dump failed (exit {exc.returncode}): {tail}") from None
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("pg_dump timed out after 1800s") from None
         return out.stdout, "pgdump"
     raise RuntimeError(f"backups not supported for dialect {engine.dialect.name}")
 

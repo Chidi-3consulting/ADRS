@@ -109,7 +109,7 @@ SMTP_SECURE   = os.getenv("SMTP_SECURE", "tls")  # 'tls' | 'ssl' | 'none'
 SMTP_REPLY_TO = os.getenv("SMTP_REPLY_TO", "")
 
 # ── Object storage (attachments, backups) ──
-STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local")  # 'local' | 's3'
+STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local").strip().lower()  # 'local' | 's3'
 STORAGE_LOCAL_ROOT = os.getenv("STORAGE_LOCAL_ROOT", os.path.join(BASE_DIR, "storage"))
 S3_BUCKET = os.getenv("S3_BUCKET", "")
 S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "")  # e.g. https://<account>.r2.cloudflarestorage.com
@@ -120,4 +120,8 @@ S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY", "")
 BACKUP_ENCRYPTION_KEY = os.getenv("BACKUP_ENCRYPTION_KEY", "")
 if IS_PRODUCTION and not BACKUP_ENCRYPTION_KEY:
     print("FATAL: BACKUP_ENCRYPTION_KEY must be set in production.", file=sys.stderr)
+    sys.exit(1)
+if IS_PRODUCTION and (STORAGE_BACKEND != "s3" or not (S3_BUCKET and S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY)):
+    print("FATAL: in production STORAGE_BACKEND must be 's3' with S3_BUCKET, S3_ACCESS_KEY_ID and "
+          "S3_SECRET_ACCESS_KEY set (local disk is ephemeral).", file=sys.stderr)
     sys.exit(1)

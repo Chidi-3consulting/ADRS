@@ -2,6 +2,8 @@ import os
 import uuid
 import csv
 import io
+import logging
+import urllib.parse
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -836,10 +838,12 @@ def handle_attachment_download(id: int, request: Request, db: Session = Depends(
     try:
         data = get_storage().get(key)
     except (FileNotFoundError, ValueError):
+        logging.getLogger("safedata.attachments").warning("attachment %s missing from storage (key=%s)", att.id, key)
         raise HTTPException(status_code=404, detail="File not found on storage server.")
-    safe_name = "".join(c for c in att.original_filename if c.isalnum() or c in "._-") or "attachment"
+    safe_name = "".join(c for c in att.original_filename if c.isascii() and (c.isalnum() or c in "._-")) or "attachment"
+    quoted = urllib.parse.quote(att.original_filename)
     return Response(content=data, media_type=att.mime_type,
-                    headers={"Content-Disposition": f'attachment; filename="{safe_name}"'})
+                    headers={"Content-Disposition": f"attachment; filename=\"{safe_name}\"; filename*=UTF-8''{quoted}"})
 
 @router.get("/attachments", response_class=HTMLResponse)
 def list_attachments(request: Request, db: Session = Depends(get_db)):

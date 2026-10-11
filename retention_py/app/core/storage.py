@@ -63,10 +63,13 @@ class S3Storage:
         self.client.put_object(Bucket=self.bucket, Key=_check_key(key), Body=data, ContentType=content_type)
 
     def get(self, key):
+        from botocore.exceptions import ClientError
         try:
             return self.client.get_object(Bucket=self.bucket, Key=_check_key(key))["Body"].read()
-        except Exception as exc:
-            raise FileNotFoundError(key) from exc
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404", "NotFound"):
+                raise FileNotFoundError(key) from exc
+            raise
 
     def delete(self, key):
         self.client.delete_object(Bucket=self.bucket, Key=_check_key(key))
