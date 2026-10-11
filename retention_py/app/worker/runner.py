@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -11,10 +12,13 @@ from sqlalchemy.orm import Session
 
 from app.core.clock import utcnow
 from app.models import JobRun
-from app.worker.locks import acquire, release
+from app.worker.locks import acquire, release, renew
 
 log = logging.getLogger("safedata.worker")
 TICK_SECONDS = 30
+LEASE_MIN_TTL = 900
+# Lease renewal period in seconds; None means ttl/3. Tests override with a short value.
+RENEW_INTERVAL_SECONDS: float | None = None
 
 
 @dataclass(frozen=True)
@@ -31,11 +35,38 @@ def is_due(db: Session, job: Job, now: datetime) -> bool:
     return last is None or now - last[0] >= timedelta(seconds=job.interval_seconds)
 
 
+def _renew_loop(session_factory, job_name: str, holder: str, ttl: int,
+                interval: float, stop: threading.Event) -> None:
+    """Keep the lease alive while the job runs so no other worker can take it over."""
+    db = session_factory()
+    try:
+        while not stop.wait(interval):
+            try:
+                if not renew(db, job_name, holder, ttl):
+                    log.error("lease lost", extra={"job": job_name})
+                    return
+            except Exception:
+                db.rollback()
+                log.exception("lease renewal failed", extra={"job": job_name})
+    finally:
+        db.close()
+
+
 def run_job(job: Job, session_factory, holder: str) -> str:
     db: Session = session_factory()
+    renew_stop = threading.Event()
+    renewer: threading.Thread | None = None
     try:
-        if not acquire(db, job.name, holder, max(job.interval_seconds, 900)):
+        ttl = max(job.interval_seconds, LEASE_MIN_TTL)
+        if not acquire(db, job.name, holder, ttl):
             return "skipped"
+        renewer = threading.Thread(
+            target=_renew_loop,
+            args=(session_factory, job.name, holder, ttl,
+                  RENEW_INTERVAL_SECONDS or ttl / 3, renew_stop),
+            daemon=True,
+        )
+        renewer.start()
         run = JobRun(job_name=job.name, holder=holder, status="running", started_at=utcnow())
         db.add(run)
         db.commit()
@@ -54,8 +85,14 @@ def run_job(job: Job, session_factory, holder: str) -> str:
                                         "duration_ms": int((time.monotonic() - started) * 1000)})
         return run.status
     finally:
+        renew_stop.set()
+        if renewer is not None:
+            renewer.join(timeout=5)
         try:
+            db.rollback()
             release(db, job.name, holder)
+        except Exception:
+            log.exception("lock release failed", extra={"job": job.name})
         finally:
             db.close()
 
@@ -66,11 +103,14 @@ def run_forever(session_factory, holder: str, jobs: list[Job],
     log.info("worker started", extra={"status": holder})
     while not stop():
         for job in jobs:
-            db = session_factory()
             try:
-                due = is_due(db, job, utcnow())
-            finally:
-                db.close()
-            if due:
-                run_job(job, session_factory, holder)
+                db = session_factory()
+                try:
+                    due = is_due(db, job, utcnow())
+                finally:
+                    db.close()
+                if due:
+                    run_job(job, session_factory, holder)
+            except Exception:
+                log.exception("worker loop error", extra={"job": job.name})
         sleep(TICK_SECONDS)

@@ -35,3 +35,15 @@ def acquire(db: Session, job_name: str, holder: str, ttl_seconds: int) -> bool:
 def release(db: Session, job_name: str, holder: str) -> None:
     db.execute(delete(JobLock).where(JobLock.job_name == job_name, JobLock.holder == holder))
     db.commit()
+
+
+def renew(db: Session, job_name: str, holder: str, ttl_seconds: int) -> bool:
+    """Extend the lease, only if `holder` still owns it. Returns False if the lease was lost."""
+    expires = utcnow() + timedelta(seconds=ttl_seconds)
+    n = db.execute(
+        update(JobLock)
+        .where(JobLock.job_name == job_name, JobLock.holder == holder)
+        .values(expires_at=expires)
+    ).rowcount
+    db.commit()
+    return n == 1

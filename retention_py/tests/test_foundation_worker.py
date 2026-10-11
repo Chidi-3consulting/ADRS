@@ -4,8 +4,11 @@ from app.core.clock import utcnow
 from app.database import SessionLocal
 from app.models import JobLock, JobRun
 from app.worker import jobs as jobs_mod
-from app.worker.locks import acquire, release
-from app.worker.runner import Job, is_due, run_job
+import time
+
+from app.worker import runner as runner_mod
+from app.worker.locks import acquire, release, renew
+from app.worker.runner import Job, is_due, run_forever, run_job
 
 
 def test_two_holders_only_one_acquires(db):
@@ -75,3 +78,61 @@ def test_dispatch_and_intake_run_without_global_enterprise_setting(db, monkeypat
 def test_registry_names():
     assert {j.name for j in jobs_mod.JOBS} == {
         "retention", "housekeeping", "backup", "dispatch", "intake", "audit_chain"}
+
+
+def test_renew_only_for_holder(db):
+    acquire(db, "retention", "a", 10)
+    before = db.get(JobLock, "retention").expires_at
+    assert renew(db, "retention", "b", 600) is False
+    db.expire_all()
+    assert db.get(JobLock, "retention").expires_at == before
+    assert renew(db, "retention", "a", 600) is True
+    db.expire_all()
+    assert db.get(JobLock, "retention").expires_at > before + timedelta(seconds=300)
+
+
+def test_lease_renewed_while_job_runs(db, monkeypatch):
+    monkeypatch.setattr(runner_mod, "LEASE_MIN_TTL", 1)
+    monkeypatch.setattr(runner_mod, "RENEW_INTERVAL_SECONDS", 0.1)
+    seen = {}
+
+    def slow(_s):
+        time.sleep(2.5)  # well past the 1s TTL
+        other = SessionLocal()
+        try:
+            lock = other.get(JobLock, "slow")
+            seen["holder"] = lock.holder
+            seen["valid"] = lock.expires_at > utcnow()
+            seen["stolen"] = acquire(other, "slow", "intruder", 1)
+        finally:
+            other.close()
+        return {}
+
+    assert run_job(Job("slow", 1, slow), SessionLocal, "w1") == "success"
+    assert seen == {"holder": "w1", "valid": True, "stolen": False}
+    db.expire_all()
+    assert db.get(JobLock, "slow") is None
+
+
+def test_loop_survives_error_outside_job_fn(db, monkeypatch):
+    real = runner_mod.run_job
+
+    def flaky(job, sf, holder):
+        if job.name == "first":
+            raise RuntimeError("commit exploded")
+        return real(job, sf, holder)
+
+    monkeypatch.setattr(runner_mod, "run_job", flaky)
+    passes = iter([False, True])
+    run_forever(SessionLocal, "w1",
+                [Job("first", 60, lambda s: {}), Job("second", 60, lambda s: {"ok": 1})],
+                stop=lambda: next(passes), sleep=lambda _s: None)
+    db.expire_all()
+    assert db.query(JobRun).filter_by(job_name="second", status="success").count() == 1
+
+
+def test_release_failure_is_logged_not_raised(db, monkeypatch):
+    def bad_release(*_a):
+        raise RuntimeError("release boom")
+    monkeypatch.setattr(runner_mod, "release", bad_release)
+    assert run_job(Job("rel", 60, lambda s: {}), SessionLocal, "w1") == "success"
