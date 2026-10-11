@@ -21,15 +21,14 @@ def _housekeeping(db: Session) -> dict:
 
 
 def _backup(db: Session) -> dict:
-    # Until Task 5 moves backups to object storage this uses the filesystem API.
     from app.backups import backup_database, prune_backups
-    from app.config import BACKUP_PATH
-    result = backup_database(db, BACKUP_PATH)
+    from app.core.storage import get_storage
+    storage = get_storage()
+    result = backup_database(db, storage)
     if result["status"] != "success":
         raise RuntimeError(result.get("message") or "backup failed")
-    pruned = prune_backups(db, BACKUP_PATH, days=30)
-    return {"file": result["file"], "size": result["size"], "pruned": pruned}
-
+    pruned = prune_backups(db, storage, 30)
+    return {"key": result["key"], "size": result["size"], "pruned": pruned}
 
 def _dispatch(db: Session) -> dict:
     from app import enterprise

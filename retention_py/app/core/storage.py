@@ -1,0 +1,87 @@
+"""Object storage: local filesystem (dev) or S3-compatible (Cloudflare R2 / DO Spaces)."""
+from __future__ import annotations
+
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Protocol
+
+_SAFE_KEY = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+
+
+def _check_key(key: str) -> str:
+    if not key or not _SAFE_KEY.match(key) or ".." in key.split("/") or "\\" in key:
+        raise ValueError(f"unsafe storage key: {key!r}")
+    return key
+
+
+class Storage(Protocol):
+    def put(self, key: str, data: bytes, content_type: str) -> None: ...
+    def get(self, key: str) -> bytes: ...
+    def delete(self, key: str) -> None: ...
+    def list(self, prefix: str) -> list[tuple[str, datetime]]: ...
+
+
+class LocalStorage:
+    def __init__(self, root: str):
+        self.root = Path(root).resolve()
+        self.root.mkdir(parents=True, exist_ok=True)
+
+    def _path(self, key: str) -> Path:
+        p = (self.root / _check_key(key)).resolve()
+        if self.root not in p.parents:
+            raise ValueError(f"unsafe storage key: {key!r}")
+        return p
+
+    def put(self, key, data, content_type):
+        p = self._path(key)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(data)
+
+    def get(self, key):
+        return self._path(key).read_bytes()
+
+    def delete(self, key):
+        self._path(key).unlink(missing_ok=True)
+
+    def list(self, prefix):
+        base = self.root
+        out = []
+        for f in base.rglob("*"):
+            if f.is_file():
+                k = f.relative_to(base).as_posix()
+                if k.startswith(prefix):
+                    out.append((k, datetime.fromtimestamp(f.stat().st_mtime, timezone.utc).replace(tzinfo=None)))
+        return sorted(out)
+
+
+class S3Storage:
+    def __init__(self, bucket: str, client):
+        self.bucket, self.client = bucket, client
+
+    def put(self, key, data, content_type):
+        self.client.put_object(Bucket=self.bucket, Key=_check_key(key), Body=data, ContentType=content_type)
+
+    def get(self, key):
+        try:
+            return self.client.get_object(Bucket=self.bucket, Key=_check_key(key))["Body"].read()
+        except Exception as exc:
+            raise FileNotFoundError(key) from exc
+
+    def delete(self, key):
+        self.client.delete_object(Bucket=self.bucket, Key=_check_key(key))
+
+    def list(self, prefix):
+        resp = self.client.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
+        return sorted((o["Key"], o["LastModified"].replace(tzinfo=None)) for o in resp.get("Contents", []))
+
+
+def get_storage() -> Storage:
+    from app import config
+    if config.STORAGE_BACKEND == "s3":
+        import boto3
+        client = boto3.client("s3", endpoint_url=config.S3_ENDPOINT_URL or None, region_name=config.S3_REGION,
+                              aws_access_key_id=config.S3_ACCESS_KEY_ID,
+                              aws_secret_access_key=config.S3_SECRET_ACCESS_KEY)
+        return S3Storage(config.S3_BUCKET, client)
+    return LocalStorage(config.STORAGE_LOCAL_ROOT)

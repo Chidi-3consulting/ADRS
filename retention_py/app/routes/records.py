@@ -6,7 +6,8 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
+from app.core.storage import get_storage
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import or_, and_, func
 from sqlalchemy.orm import Session
@@ -16,7 +17,6 @@ from app.models import DataRecord, DataCategory, CategoryRetentionRule, AuditLog
 from app.auth import get_session, verify_stepup_authentication
 from app.helpers import get_country_regulation_labels, get_framework_badge, log_audit
 from app.engine import calculate_retention_end_date, execute_disposal
-from app.config import UPLOAD_PATH
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
 templates = Jinja2Templates(directory=templates_path)
@@ -794,11 +794,8 @@ async def handle_attachment_upload(
             detail=f"File content does not match the .{ext} extension. Upload rejected."
         )
 
-    stored_filename = f"{uuid.uuid4().hex}.{ext}"
-    dest_path = os.path.join(UPLOAD_PATH, stored_filename)
-
-    with open(dest_path, "wb") as f:
-        f.write(content)
+    stored_filename = f"orgs/{org_id}/attachments/{uuid.uuid4().hex}.{ext}"
+    get_storage().put(stored_filename, content, file.content_type or "application/octet-stream")
 
     new_att = Attachment(
         organization_id=org_id,
@@ -835,24 +832,14 @@ def handle_attachment_download(id: int, request: Request, db: Session = Depends(
     if not att:
         raise HTTPException(status_code=404, detail="Attachment not found")
 
-    file_path = os.path.join(UPLOAD_PATH, att.stored_filename)
-
-    # Gap 6: Path traversal protection — ensure resolved path stays within UPLOAD_PATH
-    real_path = os.path.realpath(file_path)
-    real_upload = os.path.realpath(UPLOAD_PATH)
-    if not real_path.startswith(real_upload + os.sep) and real_path != real_upload:
-        raise HTTPException(status_code=403, detail="Access denied.")
-
-    if not os.path.exists(file_path):
+    key = att.stored_filename if "/" in att.stored_filename else f"attachments/{att.stored_filename}"  # legacy local files
+    try:
+        data = get_storage().get(key)
+    except (FileNotFoundError, ValueError):
         raise HTTPException(status_code=404, detail="File not found on storage server.")
-
-    # Clean the filename for presentation in headers
-    safe_name = "".join(c for c in att.original_filename if c.isalnum() or c in "._-")
-    return FileResponse(
-        path=file_path,
-        media_type=att.mime_type,
-        filename=safe_name
-    )
+    safe_name = "".join(c for c in att.original_filename if c.isalnum() or c in "._-") or "attachment"
+    return Response(content=data, media_type=att.mime_type,
+                    headers={"Content-Disposition": f'attachment; filename="{safe_name}"'})
 
 @router.get("/attachments", response_class=HTMLResponse)
 def list_attachments(request: Request, db: Session = Depends(get_db)):

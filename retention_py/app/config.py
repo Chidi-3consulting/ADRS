@@ -107,3 +107,17 @@ SMTP_SECURE   = os.getenv("SMTP_SECURE", "tls")  # 'tls' | 'ssl' | 'none'
 # Reply-To address — clients can reply to support without exposing noreply@
 # Set to your support/team email, e.g. support@3consulting.com
 SMTP_REPLY_TO = os.getenv("SMTP_REPLY_TO", "")
+
+# ── Object storage (attachments, backups) ──
+STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "local")  # 'local' | 's3'
+STORAGE_LOCAL_ROOT = os.getenv("STORAGE_LOCAL_ROOT", os.path.join(BASE_DIR, "storage"))
+S3_BUCKET = os.getenv("S3_BUCKET", "")
+S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "")  # e.g. https://<account>.r2.cloudflarestorage.com
+S3_REGION = os.getenv("S3_REGION", "auto")
+S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID", "")
+S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY", "")
+# Fernet key (python -c "from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())")
+BACKUP_ENCRYPTION_KEY = os.getenv("BACKUP_ENCRYPTION_KEY", "")
+if IS_PRODUCTION and not BACKUP_ENCRYPTION_KEY:
+    print("FATAL: BACKUP_ENCRYPTION_KEY must be set in production.", file=sys.stderr)
+    sys.exit(1)

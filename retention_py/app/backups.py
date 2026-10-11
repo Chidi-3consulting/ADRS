@@ -1,131 +1,64 @@
-"""
-SafeData Backup System
+"""Encrypted database backups written to object storage.
+SQLite → iterdump SQL; PostgreSQL → pg_dump custom format (pg_dump 16 is in the Docker image)."""
+from __future__ import annotations
 
-Provides: logical database dump (pure-Python, no external mysqldump dependency),
-backup log recording, and old backup pruning.
+import logging
+import subprocess
+from datetime import timedelta
 
-For SQLite (dev): uses the built-in sqlite3 .dump() for a restorable .sql file.
-For MySQL (prod): uses a table-by-table SELECT + INSERT approach matching the legacy version.
-"""
-import os
-import glob
-import time
-from datetime import datetime, timedelta, timezone
+from cryptography.fernet import Fernet
 from sqlalchemy.orm import Session
-from sqlalchemy import text, inspect
 
+from app.config import BACKUP_ENCRYPTION_KEY
+from app.core.clock import utcnow
 from app.models import BackupLog
-from app.config import APP_ENV
+
+log = logging.getLogger("safedata.backups")
+PREFIX = "backups/"
 
 
-def backup_database(db: Session, backup_dir: str) -> dict:
-    """
-    Dump the whole database to a .sql file in backup_dir.
-    Returns {'file': str, 'size': int, 'status': 'success'|'failed', 'message': str|None}.
-    Ported from legacy backup_database().
-    """
-    filename = f"SafeData_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql"
-    filepath = os.path.join(backup_dir, filename)
+def _dump(db: Session) -> tuple[bytes, str]:
+    engine = db.get_bind()
+    if engine.dialect.name == "sqlite":
+        raw = engine.raw_connection()
+        try:
+            return ("\n".join(raw.iterdump()) + "\n").encode("utf-8"), "sqlite.sql"
+        finally:
+            raw.close()
+    if engine.dialect.name == "postgresql":
+        url = engine.url.set(drivername="postgresql").render_as_string(hide_password=False)
+        out = subprocess.run(["pg_dump", "--format=custom", "--no-owner", url],
+                             check=True, capture_output=True, timeout=1800)
+        return out.stdout, "pgdump"
+    raise RuntimeError(f"backups not supported for dialect {engine.dialect.name}")
 
+
+def backup_database(db: Session, storage) -> dict:
+    key = ""
     try:
-        os.makedirs(backup_dir, exist_ok=True)
-        engine = db.get_bind()
-        dialect = engine.dialect.name
-
-        with open(filepath, "w", encoding="utf-8") as fh:
-            fh.write(f"-- SafeData backup {datetime.now().isoformat()}\n")
-            fh.write("SET FOREIGN_KEY_CHECKS=0;\nSET NAMES utf8mb4;\n\n")
-
-            if dialect == "sqlite":
-                # Use SQLite's iterdump for a complete SQL dump
-                import sqlite3
-                raw_conn = engine.raw_connection()
-                try:
-                    for line in raw_conn.iterdump():
-                        fh.write(f"{line}\n")
-                finally:
-                    raw_conn.close()
-            else:
-                # MySQL: table-by-table dump matching legacy approach
-                inspector = inspect(engine)
-                tables = inspector.get_table_names()
-
-                for table_name in tables:
-                    # Get CREATE TABLE
-                    result = db.execute(text(f"SHOW CREATE TABLE `{table_name}`"))
-                    row = result.fetchone()
-                    if row:
-                        create_sql = row[1] if len(row) > 1 else str(row)
-                        fh.write(f"DROP TABLE IF EXISTS `{table_name}`;\n{create_sql};\n\n")
-
-                    # Dump rows
-                    rows = db.execute(text(f"SELECT * FROM `{table_name}`"))
-                    columns = rows.keys()
-                    for data_row in rows:
-                        cols = ",".join(f"`{c}`" for c in columns)
-                        vals = ",".join(
-                            "NULL" if v is None else f"'{str(v).replace(chr(39), chr(39)+chr(39))}'"
-                            for v in data_row
-                        )
-                        fh.write(f"INSERT INTO `{table_name}` ({cols}) VALUES ({vals});\n")
-                    fh.write("\n")
-
-            fh.write("SET FOREIGN_KEY_CHECKS=1;\n")
-
-        size = os.path.getsize(filepath)
-
-        # Record in backup_log
-        log = BackupLog(
-            filename=filename,
-            size_bytes=size,
-            status="success",
-            message=None,
-        )
-        db.add(log)
+        data, ext = _dump(db)
+        if BACKUP_ENCRYPTION_KEY:
+            data, ext = Fernet(BACKUP_ENCRYPTION_KEY.encode()).encrypt(data), ext + ".enc"
+        key = f"{PREFIX}SafeData_backup_{utcnow():%Y%m%d_%H%M%S}.{ext}"
+        storage.put(key, data, "application/octet-stream")
+        db.add(BackupLog(filename=key, size_bytes=len(data), status="success"))
         db.commit()
-
-        return {"file": filepath, "size": size, "status": "success", "message": None}
-
-    except Exception as e:
-        # Log failure
-        try:
-            log = BackupLog(
-                filename=filename,
-                size_bytes=None,
-                status="failed",
-                message=str(e)[:500],
-            )
-            db.add(log)
-            db.commit()
-        except Exception:
-            try:
-                db.rollback()
-            except Exception:
-                pass
-
-        return {"file": filepath, "size": 0, "status": "failed", "message": str(e)}
+        return {"status": "success", "key": key, "size": len(data), "message": None}
+    except Exception as exc:
+        db.rollback()
+        log.exception("backup failed")
+        db.add(BackupLog(filename=key or "unknown", size_bytes=None, status="failed", message=str(exc)[:500]))
+        db.commit()
+        return {"status": "failed", "key": key, "size": 0, "message": str(exc)}
 
 
-def prune_backups(db: Session, backup_dir: str, days: int = 30) -> int:
-    """
-    Delete backup files (and their log rows) older than `days`.
-    Returns count removed. Ported from legacy prune_backups().
-    """
-    cutoff = time.time() - (days * 86400)
+def prune_backups(db: Session, storage, days: int = 30) -> int:
+    cutoff = utcnow() - timedelta(days=days)
     removed = 0
-
-    pattern = os.path.join(backup_dir, "SafeData_backup_*.sql")
-    for f in glob.glob(pattern):
-        try:
-            if os.path.getmtime(f) < cutoff:
-                os.remove(f)
-                removed += 1
-        except OSError:
-            pass
-
-    # Prune log rows
-    cutoff_dt = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
-    db.query(BackupLog).filter(BackupLog.created_at < cutoff_dt).delete()
+    for key, modified in storage.list(PREFIX):
+        if modified < cutoff:
+            storage.delete(key)
+            removed += 1
+    db.query(BackupLog).filter(BackupLog.created_at < cutoff).delete()
     db.commit()
-
     return removed
