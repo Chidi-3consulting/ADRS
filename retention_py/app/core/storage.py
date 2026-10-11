@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -81,18 +82,29 @@ class S3Storage:
         return sorted((o["Key"], o["LastModified"].replace(tzinfo=None)) for o in resp.get("Contents", []))
 
 
+@functools.lru_cache(maxsize=4)
+def _s3_client(endpoint_url, region_name, access_key_id, secret_access_key):
+    """One client per process per config (boto3 default-session client creation is not thread-safe)."""
+    import boto3
+
+    return boto3.session.Session().client(
+        "s3",
+        endpoint_url=endpoint_url,
+        region_name=region_name,
+        aws_access_key_id=access_key_id,
+        aws_secret_access_key=secret_access_key,
+    )
+
+
 def get_storage() -> Storage:
     from app import config
 
     if config.STORAGE_BACKEND == "s3":
-        import boto3
-
-        client = boto3.client(
-            "s3",
-            endpoint_url=config.S3_ENDPOINT_URL or None,
-            region_name=config.S3_REGION,
-            aws_access_key_id=config.S3_ACCESS_KEY_ID,
-            aws_secret_access_key=config.S3_SECRET_ACCESS_KEY,
+        client = _s3_client(
+            config.S3_ENDPOINT_URL or None,
+            config.S3_REGION,
+            config.S3_ACCESS_KEY_ID,
+            config.S3_SECRET_ACCESS_KEY,
         )
         return S3Storage(config.S3_BUCKET, client)
     return LocalStorage(config.STORAGE_LOCAL_ROOT)

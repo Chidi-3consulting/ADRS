@@ -30,7 +30,7 @@ def cmd_migrate(_args) -> int:
 
 def cmd_adopt_legacy_db(_args) -> int:
     """For databases created by the old import-time create_all: patch legacy columns,
-    create any missing tables, verify no drift, then stamp the baseline."""
+    create any missing tables, verify no drift, then stamp head."""
     from alembic.autogenerate import compare_metadata
     from alembic.migration import MigrationContext
 
@@ -45,8 +45,11 @@ def cmd_adopt_legacy_db(_args) -> int:
     if diff:
         log.error("Legacy DB still differs from models; not stamping: %s", diff)
         return 1
-    command.stamp(alembic_config(), "0001_baseline")
-    command.upgrade(alembic_config(), "head")
+    # compare_metadata ignores CHECK constraints, so adopted legacy tables do not get the enum CHECKs.
+    log.warning("Adopted legacy tables will not have the enum CHECK constraints (not detected by drift check).")
+    # No drift against the FULL current models means the DB is already at head (create_all added
+    # any missing tables, incl. job_locks/job_runs). Stamp head; do not upgrade.
+    command.stamp(alembic_config(), "head")
     return 0
 
 

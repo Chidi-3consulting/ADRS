@@ -89,4 +89,5 @@ def ensure_legacy_columns(bind_engine):
                     conn.execute(text("ALTER TABLE ropa_entries ADD COLUMN processor_contact VARCHAR(255) NULL"))
                     conn.commit()
     except Exception as e:
-        log.warning("Auto column migration warning: %s", e)
+        log.error("Legacy column patch failed: %s", e)
+        raise

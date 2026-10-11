@@ -102,7 +102,7 @@ def test_renew_only_for_holder(db):
 
 
 def test_lease_renewed_while_job_runs(db, monkeypatch):
-    monkeypatch.setattr(runner_mod, "LEASE_MIN_TTL", 1)
+    monkeypatch.setattr(runner_mod, "LEASE_TTL_SECONDS", 1)
     monkeypatch.setattr(runner_mod, "RENEW_INTERVAL_SECONDS", 0.1)
     seen = {}
 

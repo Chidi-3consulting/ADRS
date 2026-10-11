@@ -2,9 +2,13 @@
 (the old global SafeData_tier == 'enterprise' gate is removed; plan entitlements gate
 these in Phase 3)."""
 
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.worker.runner import Job
+
+log = logging.getLogger("safedata.worker")
 
 
 def _retention(db: Session) -> dict:
@@ -12,9 +16,17 @@ def _retention(db: Session) -> dict:
     from app.models import Organization
 
     orgs = [o.id for o in db.query(Organization.id).all()]
+    failed = 0
     for org_id in orgs:
-        run_retention_checks(db, org_id)
-    return {"organisations": len(orgs)}
+        try:
+            run_retention_checks(db, org_id)
+        except Exception:
+            db.rollback()
+            failed += 1
+            log.exception("retention failed for organisation", extra={"org_id": org_id})
+    if orgs and failed == len(orgs):
+        raise RuntimeError(f"retention failed for all {failed} organisations")
+    return {"organisations": len(orgs), "failed": failed}
 
 
 def _housekeeping(db: Session) -> dict:

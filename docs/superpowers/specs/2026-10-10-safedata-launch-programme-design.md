@@ -72,6 +72,8 @@ Retention-policy generator) are included across products per plan (see §6.2).
 | D16 | Design | "Calm Authority" — light + dark, ink-navy collapsible sidebar (☰ → icon rail; drawer on mobile), orange actions, teal/amber/red status always paired with icon + word, Ctrl+K command palette, self-hosted fonts. |
 | D17 | Language | English at launch, every string translatable; locale-aware dates/numbers/currency. |
 | D18 | AI | No AI at launch. |
+| D20 | Brand family | SafeData is an **endorsed sub-brand** of 3Consulting. Its Lifecycle Ring is drawn in the parent 3C seal's visual language (orange ring stroke, same orange ~#FF914D, generous circle proportions) so the two marks read as one family; the endorsement line "by 3Consulting" uses the parent's monospace wordmark typeface; parent tagline "Build Trust in the Digital Economy" appears in footers/sales material beside SafeData's own tagline. Exact colour values and typeface are taken from the brand files during Phase 2 Task 1. |
+| D21 | Revenue | Revenue is multi-stream, not subscription-only: SaaS, MSP/white-label partners (extends the existing MSP Partners offer), in-app expert services, compliance audit evidence + filing support, training/certification, templates, verified trust badge, API usage, private-cloud licensing, marketplaces, referrals, events — detailed and prioritised in `Documents/launch/06_REVENUE_STREAMS_AND_MONETISATION.md` (Phase 0 Task 14). Never monetise customer data. |
 | D19 | Approach | Evolve the existing FastAPI codebase in phases (no rewrite, no SPA). Server-rendered Jinja + HTMX + Alpine.js. |
 
 ---

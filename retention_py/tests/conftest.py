@@ -21,6 +21,13 @@ from main import app  # noqa: E402
 
 @pytest.fixture(scope="session", autouse=True)
 def _schema():
+    url = str(engine.url)
+    if not (url.startswith("sqlite") or "test" in url.lower()):
+        pytest.exit(
+            f"Refusing to drop_all on a non-test database ({engine.url.render_as_string()}); "
+            "point TEST_DATABASE_URL at a SQLite file or a database whose URL contains 'test'.",
+            returncode=2,
+        )
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield

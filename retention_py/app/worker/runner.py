@@ -17,7 +17,8 @@ from app.worker.locks import acquire, release, renew
 
 log = logging.getLogger("safedata.worker")
 TICK_SECONDS = 30
-LEASE_MIN_TTL = 900
+# Fixed lease length; the heartbeat renews it, so a short lease only speeds crash recovery.
+LEASE_TTL_SECONDS = 300
 # Lease renewal period in seconds; None means ttl/3. Tests override with a short value.
 RENEW_INTERVAL_SECONDS: float | None = None
 
@@ -60,7 +61,7 @@ def run_job(job: Job, session_factory, holder: str) -> str:
     renew_stop = threading.Event()
     renewer: threading.Thread | None = None
     try:
-        ttl = max(job.interval_seconds, LEASE_MIN_TTL)
+        ttl = LEASE_TTL_SECONDS
         if not acquire(db, job.name, holder, ttl):
             return "skipped"
         renewer = threading.Thread(

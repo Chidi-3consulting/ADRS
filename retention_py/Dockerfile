@@ -13,4 +13,4 @@ COPY . .
 RUN useradd --create-home --uid 10001 safedata && chown -R safedata /app
 USER safedata
 EXPOSE 8200
-CMD ["gunicorn", "main:app", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8200", "--workers", "2", "--timeout", "120"]
+CMD ["sh", "-c", "exec gunicorn main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8200} --workers 2 --timeout 120"]

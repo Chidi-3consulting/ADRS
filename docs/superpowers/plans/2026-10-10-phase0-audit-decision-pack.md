@@ -58,7 +58,9 @@ Documents/launch/
   03_HOSTING_DOMAIN_AND_COST_MODEL.md
   04_CONSENT_MANAGEMENT_EXPLAINED.md
   05_GO_TO_MARKET_AND_LAUNCH_CHECKLIST.md
+  06_REVENUE_STREAMS_AND_MONETISATION.md
   PDFs/                     # generated
+Documents/3Consulting-Company-Profile/   # company knowledge base from www.3consult-ng.com (input to Tasks 7, 9, 13, 14)
 ```
 
 ---
@@ -887,7 +889,42 @@ git commit -m "docs(launch): executive decision pack and go-to-market checklist"
 
 ---
 
-### Task 14: Render stakeholder PDFs and final review
+### Task 14: Revenue streams & monetisation strategy (3Consulting LTD)
+
+**Files:**
+- Create: `Documents/launch/06_REVENUE_STREAMS_AND_MONETISATION.md`
+- Read first: `Documents/3Consulting-Company-Profile/` (company knowledge base built from https://www.3consult-ng.com/ — services, Solutions menu, MSP Partner programme, training/PECB, brand)
+
+- [ ] **Step 1: Verify market facts** with WebSearch (record URL + date for each): NDPA 2023 / NDPC annual compliance audit filing obligations and the role of licensed Data Protection Compliance Organisations (DPCOs) in Nigeria; PECB partner/reseller model; Microsoft/AWS/Google cloud marketplace listing requirements for SaaS; typical MSP white-label margins for compliance SaaS; G2/Capterra listing; Paystack/Stripe support for usage-based and partner payouts.
+
+- [ ] **Step 2: Write the document** for 3Consulting's directors, with one section per revenue stream — what it is, who buys it, why they buy (buyer motivation and objections), pricing model, SafeData features it needs (with roadmap phase), effort, expected revenue range for year 1 (low/base/high with stated assumptions), risks — covering at least:
+  1. SaaS subscriptions (Retention, Consent, Suite; regional bands; monthly/yearly).
+  2. **MSP / white-label partner programme** — extends the existing MSP Partners offer: partners run many client Groups from one login (Phase 1B multi-group identity), white-label branding, wholesale price + partner margin, partner console (Phase 2/3 addition).
+  3. Expert services attached in-app: DPIA, gap assessment, Outsourced DPO retainers, third-party assessments, audits.
+  4. **NDPC compliance audit evidence + filing support** — SafeData's evidence pack feeds 3Consulting's audit/filing service (subject to Step 1 verification of 3Consulting's licensing status).
+  5. Training and certification: PECB courses, a "SafeData Practitioner" self-paced course + certificate, corporate training seats.
+  6. Templates & policy packs (industry/country retention schedules, policies) as one-off digital purchases.
+  7. "Trust badge" / verified-compliance seal with a public verification page (annual fee) — only claims SafeData can actually evidence.
+  8. API & integration usage tier (metered API calls for high-volume enterprises).
+  9. Private-cloud / dedicated-instance licensing for banks, telcos and government needing data residency.
+  10. Cloud marketplaces (Azure, AWS, Google) and software directories (G2, Capterra).
+  11. Referral & affiliate programme (customers and consultants), credits/commission.
+  12. Events, webinars and newsletter sponsorship (Resources section).
+  13. Free gap check and AI Health Check as lead magnets into consulting.
+  For each stream also note what must NOT be done (e.g. selling or "benchmarking" customer data — forbidden by the data-minimisation principle D15).
+
+- [ ] **Step 3: Prioritise** — a table ranking streams by (revenue potential × speed to cash ÷ effort), a 90-day plan (first 3 streams to switch on), and the product features each requires, mapped to roadmap phases.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add Documents/launch/06_REVENUE_STREAMS_AND_MONETISATION.md
+git commit -m "docs(launch): revenue streams and monetisation strategy"
+```
+
+---
+
+### Task 15: Render stakeholder PDFs and final review
 
 **Files:**
 - Modify: `Documents/convert_to_pdf.py` (accept a source directory argument)
