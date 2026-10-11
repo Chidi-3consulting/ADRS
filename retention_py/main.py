@@ -1,4 +1,4 @@
-﻿"""
+"""
 SafeData Python Engine — main application entry point.
 
 Registers FastAPI app with:

@@ -1,4 +1,4 @@
-﻿"""
+"""
 SafeData Security Middleware
 
 Provides:
@@ -15,6 +15,7 @@ Provides:
 import secrets
 import time
 import hashlib
+from urllib.parse import quote as _quote
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -426,7 +427,9 @@ class CanonicalHostMiddleware:
             host = dict(scope.get("headers") or []).get(b"host", b"").decode("latin-1").split(":")[0].lower()
             if host in LEGACY_HOSTS:
                 qs = scope.get("query_string", b"").decode("latin-1")
-                location = APP_URL + scope.get("path", "/") + (f"?{qs}" if qs else "")
+                raw = scope.get("raw_path")
+                path = raw.decode("latin-1") if raw else _quote(scope.get("path", "/"), safe="/%:@!$&'()*+,;=-._~")
+                location = APP_URL + path + (f"?{qs}" if qs else "")
                 await send({"type": "http.response.start", "status": 301,
                             "headers": [(b"location", location.encode("latin-1"))]})
                 await send({"type": "http.response.body", "body": b""})

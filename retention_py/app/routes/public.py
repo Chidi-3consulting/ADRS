@@ -1,4 +1,4 @@
-﻿"""
+"""
 SafeData Public Routes — landing, login, register, password reset, logout.
 
 Security integrations:
@@ -19,6 +19,7 @@ import secrets
 import hashlib
 
 from app.database import get_db
+from app.config import APP_URL, APP_HOST
 from app.models import User, Organization, DataCategory, PasswordReset
 from app.auth import (
     hash_password, verify_password, set_session, clear_session, get_session,
@@ -599,7 +600,6 @@ def resend_verification(request: Request, db: Session = Depends(get_db)):
     from app.auth import issue_email_verification_token
     from app.helpers import email_verification, send_system_email
     from app.models import User
-    from app.config import APP_URL
 
     user = db.query(User).filter(User.id == session["user_id"]).first()
     if user and not user.email_verified_at:
