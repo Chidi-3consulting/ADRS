@@ -569,7 +569,7 @@ class PasswordReset(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), nullable=False)
-    token_hash = Column(String(64), nullable=False)
+    token_hash = Column(String(80), nullable=False)
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=func.now(), nullable=False)

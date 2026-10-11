@@ -70,7 +70,7 @@ def upgrade() -> None:
     op.create_table('password_resets',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
-    sa.Column('token_hash', sa.String(length=64), nullable=False),
+    sa.Column('token_hash', sa.String(length=80), nullable=False),
     sa.Column('expires_at', sa.DateTime(), nullable=False),
     sa.Column('used', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
