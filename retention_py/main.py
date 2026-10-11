@@ -1,4 +1,4 @@
-"""
+﻿"""
 SafeData Python Engine — main application entry point.
 
 Registers FastAPI app with:
@@ -21,7 +21,7 @@ from datetime import datetime
 
 from app.database import SessionLocal
 from app.auth import get_session, build_session_data
-from app.config import APP_ENV, IS_PRODUCTION, IS_TEST, ALLOWED_HOSTS
+from app.config import APP_ENV, IS_PRODUCTION, IS_TEST, ALLOWED_HOSTS, LEGACY_HOSTS
 from app.core.logging import RequestIdMiddleware, configure_logging
 configure_logging(json_output=IS_PRODUCTION)
 
@@ -102,6 +102,7 @@ from app.middleware import (
     CSRFMiddleware,
     SessionEnforcementMiddleware,
     RequestSizeLimitMiddleware,
+    CanonicalHostMiddleware,
 )
 
 # Middleware is applied in reverse order — last added = outermost
@@ -109,14 +110,17 @@ app.add_middleware(SessionEnforcementMiddleware)
 app.add_middleware(CSRFMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestSizeLimitMiddleware)
-app.add_middleware(RequestIdMiddleware)
-
 # Gap 9: Trusted Host validation — prevent Host header attacks in production
+# (legacy hosts are accepted so CanonicalHostMiddleware's 301 stays reachable)
 if ALLOWED_HOSTS and ALLOWED_HOSTS != "*":
     _hosts = [h.strip() for h in ALLOWED_HOSTS.split(",") if h.strip()]
     if _hosts:
+        _hosts += [h for h in LEGACY_HOSTS if h not in _hosts]
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=_hosts)
 
+app.add_middleware(RequestIdMiddleware)
+# Outermost: redirect legacy hosts before anything else runs
+app.add_middleware(CanonicalHostMiddleware)
 
 # ── Mount Static Files ──
 static_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "static")

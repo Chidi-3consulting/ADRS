@@ -1,4 +1,4 @@
-"""
+﻿"""
 SafeData Security Middleware
 
 Provides:
@@ -23,7 +23,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.config import (
     IS_PRODUCTION, APP_ENV, SESSION_IDLE_TIMEOUT, SESSION_ABSOLUTE_TIMEOUT,
-    CSRF_TOKEN_LENGTH, SECRET_KEY, MAX_REQUEST_BODY_SIZE,
+    CSRF_TOKEN_LENGTH, SECRET_KEY, MAX_REQUEST_BODY_SIZE, APP_URL, LEGACY_HOSTS,
 )
 from app.auth import get_session, set_session
 
@@ -414,3 +414,21 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
             except (ValueError, TypeError):
                 pass  # Malformed header — let downstream handle
         return await call_next(request)
+
+class CanonicalHostMiddleware:
+    """301-redirect requests for legacy hosts to APP_URL, preserving path and query."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and LEGACY_HOSTS:
+            host = dict(scope.get("headers") or []).get(b"host", b"").decode("latin-1").split(":")[0].lower()
+            if host in LEGACY_HOSTS:
+                qs = scope.get("query_string", b"").decode("latin-1")
+                location = APP_URL + scope.get("path", "/") + (f"?{qs}" if qs else "")
+                await send({"type": "http.response.start", "status": 301,
+                            "headers": [(b"location", location.encode("latin-1"))]})
+                await send({"type": "http.response.body", "body": b""})
+                return
+        await self.app(scope, receive, send)

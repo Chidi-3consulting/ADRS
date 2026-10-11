@@ -1,4 +1,4 @@
-"""
+﻿"""
 SafeData Public Routes — landing, login, register, password reset, logout.
 
 Security integrations:
@@ -525,7 +525,7 @@ def handle_register(
             </div>
             <p style="color:#888;font-size:13px;margin-top:32px;">
               — The SafeData Team, 3Consulting Limited<br>
-              <a href="https://safedata.3consulting.com" style="color:#667eea;">safedata.3consulting.com</a>
+              <a href="{APP_URL}" style="color:#667eea;">{APP_HOST}</a>
             </p>
           </div>
         </div>

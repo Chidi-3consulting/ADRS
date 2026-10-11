@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import secrets as _secrets
 import warnings
@@ -10,8 +10,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_ENV = os.getenv("APP_ENV", "local")  # 'production' | 'local' | 'test'
 IS_PRODUCTION = APP_ENV == "production"
 IS_TEST = APP_ENV == "test"
-APP_NAME = os.getenv("APP_NAME", "SafeData — 3Consulting Python")
-APP_URL = os.getenv("APP_URL", "http://127.0.0.1:8200")
+APP_NAME = os.getenv("APP_NAME", "SafeData by 3Consulting")
+APP_URL = os.getenv("APP_URL", "http://127.0.0.1:8200").rstrip("/")
+from urllib.parse import urlparse as _urlparse
+APP_HOST = _urlparse(APP_URL).hostname or "127.0.0.1"
+LEGACY_HOSTS = [h.strip().lower() for h in os.getenv("LEGACY_HOSTS", "").split(",") if h.strip()]
+MAIL_DOMAIN = os.getenv("MAIL_DOMAIN", "safedata.3consult-ng.com")
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", f"support@{MAIL_DOMAIN}")
+SECURITY_EMAIL = os.getenv("SECURITY_EMAIL", "security@3consult-ng.com")
 
 # ── Security: Secret Key (Gap 1) ──
 # The default is ONLY for local development. In production, a cryptographically
@@ -101,11 +107,11 @@ SMTP_HOST     = os.getenv("SMTP_HOST", "")
 SMTP_PORT     = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER     = os.getenv("SMTP_USER", "")
 SMTP_PASS     = os.getenv("SMTP_PASS", "")
-SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", "noreply@3consulting.com")
+SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", f"noreply@{MAIL_DOMAIN}")
 SMTP_FROM_NAME  = os.getenv("SMTP_FROM_NAME", "SafeData by 3Consulting")
 SMTP_SECURE   = os.getenv("SMTP_SECURE", "tls")  # 'tls' | 'ssl' | 'none'
 # Reply-To address — clients can reply to support without exposing noreply@
-# Set to your support/team email, e.g. support@3consulting.com
+# Set to your support/team email, e.g. support@safedata.3consult-ng.com
 SMTP_REPLY_TO = os.getenv("SMTP_REPLY_TO", "")
 
 # ── Object storage (attachments, backups) ──
