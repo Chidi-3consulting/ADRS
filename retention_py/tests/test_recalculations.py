@@ -30,7 +30,7 @@ def _seed_records(db):
     return cat, record
 
 
-def test_create_pending_recalculation(db):
+def test_create_pending_recalculation(db, auth_user):
     """Should create a pending recalculation entry."""
     cat, record = _seed_records(db)
     recalc = PendingRecalculation(
@@ -40,7 +40,7 @@ def test_create_pending_recalculation(db):
         old_retention_end_date=record.retention_end_date,
         new_retention_end_date=date.today() + timedelta(days=730),
         status="pending",
-        triggered_by=1,
+        triggered_by=auth_user.id,
     )
     db.add(recalc)
     db.commit()
@@ -68,14 +68,14 @@ def test_recalculation_updates_dates(db):
     assert refreshed.retention_end_date == expected
 
 
-def test_pending_recalculation_completion(db):
+def test_pending_recalculation_completion(db, auth_user):
     """Completed recalculation should be updated with new status."""
     cat, record = _seed_records(db)
     recalc = PendingRecalculation(
         organization_id=1, record_id=record.id, category_id=cat.id,
         old_retention_end_date=record.retention_end_date,
         new_retention_end_date=date.today() + timedelta(days=730),
-        status="pending", triggered_by=1,
+        status="pending", triggered_by=auth_user.id,
     )
     db.add(recalc)
     db.commit()

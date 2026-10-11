@@ -115,8 +115,8 @@ def test_quarterly_review(db):
     assert "disposed_quarter" in res
 
 
-def test_audit_chain_verification(db):
-    log_audit(db, 1, "test_action", "system", 1, 1, {"foo": "bar"}, "127.0.0.1")
+def test_audit_chain_verification(db, auth_user):
+    log_audit(db, 1, "test_action", "system", 1, auth_user.id, {"foo": "bar"}, "127.0.0.1")
     res = verify_audit_chain(db, org_id=1)
     assert res["ok"] is True
     assert res["checked"] >= 1

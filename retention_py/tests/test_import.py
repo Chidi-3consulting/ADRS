@@ -25,11 +25,11 @@ def test_import_csv_endpoint(client, db, auth_user):
     assert response.status_code in [200, 303]
 
 
-def test_import_job_model(db):
+def test_import_job_model(db, auth_user):
     """Import job should be created and tracked."""
     job = ImportJob(
         organization_id=1,
-        imported_by=1,
+        imported_by=auth_user.id,
         filename="test.csv",
         total_rows=10,
         valid_rows=10,

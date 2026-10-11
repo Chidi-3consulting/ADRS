@@ -7,14 +7,14 @@ from datetime import datetime, timedelta, timezone
 from app.models import OrganizationInvitation, User
 
 
-def test_create_invitation(db):
+def test_create_invitation(db, auth_user):
     """Should create an invitation record."""
     invite = OrganizationInvitation(
         organization_id=1,
         email="invited@test.com",
         name="Invited User",
         role="data_owner",
-        invited_by=1,
+        invited_by=auth_user.id,
         token_hash="abc123hash",
         expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=7),
     )
@@ -27,14 +27,14 @@ def test_create_invitation(db):
     assert invite.revoked_at is None
 
 
-def test_invitation_expiry(db):
+def test_invitation_expiry(db, auth_user):
     """Expired invitation should be detectable."""
     invite = OrganizationInvitation(
         organization_id=1,
         email="expired@test.com",
         name="Expired User",
         role="data_owner",
-        invited_by=1,
+        invited_by=auth_user.id,
         token_hash="expiredhash",
         expires_at=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=1),
     )
@@ -44,14 +44,14 @@ def test_invitation_expiry(db):
     assert invite.expires_at < datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def test_revoke_invitation(db):
+def test_revoke_invitation(db, auth_user):
     """Revoked invitation should have revoked_at timestamp set."""
     invite = OrganizationInvitation(
         organization_id=1,
         email="revoke@test.com",
         name="Revoke User",
         role="dpo",
-        invited_by=1,
+        invited_by=auth_user.id,
         token_hash="revokehash",
         expires_at=datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=7),
     )

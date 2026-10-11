@@ -27,7 +27,7 @@ def _seed_record(db):
     return record
 
 
-def test_create_attachment(db):
+def test_create_attachment(db, auth_user):
     """Should create an attachment linked to a record."""
     record = _seed_record(db)
     att = Attachment(
@@ -37,7 +37,7 @@ def test_create_attachment(db):
         stored_filename="uuid_document.pdf",
         file_size=1024,
         mime_type="application/pdf",
-        uploaded_by=1,
+        uploaded_by=auth_user.id,
     )
     db.add(att)
     db.commit()
@@ -47,7 +47,7 @@ def test_create_attachment(db):
     assert att.original_filename == "document.pdf"
 
 
-def test_list_attachments_for_record(db):
+def test_list_attachments_for_record(db, auth_user):
     """Should list all attachments for a specific record."""
     record = _seed_record(db)
     for i in range(3):
@@ -55,7 +55,7 @@ def test_list_attachments_for_record(db):
             organization_id=1, record_id=record.id,
             original_filename=f"file_{i}.txt",
             stored_filename=f"stored_{i}.txt",
-            file_size=100 * (i + 1), mime_type="text/plain", uploaded_by=1,
+            file_size=100 * (i + 1), mime_type="text/plain", uploaded_by=auth_user.id,
         ))
     db.commit()
 

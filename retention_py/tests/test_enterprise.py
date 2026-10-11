@@ -48,9 +48,9 @@ class TestApiKeys:
         assert len(k["raw"]) == len("SafeData_") + 48
         assert len(k["hash"]) == 64
 
-    def test_create_and_verify(self, db):
+    def test_create_and_verify(self, db, auth_user):
         system = _seed_system(db)
-        result = create_api_key(db, system.id, "Test Key", ["ingest"], 60, 1)
+        result = create_api_key(db, system.id, "Test Key", ["ingest"], 60, auth_user.id)
         assert "raw" in result
         assert "id" in result
 
@@ -61,15 +61,15 @@ class TestApiKeys:
     def test_verify_invalid_key(self, db):
         assert verify_api_key(db, "invalid_key_12345") is None
 
-    def test_revoke_key(self, db):
+    def test_revoke_key(self, db, auth_user):
         system = _seed_system(db)
-        result = create_api_key(db, system.id, "Revocable", [], 60, 1)
-        revoke_api_key(db, result["id"], 1)
+        result = create_api_key(db, system.id, "Revocable", [], 60, auth_user.id)
+        revoke_api_key(db, result["id"], auth_user.id)
         assert verify_api_key(db, result["raw"]) is None
 
-    def test_api_key_can(self, db):
+    def test_api_key_can(self, db, auth_user):
         system = _seed_system(db)
-        result = create_api_key(db, system.id, "Perms", ["ingest", "read"], 60, 1)
+        result = create_api_key(db, system.id, "Perms", ["ingest", "read"], 60, auth_user.id)
         key = verify_api_key(db, result["raw"])
         assert api_key_can(key, "ingest") is True
         assert api_key_can(key, "delete") is False
@@ -163,9 +163,9 @@ class TestConsentSignals:
         result = record_consent_signal(db, system.id, "NOMATCH-001", "withdrawal")
         assert result["matched"] is False
 
-    def test_api_consent_signal_endpoint(self, db, client):
+    def test_api_consent_signal_endpoint(self, db, client, auth_user):
         system = _seed_system(db)
-        key_res = create_api_key(db, system.id, "Consent Key", ["consent"], 60, 1)
+        key_res = create_api_key(db, system.id, "Consent Key", ["consent"], 60, auth_user.id)
         cat = _seed_category(db, trigger="consent_withdrawal")
         record = DataRecord(
             organization_id=1, category_id=cat.id,
@@ -194,9 +194,9 @@ class TestConsentSignals:
         assert record.consent_withdrawn_by is None
         assert record.retention_end_date is not None
 
-    def test_api_consent_withdraw_deprecation(self, db, client):
+    def test_api_consent_withdraw_deprecation(self, db, client, auth_user):
         system = _seed_system(db)
-        key_res = create_api_key(db, system.id, "Consent Key", ["consent"], 60, 1)
+        key_res = create_api_key(db, system.id, "Consent Key", ["consent"], 60, auth_user.id)
         cat = _seed_category(db, trigger="consent_withdrawal")
         record = DataRecord(
             organization_id=1, category_id=cat.id,

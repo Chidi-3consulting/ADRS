@@ -9,8 +9,16 @@ from app.helpers import provision_org_categories, get_country_regulations, get_c
 from app.models import DataCategory, Organization, User
 
 
+def _make_org(db, org_id):
+    """provision_org_categories needs a real organisation row (PostgreSQL enforces the FK)."""
+    db.add(Organization(id=org_id, name=f"Org {org_id}", slug=f"org-{org_id}", primary_domain=f"org{org_id}.test.local",
+                        country="NG", tier="core", status="active"))
+    db.commit()
+
+
 def test_provision_ng_categories(db):
     """Nigeria should seed NDPR + BOTH categories."""
+    _make_org(db, 101)
     provision_org_categories(db, 101, "NG")
     cats = db.query(DataCategory).filter(DataCategory.organization_id == 101).all()
     assert len(cats) > 0
@@ -20,6 +28,7 @@ def test_provision_ng_categories(db):
 
 def test_provision_gb_categories(db):
     """UK should seed UK_GDPR/GDPR + BOTH categories."""
+    _make_org(db, 102)
     provision_org_categories(db, 102, "GB")
     cats = db.query(DataCategory).filter(DataCategory.organization_id == 102).all()
     assert len(cats) > 0
@@ -27,6 +36,7 @@ def test_provision_gb_categories(db):
 
 def test_provision_us_categories(db):
     """US should seed CCPA categories."""
+    _make_org(db, 103)
     provision_org_categories(db, 103, "US")
     cats = db.query(DataCategory).filter(DataCategory.organization_id == 103).all()
     assert len(cats) > 0
@@ -36,6 +46,7 @@ def test_provision_us_categories(db):
 
 def test_provision_idempotent(db):
     """Running twice should not duplicate categories."""
+    _make_org(db, 104)
     provision_org_categories(db, 104, "NG")
     count1 = db.query(DataCategory).filter(DataCategory.organization_id == 104).count()
 
@@ -47,6 +58,7 @@ def test_provision_idempotent(db):
 
 def test_provision_unknown_country(db):
     """Unknown country should fall back to GDPR + BOTH baseline."""
+    _make_org(db, 105)
     provision_org_categories(db, 105, "XX")
     cats = db.query(DataCategory).filter(DataCategory.organization_id == 105).all()
     assert len(cats) > 0
