@@ -17,7 +17,9 @@ from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 import os
+import logging
 from datetime import datetime
+from sqlalchemy import text as _sql_text
 
 from app.database import SessionLocal
 from app.auth import get_session, build_session_data
@@ -143,13 +145,22 @@ app.include_router(api_v1.router, prefix="/api/v1")
 
 
 # ── Health Check ──
+def _db_ping() -> None:
+    db = SessionLocal()
+    try:
+        db.execute(_sql_text("SELECT 1"))
+    finally:
+        db.close()
+
+
 @app.get("/healthz")
 def system_healthz():
-    return JSONResponse(content={
-        "status": "ok",
-        "service": "SafeData Python Engine",
-        "env": APP_ENV,
-    })
+    try:
+        _db_ping()
+    except Exception:
+        logging.getLogger("safedata.health").exception("database ping failed")
+        return JSONResponse(status_code=503, content={"status": "degraded", "database": "error"})
+    return JSONResponse(content={"status": "ok", "database": "ok", "service": "SafeData"})
 
 
 # ── Custom Error Handlers ──
