@@ -3,6 +3,13 @@ databases:
     region: frankfurt
     plan: basic-1gb
     postgresMajorVersion: "16"
+# SECRET_KEY lives in a shared env group so web and worker get the SAME generated
+# value (sessions, email tokens and the TOTP Fernet key are all derived from it).
+# generateValue inside a per-service list would create a different key per service.
+envVarGroups:
+  - name: safedata-secrets
+    envVars:
+      - { key: SECRET_KEY, generateValue: true }
 services:
   - type: web
     name: safedata-web
@@ -12,8 +19,8 @@ services:
     preDeployCommand: python -m app.cli migrate
     healthCheckPath: /healthz
     envVars: &env
+      - fromGroup: safedata-secrets
       - { key: APP_ENV, value: production }
-      - { key: SECRET_KEY, generateValue: true }
       - { key: BACKUP_ENCRYPTION_KEY, sync: false }
       - { key: APP_URL, value: https://safedata.3consult-ng.com }
       - { key: ALLOWED_HOSTS, value: safedata.3consult-ng.com }

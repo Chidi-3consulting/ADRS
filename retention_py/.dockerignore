@@ -6,3 +6,10 @@ storage/
 scratch/
 cloudflared.exe
 tests/
+.env
+.env.*
+.git
+.gitignore
+.venv/
+venv/
+.superpowers/
