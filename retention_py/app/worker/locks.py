@@ -1,4 +1,5 @@
 """Lease-based job locks stored in job_locks (portable across SQLite and PostgreSQL)."""
+
 from datetime import timedelta
 
 from sqlalchemy import delete, update
@@ -41,9 +42,7 @@ def renew(db: Session, job_name: str, holder: str, ttl_seconds: int) -> bool:
     """Extend the lease, only if `holder` still owns it. Returns False if the lease was lost."""
     expires = utcnow() + timedelta(seconds=ttl_seconds)
     n = db.execute(
-        update(JobLock)
-        .where(JobLock.job_name == job_name, JobLock.holder == holder)
-        .values(expires_at=expires)
+        update(JobLock).where(JobLock.job_name == job_name, JobLock.holder == holder).values(expires_at=expires)
     ).rowcount
     db.commit()
     return n == 1

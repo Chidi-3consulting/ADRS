@@ -9,6 +9,7 @@ def test_healthz_degraded_when_db_down(client, monkeypatch):
 
     def broken():
         raise RuntimeError("db down")
+
     monkeypatch.setattr(main, "_db_ping", broken)
     r = client.get("/healthz")
     assert r.status_code == 503

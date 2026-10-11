@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import UTC
 
 from app.core.logging import JsonFormatter, request_id_var
 
@@ -26,8 +27,10 @@ def test_request_id_header_is_echoed_or_generated(client):
 
 
 def test_utcnow_is_naive_utc():
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     from app.core.clock import utcnow
+
     now = utcnow()
     assert now.tzinfo is None
-    assert abs((datetime.now(timezone.utc).replace(tzinfo=None) - now).total_seconds()) < 5
+    assert abs((datetime.now(UTC).replace(tzinfo=None) - now).total_seconds()) < 5

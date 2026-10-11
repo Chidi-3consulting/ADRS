@@ -1,8 +1,9 @@
 """Object storage: local filesystem (dev) or S3-compatible (Cloudflare R2 / DO Spaces)."""
+
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
@@ -51,7 +52,7 @@ class LocalStorage:
             if f.is_file():
                 k = f.relative_to(base).as_posix()
                 if k.startswith(prefix):
-                    out.append((k, datetime.fromtimestamp(f.stat().st_mtime, timezone.utc).replace(tzinfo=None)))
+                    out.append((k, datetime.fromtimestamp(f.stat().st_mtime, UTC).replace(tzinfo=None)))
         return sorted(out)
 
 
@@ -64,6 +65,7 @@ class S3Storage:
 
     def get(self, key):
         from botocore.exceptions import ClientError
+
         try:
             return self.client.get_object(Bucket=self.bucket, Key=_check_key(key))["Body"].read()
         except ClientError as exc:
@@ -81,10 +83,16 @@ class S3Storage:
 
 def get_storage() -> Storage:
     from app import config
+
     if config.STORAGE_BACKEND == "s3":
         import boto3
-        client = boto3.client("s3", endpoint_url=config.S3_ENDPOINT_URL or None, region_name=config.S3_REGION,
-                              aws_access_key_id=config.S3_ACCESS_KEY_ID,
-                              aws_secret_access_key=config.S3_SECRET_ACCESS_KEY)
+
+        client = boto3.client(
+            "s3",
+            endpoint_url=config.S3_ENDPOINT_URL or None,
+            region_name=config.S3_REGION,
+            aws_access_key_id=config.S3_ACCESS_KEY_ID,
+            aws_secret_access_key=config.S3_SECRET_ACCESS_KEY,
+        )
         return S3Storage(config.S3_BUCKET, client)
     return LocalStorage(config.STORAGE_LOCAL_ROOT)

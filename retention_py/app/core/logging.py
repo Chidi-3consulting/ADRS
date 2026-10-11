@@ -1,4 +1,5 @@
 """Structured logging with per-request IDs."""
+
 from __future__ import annotations
 
 import json
@@ -6,7 +7,7 @@ import logging
 import sys
 import uuid
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 _EXTRA_KEYS = ("job", "org_id", "user_id", "duration_ms", "status", "path", "method")
@@ -15,7 +16,7 @@ _EXTRA_KEYS = ("job", "org_id", "user_id", "duration_ms", "status", "path", "met
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         payload = {
-            "ts": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
+            "ts": datetime.now(UTC).isoformat(timespec="milliseconds"),
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),
@@ -31,8 +32,9 @@ class JsonFormatter(logging.Formatter):
 
 def configure_logging(json_output: bool) -> None:
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JsonFormatter() if json_output else
-                         logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    handler.setFormatter(
+        JsonFormatter() if json_output else logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    )
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(logging.INFO)

@@ -1,6 +1,7 @@
 """Single source of 'now'. Phase 1C switches this to timezone-aware UTC."""
-from datetime import datetime, timezone
+
+from datetime import UTC, datetime
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)

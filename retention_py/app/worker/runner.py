@@ -1,12 +1,13 @@
 """Run registered jobs on their intervals with locks and history."""
+
 from __future__ import annotations
 
 import logging
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Callable
 
 from sqlalchemy.orm import Session
 
@@ -29,14 +30,16 @@ class Job:
 
 
 def is_due(db: Session, job: Job, now: datetime) -> bool:
-    last = (db.query(JobRun.started_at)
-            .filter(JobRun.job_name == job.name, JobRun.status.in_(("success", "failed")))
-            .order_by(JobRun.started_at.desc()).first())
+    last = (
+        db.query(JobRun.started_at)
+        .filter(JobRun.job_name == job.name, JobRun.status.in_(("success", "failed")))
+        .order_by(JobRun.started_at.desc())
+        .first()
+    )
     return last is None or now - last[0] >= timedelta(seconds=job.interval_seconds)
 
 
-def _renew_loop(session_factory, job_name: str, holder: str, ttl: int,
-                interval: float, stop: threading.Event) -> None:
+def _renew_loop(session_factory, job_name: str, holder: str, ttl: int, interval: float, stop: threading.Event) -> None:
     """Keep the lease alive while the job runs so no other worker can take it over."""
     db = session_factory()
     try:
@@ -62,8 +65,7 @@ def run_job(job: Job, session_factory, holder: str) -> str:
             return "skipped"
         renewer = threading.Thread(
             target=_renew_loop,
-            args=(session_factory, job.name, holder, ttl,
-                  RENEW_INTERVAL_SECONDS or ttl / 3, renew_stop),
+            args=(session_factory, job.name, holder, ttl, RENEW_INTERVAL_SECONDS or ttl / 3, renew_stop),
             daemon=True,
         )
         renewer.start()
@@ -81,8 +83,10 @@ def run_job(job: Job, session_factory, holder: str) -> str:
             log.exception("job failed", extra={"job": job.name})
         run.finished_at = utcnow()
         db.commit()
-        log.info("job finished", extra={"job": job.name, "status": run.status,
-                                        "duration_ms": int((time.monotonic() - started) * 1000)})
+        log.info(
+            "job finished",
+            extra={"job": job.name, "status": run.status, "duration_ms": int((time.monotonic() - started) * 1000)},
+        )
         return run.status
     finally:
         renew_stop.set()
@@ -97,9 +101,13 @@ def run_job(job: Job, session_factory, holder: str) -> str:
             db.close()
 
 
-def run_forever(session_factory, holder: str, jobs: list[Job],
-                stop: Callable[[], bool] = lambda: False,
-                sleep: Callable[[float], None] = time.sleep) -> None:
+def run_forever(
+    session_factory,
+    holder: str,
+    jobs: list[Job],
+    stop: Callable[[], bool] = lambda: False,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
     log.info("worker started", extra={"status": holder})
     while not stop():
         for job in jobs:

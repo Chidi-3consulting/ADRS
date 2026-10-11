@@ -1,11 +1,10 @@
+import time
 from datetime import timedelta
 
 from app.core.clock import utcnow
 from app.database import SessionLocal
 from app.models import JobLock, JobRun
 from app.worker import jobs as jobs_mod
-import time
-
 from app.worker import runner as runner_mod
 from app.worker.locks import acquire, release, renew
 from app.worker.runner import Job, is_due, run_forever, run_job
@@ -42,6 +41,7 @@ def test_successful_job_recorded(db):
 def test_failed_job_recorded_and_lock_released(db):
     def boom(_s):
         raise RuntimeError("kaboom")
+
     job = Job("boom", 60, boom)
     assert run_job(job, SessionLocal, "w1") == "failed"
     db.expire_all()
@@ -58,8 +58,7 @@ def test_skipped_when_locked(db):
 def test_is_due(db):
     job = Job("retention", 600, lambda s: {})
     assert is_due(db, job, utcnow()) is True
-    db.add(JobRun(job_name="retention", holder="w", status="success",
-                  started_at=utcnow(), finished_at=utcnow()))
+    db.add(JobRun(job_name="retention", holder="w", status="success", started_at=utcnow(), finished_at=utcnow()))
     db.commit()
     assert is_due(db, job, utcnow()) is False
     assert is_due(db, job, utcnow() + timedelta(seconds=601)) is True
@@ -67,8 +66,13 @@ def test_is_due(db):
 
 def test_dispatch_and_intake_run_without_global_enterprise_setting(db, monkeypatch):
     called = {}
-    monkeypatch.setattr("app.enterprise.process_disposal_dispatches", lambda s, n: called.setdefault("dispatch", {"sent": 0, "failed": 0}))
-    monkeypatch.setattr("app.enterprise.process_intake_queue", lambda s, n: called.setdefault("intake", {"processed": 0}))
+    monkeypatch.setattr(
+        "app.enterprise.process_disposal_dispatches",
+        lambda s, n: called.setdefault("dispatch", {"sent": 0, "failed": 0}),
+    )
+    monkeypatch.setattr(
+        "app.enterprise.process_intake_queue", lambda s, n: called.setdefault("intake", {"processed": 0})
+    )
     by_name = {j.name: j for j in jobs_mod.JOBS}
     by_name["dispatch"].fn(db)
     by_name["intake"].fn(db)
@@ -77,7 +81,13 @@ def test_dispatch_and_intake_run_without_global_enterprise_setting(db, monkeypat
 
 def test_registry_names():
     assert {j.name for j in jobs_mod.JOBS} == {
-        "retention", "housekeeping", "backup", "dispatch", "intake", "audit_chain"}
+        "retention",
+        "housekeeping",
+        "backup",
+        "dispatch",
+        "intake",
+        "audit_chain",
+    }
 
 
 def test_renew_only_for_holder(db):
@@ -124,9 +134,13 @@ def test_loop_survives_error_outside_job_fn(db, monkeypatch):
 
     monkeypatch.setattr(runner_mod, "run_job", flaky)
     passes = iter([False, True])
-    run_forever(SessionLocal, "w1",
-                [Job("first", 60, lambda s: {}), Job("second", 60, lambda s: {"ok": 1})],
-                stop=lambda: next(passes), sleep=lambda _s: None)
+    run_forever(
+        SessionLocal,
+        "w1",
+        [Job("first", 60, lambda s: {}), Job("second", 60, lambda s: {"ok": 1})],
+        stop=lambda: next(passes),
+        sleep=lambda _s: None,
+    )
     db.expire_all()
     assert db.query(JobRun).filter_by(job_name="second", status="success").count() == 1
 
@@ -134,5 +148,6 @@ def test_loop_survives_error_outside_job_fn(db, monkeypatch):
 def test_release_failure_is_logged_not_raised(db, monkeypatch):
     def bad_release(*_a):
         raise RuntimeError("release boom")
+
     monkeypatch.setattr(runner_mod, "release", bad_release)
     assert run_job(Job("rel", 60, lambda s: {}), SessionLocal, "w1") == "success"

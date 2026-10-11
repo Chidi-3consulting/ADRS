@@ -1,4 +1,5 @@
 """SafeData operations CLI: python -m app.cli <command>."""
+
 from __future__ import annotations
 
 import argparse
@@ -6,8 +7,9 @@ import logging
 import os
 import sys
 
-from alembic import command
 from alembic.config import Config
+
+from alembic import command
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 log = logging.getLogger("safedata.cli")
