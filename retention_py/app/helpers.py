@@ -19,6 +19,41 @@ COUNTRY_REGULATION_MAP = {
     'CA': ['PIPEDA'],
     'AU': ['APPs'],
     'EG': ['EGDPL'],
+
+    # ── African continent — national data protection laws ──
+    # East Africa
+    'RW': ['DPA_RW'],      # Rwanda Law No. 058/2021 — NCSA
+    'UG': ['DPA_UG'],      # Uganda Data Protection and Privacy Act 2019 — PDPO
+    'TZ': ['DPA_TZ'],      # Tanzania Personal Data Protection Act 2022 — PDPC
+    'ET': ['DPA_ET'],      # Ethiopia Proclamation 1321/2024 — Ethiopian Communications Authority
+    # Southern Africa
+    'ZM': ['DPA_ZM'],      # Zambia Data Protection Act No. 3 of 2021
+    'ZW': ['DPA_ZW'],      # Zimbabwe Cyber & Data Protection Act 2021 — POTRAZ
+    'MW': ['DPA_MW'],      # Malawi Data Protection Act 2024 — MACRA-designated
+    'BW': ['DPA_BW'],      # Botswana Data Protection Act No. 18 of 2024
+    'MU': ['DPA_MU'],      # Mauritius Data Protection Act 2017
+    'SC': ['DPA_SC'],      # Seychelles Data Protection Act 2023 — Information Commission
+    'SZ': ['DPA_SZ'],      # Eswatini Data Protection Act No. 5 of 2022
+    'LS': ['DPA_LS'],      # Lesotho Data Protection Act 2011
+    'CV': ['DPA_CV'],      # Cabo Verde Law No. 133/V/2001 (amended 2013) — CNPD
+    'MZ': ['GDPR_ALIGN'],  # Mozambique: draft law as of 2026 — GDPR-aligned baseline
+    'NA': ['GDPR_ALIGN'],  # Namibia: draft bill as of 2026 — GDPR-aligned baseline
+    # West Africa
+    'SN': ['DPA_SN'],      # Senegal Act No. 2008-12 — CDP
+    'CI': ['DPA_CI'],      # Côte d'Ivoire Law No. 2013-450 — ARTCI
+    'MA': ['DPA_MA'],      # Morocco Law No. 09-08 — CNDP
+    'BJ': ['DPA_BJ'],      # Benin Law No. 2009-09 — APDP
+    'TG': ['DPA_TG'],      # Togo Law No. 2019-014 — IPDCP
+    'BF': ['DPA_BF'],      # Burkina Faso Law No. 010-2004/AN — CIL
+    'ML': ['DPA_ML'],      # Mali Law No. 2013-015 — APDP
+    'GM': ['GDPR_ALIGN'],  # Gambia: law reportedly enacted 2025; unverified — GDPR-aligned baseline
+    'CM': ['DPA_CM'],      # Cameroon Law No. 2024/017 — regulator not yet operational
+    'GA': ['DPA_GA'],      # Gabon Law No. 001/2011 — CNPDCP
+    'AO': ['DPA_AO'],      # Angola Law No. 22/11 — APD
+    # North Africa
+    'TN': ['DPA_TN'],      # Tunisia Organic Law 2004-63 — INPDP
+    'DZ': ['DPA_DZ'],      # Algeria Law No. 18-07 — ANPDP
+
     # EU / EEA member states → GDPR
     'AT': ['GDPR'], 'BE': ['GDPR'], 'BG': ['GDPR'],
     'HR': ['GDPR'], 'CY': ['GDPR'], 'CZ': ['GDPR'],
@@ -50,6 +85,71 @@ COUNTRY_REGULATION_LABELS = {
     'CA': {'authority': 'OPC', 'law': 'PIPEDA', 'audit_label': 'PIPEDA Annual Compliance Report'},
     'AU': {'authority': 'OAIC', 'law': 'Privacy Act / APPs', 'audit_label': 'APPs Annual Compliance Report'},
     'EG': {'authority': 'Data Protection Center', 'law': 'EGDPL', 'audit_label': 'EGDPL Annual Compliance Report'},
+
+    # ── African continent ──
+    'RW': {'authority': 'NCSA', 'law': 'Rwanda DPA 2021',
+           'audit_label': 'Rwanda DPA Annual Compliance Report'},
+    'UG': {'authority': 'PDPO', 'law': 'Uganda DP&PA 2019',
+           'audit_label': 'Uganda DPPA Annual Compliance Report'},
+    'TZ': {'authority': 'PDPC (Tanzania)', 'law': 'Tanzania PDPA 2022',
+           'audit_label': 'Tanzania PDPA Annual Compliance Report'},
+    'ET': {'authority': 'Ethiopian Communications Authority', 'law': 'Ethiopia PDPP 2024',
+           'audit_label': 'Ethiopia DPP Annual Compliance Report'},
+    'ZM': {'authority': 'Data Protection Commissioner (Zambia)', 'law': 'Zambia DPA 2021',
+           'audit_label': 'Zambia DPA Annual Compliance Report'},
+    'ZW': {'authority': 'POTRAZ', 'law': 'Zimbabwe CDPA 2021',
+           'audit_label': 'Zimbabwe CDPA Annual Compliance Report'},
+    'MW': {'authority': 'MACRA', 'law': 'Malawi DPA 2024',
+           'audit_label': 'Malawi DPA Annual Compliance Report'},
+    'BW': {'authority': 'Information & Data Protection Commission',
+           'law': 'Botswana DPA 2024',
+           'audit_label': 'Botswana DPA Annual Compliance Report'},
+    'MU': {'authority': 'Data Protection Office (Mauritius)', 'law': 'Mauritius DPA 2017',
+           'audit_label': 'Mauritius DPA Annual Compliance Report'},
+    'SC': {'authority': 'Information Commission (Seychelles)',
+           'law': 'Seychelles DPA 2023',
+           'audit_label': 'Seychelles DPA Annual Compliance Report'},
+    'SZ': {'authority': 'Eswatini DPA', 'law': 'Eswatini DPA 2022',
+           'audit_label': 'Eswatini DPA Annual Compliance Report'},
+    'LS': {'authority': 'Data Protection Commissioner (Lesotho)',
+           'law': 'Lesotho DPA 2011',
+           'audit_label': 'Lesotho DPA Annual Compliance Report'},
+    'CV': {'authority': 'CNPD (Cabo Verde)', 'law': 'Cabo Verde DPA 2001',
+           'audit_label': 'Cabo Verde DPA Annual Compliance Report'},
+    'SN': {'authority': 'CDP (Senegal)', 'law': 'Senegal DPA 2008',
+           'audit_label': 'Senegal DPA Annual Compliance Report'},
+    'CI': {'authority': 'ARTCI', 'law': "Côte d'Ivoire DPA 2013",
+           'audit_label': "Côte d'Ivoire DPA Annual Compliance Report"},
+    'MA': {'authority': 'CNDP (Morocco)', 'law': 'Morocco Law 09-08',
+           'audit_label': 'Morocco DPA Annual Compliance Report'},
+    'BJ': {'authority': 'APDP (Benin)', 'law': 'Benin DPA 2009',
+           'audit_label': 'Benin DPA Annual Compliance Report'},
+    'TG': {'authority': 'IPDCP (Togo)', 'law': 'Togo DPA 2019',
+           'audit_label': 'Togo DPA Annual Compliance Report'},
+    'BF': {'authority': 'CIL (Burkina Faso)', 'law': 'Burkina Faso DPA 2004',
+           'audit_label': 'Burkina Faso DPA Annual Compliance Report'},
+    'ML': {'authority': 'APDP (Mali)', 'law': 'Mali DPA 2013',
+           'audit_label': 'Mali DPA Annual Compliance Report'},
+    'CM': {'authority': 'DPA (Cameroon)*', 'law': 'Cameroon DPA 2024',
+           'audit_label': 'Cameroon DPA Annual Compliance Report'},
+    'GA': {'authority': 'CNPDCP (Gabon)', 'law': 'Gabon DPA 2011',
+           'audit_label': 'Gabon DPA Annual Compliance Report'},
+    'AO': {'authority': 'APD (Angola)', 'law': 'Angola DPA 2011',
+           'audit_label': 'Angola DPA Annual Compliance Report'},
+    'TN': {'authority': 'INPDP', 'law': 'Tunisia DPA 2004',
+           'audit_label': 'Tunisia DPA Annual Compliance Report'},
+    'DZ': {'authority': 'ANPDP', 'law': 'Algeria Law 18-07',
+           'audit_label': 'Algeria DPA Annual Compliance Report'},
+    # Draft-law countries: GDPR-aligned baseline pending national law
+    'MZ': {'authority': 'National Data Authority (draft law)',
+           'law': 'GDPR-aligned baseline',
+           'audit_label': 'GDPR-aligned Compliance Report'},
+    'NA': {'authority': 'National Data Authority (draft law)',
+           'law': 'GDPR-aligned baseline',
+           'audit_label': 'GDPR-aligned Compliance Report'},
+    'GM': {'authority': 'National Data Authority (draft law)',
+           'law': 'GDPR-aligned baseline',
+           'audit_label': 'GDPR-aligned Compliance Report'},
     'OTHER': {'authority': 'National Data Authority', 'law': 'General Data Protection (GDPR-aligned)', 'audit_label': 'Annual Compliance Report'},
 }
 
@@ -59,6 +159,15 @@ SafeData_SUPPORTED_COUNTRIES = {
     'CA': 'Canada', 'AU': 'Australia', 'IN': 'India', 'AE': 'United Arab Emirates',
     'ZA': 'South Africa', 'KE': 'Kenya', 'GH': 'Ghana', 'SG': 'Singapore', 'BR': 'Brazil',
     'EG': 'Egypt',
+    # ── African continent (mapped to national laws or GDPR-aligned baseline) ──
+    'RW': 'Rwanda', 'UG': 'Uganda', 'TZ': 'Tanzania', 'ET': 'Ethiopia',
+    'ZM': 'Zambia', 'ZW': 'Zimbabwe', 'MW': 'Malawi', 'BW': 'Botswana',
+    'MU': 'Mauritius', 'SC': 'Seychelles', 'SZ': 'Eswatini', 'LS': 'Lesotho',
+    'CV': 'Cabo Verde', 'MZ': 'Mozambique', 'NA': 'Namibia',
+    'SN': 'Senegal', 'CI': "Côte d'Ivoire", 'MA': 'Morocco', 'BJ': 'Benin',
+    'TG': 'Togo', 'BF': 'Burkina Faso', 'ML': 'Mali', 'GM': 'Gambia',
+    'CM': 'Cameroon', 'GA': 'Gabon', 'AO': 'Angola', 'TN': 'Tunisia',
+    'DZ': 'Algeria',
     # ── EU / EEA member states (mapped → GDPR) ──
     'AT': 'Austria', 'BE': 'Belgium', 'BG': 'Bulgaria', 'HR': 'Croatia', 'CY': 'Cyprus',
     'CZ': 'Czech Republic', 'DK': 'Denmark', 'EE': 'Estonia', 'FI': 'Finland', 'FR': 'France',
@@ -68,39 +177,39 @@ SafeData_SUPPORTED_COUNTRIES = {
     'ES': 'Spain', 'SE': 'Sweden', 'IS': 'Iceland', 'LI': 'Liechtenstein', 'NO': 'Norway',
     'CH': 'Switzerland',
     # ── All other countries (A-Z) ──
-    'AF': 'Afghanistan', 'AL': 'Albania', 'DZ': 'Algeria', 'AD': 'Andorra', 'AO': 'Angola',
+    'AF': 'Afghanistan', 'AL': 'Albania', 'AD': 'Andorra',
     'AG': 'Antigua and Barbuda', 'AR': 'Argentina', 'AM': 'Armenia', 'AZ': 'Azerbaijan',
     'BS': 'Bahamas', 'BH': 'Bahrain', 'BD': 'Bangladesh', 'BB': 'Barbados', 'BY': 'Belarus',
-    'BZ': 'Belize', 'BJ': 'Benin', 'BT': 'Bhutan', 'BO': 'Bolivia',
-    'BA': 'Bosnia and Herzegovina', 'BW': 'Botswana', 'BN': 'Brunei', 'BF': 'Burkina Faso',
-    'BI': 'Burundi', 'CV': 'Cabo Verde', 'KH': 'Cambodia', 'CM': 'Cameroon',
+    'BZ': 'Belize', 'BT': 'Bhutan', 'BO': 'Bolivia',
+    'BA': 'Bosnia and Herzegovina', 'BN': 'Brunei',
+    'BI': 'Burundi', 'KH': 'Cambodia',
     'CF': 'Central African Republic', 'TD': 'Chad', 'CL': 'Chile', 'CN': 'China',
     'CO': 'Colombia', 'KM': 'Comoros', 'CG': 'Congo', 'CD': 'Congo (DRC)', 'CR': 'Costa Rica',
-    'CI': "Côte d'Ivoire", 'CU': 'Cuba', 'DJ': 'Djibouti', 'DM': 'Dominica',
+    'CU': 'Cuba', 'DJ': 'Djibouti', 'DM': 'Dominica',
     'DO': 'Dominican Republic', 'EC': 'Ecuador', 'SV': 'El Salvador', 'GQ': 'Equatorial Guinea',
-    'ER': 'Eritrea', 'SZ': 'Eswatini', 'ET': 'Ethiopia', 'FJ': 'Fiji', 'GA': 'Gabon',
-    'GM': 'Gambia', 'GE': 'Georgia', 'GT': 'Guatemala', 'GN': 'Guinea', 'GW': 'Guinea-Bissau',
+    'ER': 'Eritrea', 'FJ': 'Fiji',
+    'GE': 'Georgia', 'GT': 'Guatemala', 'GN': 'Guinea', 'GW': 'Guinea-Bissau',
     'GY': 'Guyana', 'HT': 'Haiti', 'HN': 'Honduras', 'IQ': 'Iraq', 'IL': 'Israel',
     'JM': 'Jamaica', 'JP': 'Japan', 'JO': 'Jordan', 'KZ': 'Kazakhstan', 'KI': 'Kiribati',
     'KP': 'North Korea', 'KR': 'South Korea', 'KW': 'Kuwait', 'KG': 'Kyrgyzstan',
-    'LA': 'Laos', 'LB': 'Lebanon', 'LS': 'Lesotho', 'LR': 'Liberia', 'LY': 'Libya',
-    'MG': 'Madagascar', 'MW': 'Malawi', 'MY': 'Malaysia', 'MV': 'Maldives', 'ML': 'Mali',
-    'MH': 'Marshall Islands', 'MR': 'Mauritania', 'MU': 'Mauritius', 'MX': 'Mexico',
+    'LA': 'Laos', 'LB': 'Lebanon', 'LR': 'Liberia', 'LY': 'Libya',
+    'MG': 'Madagascar', 'MY': 'Malaysia', 'MV': 'Maldives',
+    'MH': 'Marshall Islands', 'MR': 'Mauritania', 'MX': 'Mexico',
     'FM': 'Micronesia', 'MD': 'Moldova', 'MC': 'Monaco', 'MN': 'Mongolia', 'ME': 'Montenegro',
-    'MA': 'Morocco', 'MZ': 'Mozambique', 'MM': 'Myanmar', 'NA': 'Namibia', 'NR': 'Nauru',
+    'MM': 'Myanmar', 'NR': 'Nauru',
     'NP': 'Nepal', 'NZ': 'New Zealand', 'NI': 'Nicaragua', 'NE': 'Niger', 'MK': 'North Macedonia',
     'OM': 'Oman', 'PK': 'Pakistan', 'PW': 'Palau', 'PS': 'Palestine', 'PA': 'Panama',
     'PG': 'Papua New Guinea', 'PY': 'Paraguay', 'PE': 'Peru', 'PH': 'Philippines',
-    'QA': 'Qatar', 'RU': 'Russia', 'RW': 'Rwanda', 'KN': 'Saint Kitts and Nevis',
+    'QA': 'Qatar', 'RU': 'Russia', 'KN': 'Saint Kitts and Nevis',
     'LC': 'Saint Lucia', 'VC': 'Saint Vincent and the Grenadines', 'WS': 'Samoa',
-    'SM': 'San Marino', 'ST': 'São Tomé and Príncipe', 'SA': 'Saudi Arabia', 'SN': 'Senegal',
-    'RS': 'Serbia', 'SC': 'Seychelles', 'SL': 'Sierra Leone', 'SB': 'Solomon Islands',
+    'SM': 'San Marino', 'ST': 'São Tomé and Príncipe', 'SA': 'Saudi Arabia',
+    'RS': 'Serbia', 'SL': 'Sierra Leone', 'SB': 'Solomon Islands',
     'SO': 'Somalia', 'SS': 'South Sudan', 'LK': 'Sri Lanka', 'SD': 'Sudan', 'SR': 'Suriname',
-    'SY': 'Syria', 'TW': 'Taiwan', 'TJ': 'Tajikistan', 'TZ': 'Tanzania', 'TH': 'Thailand',
-    'TL': 'Timor-Leste', 'TG': 'Togo', 'TO': 'Tonga', 'TT': 'Trinidad and Tobago',
-    'TN': 'Tunisia', 'TR': 'Turkey', 'TM': 'Turkmenistan', 'TV': 'Tuvalu', 'UG': 'Uganda',
+    'SY': 'Syria', 'TW': 'Taiwan', 'TJ': 'Tajikistan', 'TH': 'Thailand',
+    'TL': 'Timor-Leste', 'TO': 'Tonga', 'TT': 'Trinidad and Tobago',
+    'TR': 'Turkey', 'TM': 'Turkmenistan', 'TV': 'Tuvalu',
     'UA': 'Ukraine', 'UY': 'Uruguay', 'UZ': 'Uzbekistan', 'VU': 'Vanuatu', 'VA': 'Vatican City',
-    'VE': 'Venezuela', 'VN': 'Vietnam', 'YE': 'Yemen', 'ZM': 'Zambia', 'ZW': 'Zimbabwe',
+    'VE': 'Venezuela', 'VN': 'Vietnam', 'YE': 'Yemen',
 }
 
 # Pricing Catalog (Base USD)
@@ -125,6 +234,22 @@ CURRENCY_DATA = {
     'SGD': {'code': 'SGD', 'symbol': 'S$ ', 'rate': 1.35, 'name': 'Singapore Dollar'},
     'BRL': {'code': 'BRL', 'symbol': 'R$ ', 'rate': 5.4, 'name': 'Brazilian Real'},
     'EGP': {'code': 'EGP', 'symbol': 'E£ ', 'rate': 48.0, 'name': 'Egyptian Pound'},
+    # African currencies
+    'RWF': {'code': 'RWF', 'symbol': 'FRw ', 'rate': 1400.0, 'name': 'Rwandan Franc'},
+    'UGX': {'code': 'UGX', 'symbol': 'USh ', 'rate': 3700.0, 'name': 'Ugandan Shilling'},
+    'TZS': {'code': 'TZS', 'symbol': 'TSh ', 'rate': 2600.0, 'name': 'Tanzanian Shilling'},
+    'ZMW': {'code': 'ZMW', 'symbol': 'K ', 'rate': 25.0, 'name': 'Zambian Kwacha'},
+    'MWK': {'code': 'MWK', 'symbol': 'MK ', 'rate': 1735.0, 'name': 'Malawian Kwacha'},
+    'BWP': {'code': 'BWP', 'symbol': 'P ', 'rate': 13.5, 'name': 'Botswana Pula'},
+    'MUR': {'code': 'MUR', 'symbol': '₨ ', 'rate': 46.0, 'name': 'Mauritian Rupee'},
+    'SCR': {'code': 'SCR', 'symbol': 'SR ', 'rate': 14.5, 'name': 'Seychellois Rupee'},
+    'XOF': {'code': 'XOF', 'symbol': 'CFA ', 'rate': 600.0, 'name': 'West African CFA Franc'},
+    'XAF': {'code': 'XAF', 'symbol': 'FCFA ', 'rate': 600.0, 'name': 'Central African CFA Franc'},
+    'CVE': {'code': 'CVE', 'symbol': '$ Esc ', 'rate': 100.0, 'name': 'Cape Verdean Escudo'},
+    'DZD': {'code': 'DZD', 'symbol': 'DA ', 'rate': 134.0, 'name': 'Algerian Dinar'},
+    'TND': {'code': 'TND', 'symbol': 'DT ', 'rate': 3.1, 'name': 'Tunisian Dinar'},
+    'MAD': {'code': 'MAD', 'symbol': 'DH ', 'rate': 10.0, 'name': 'Moroccan Dirham'},
+    'AOA': {'code': 'AOA', 'symbol': 'Kz ', 'rate': 915.0, 'name': 'Angolan Kwanza'},
 }
 
 # Map Country Codes to Primary Currency
@@ -142,6 +267,13 @@ COUNTRY_TO_CURRENCY = {
     'SG': 'SGD',
     'BR': 'BRL',
     'EG': 'EGP',
+    # African currencies
+    'RW': 'RWF', 'UG': 'UGX', 'TZ': 'TZS', 'ZM': 'ZMW', 'MW': 'MWK',
+    'BW': 'BWP', 'MU': 'MUR', 'SC': 'SCR',
+    'DZ': 'DZD', 'TN': 'TND', 'MA': 'MAD', 'AO': 'AOA',
+    # West African CFA franc zone
+    'SN': 'XOF', 'CI': 'XOF', 'BJ': 'XOF', 'TG': 'XOF', 'BF': 'XOF',
+    'ML': 'XOF', 'GA': 'XOF',    'CM': 'XAF', 'CV': 'CVE',
     # European Union Eurozone
     'EU': 'EUR', 'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR',
     'NL': 'EUR', 'BE': 'EUR', 'IE': 'EUR', 'PT': 'EUR', 'AT': 'EUR',
@@ -267,6 +399,11 @@ def get_framework_badge(framework: str) -> str:
         return 'bg-primary text-white fw-bold'
     elif f == 'EGDPL':
         return 'bg-success text-white fw-bold'
+    # ── African frameworks: shared teal family ──
+    elif f.startswith('DPA_'):
+        return 'bg-success text-white fw-bold'   # African national DPAs share the success green
+    elif f == 'GDPR_ALIGN':
+        return 'bg-info text-dark fw-bold'       # GDPR-aligned baseline (draft-law countries)
     elif f in ('BOTH', 'GLOBAL', 'MULTI', 'UNIVERSAL'):
         return 'bg-secondary text-white fw-bold'
     else:
@@ -607,6 +744,368 @@ CATEGORY_SEEDS = {
          'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
         ('Consent Records (EGDPL)',
          'Consent collection and withdrawal logs under Egypt Data Protection Law No. 151.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # ──────────────────────────────────────────────────────────────────────
+    #  AFRICA — national data protection laws (east/southern/west/north)
+    #  Each set: customer data, employee records (national labour/social
+    #  security), regulator consent records, and financial/KYC where a
+    #  national AML or tax authority standard exists.
+    # ──────────────────────────────────────────────────────────────────────
+
+    # DPA_RW (Rwanda): Law No. 058/2021 rel. to Protection of Personal Data & Privacy — NCSA
+    'DPA_RW': [
+        ('Customer Personal Data (Rwanda DPA)',
+         'Names, national ID (NID), phone numbers, email addresses of Rwandan data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Rwanda / RSSB)',
+         'Employment contracts, RSSB social security records, and payroll data under Rwandan labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Rwanda DPA)',
+         'Consent collection and withdrawal logs under Rwanda Law No. 058/2021.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_UG (Uganda): Data Protection and Privacy Act 2019 — PDPO (NITA-U)
+    'DPA_UG': [
+        ('Customer Personal Data (Uganda DPPA)',
+         'Names, national ID (NIN), phone numbers, email addresses of Ugandan data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Uganda / NSSF)',
+         'Employment contracts, NSSF contributions, PAYE records, and payroll data under Ugandan employment law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Uganda DPPA)',
+         'Consent logs and withdrawal records under Section 3 of the Uganda Data Protection and Privacy Act.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_TZ (Tanzania): Personal Data Protection Act 2022 (Act No. 11) — PDPC
+    'DPA_TZ': [
+        ('Customer Personal Data (Tanzania PDPA)',
+         'Names, national ID (NIDA), phone numbers, email addresses of Tanzanian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Tanzania / NSSF)',
+         'Employment contracts, NSSF contributions, PAYE records, and payroll under Tanzanian employment law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Tanzania PDPA)',
+         'Consent collection and withdrawal logs under the Tanzania Personal Data Protection Act 2022.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_ET (Ethiopia): Personal Data Protection Proclamation No. 1321/2024 — ECA
+    'DPA_ET': [
+        ('Customer Personal Data (Ethiopia PDPP)',
+         'Names, national ID (Fayda), phone numbers, email addresses of Ethiopian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Ethiopia / ESS)',
+         'Employment contracts, ESS social insurance records, and payroll data under Ethiopian labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Ethiopia PDPP)',
+         'Consent collection and withdrawal logs under Proclamation No. 1321/2024.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_ZM (Zambia): Data Protection Act No. 3 of 2021 — Data Protection Commissioner
+    'DPA_ZM': [
+        ('Customer Personal Data (Zambia DPA)',
+         'Names, NRC numbers, phone numbers, email addresses of Zambian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Zambia / NAPSA)',
+         'Employment contracts, NAPSA contributions, PAYE records, and payroll under Zambian employment law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Financial Records (ZRA)',
+         'Tax filings, VAT returns, and Zambia Revenue Authority correspondence.',
+         'legal_obligation', 2555, '6 years (ZRA requirement)', 'archive', 'date_based', False, 'annually'),
+        ('Consent Records (Zambia DPA)',
+         'Consent logs and withdrawal records under the Zambia Data Protection Act No. 3 of 2021.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_ZW (Zimbabwe): Cyber and Data Protection Act [Chapter 12:07] — POTRAZ
+    'DPA_ZW': [
+        ('Customer Personal Data (Zimbabwe CDPA)',
+         'Names, national ID numbers, phone numbers, email addresses of Zimbabwean data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Zimbabwe / NSSA)',
+         'Employment contracts, NSSA contributions, PAYE records, and payroll under Zimbabwean labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Financial Records (ZIMRA)',
+         'Tax returns, VAT records, and ZIMRA correspondence.',
+         'legal_obligation', 2190, '6 years (ZIMRA requirement)', 'archive', 'date_based', False, 'annually'),
+        ('Consent Records (Zimbabwe CDPA)',
+         'Consent collection and withdrawal logs under the Cyber and Data Protection Act Section 12.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_MW (Malawi): Data Protection Act 2024 — MACRA-designated authority
+    'DPA_MW': [
+        ('Customer Personal Data (Malawi DPA)',
+         'Names, national ID numbers, phone numbers, email addresses of Malawian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Malawi / MWCISU)',
+         'Employment contracts, pension records, PAYE records, and payroll under Malawian employment law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Malawi DPA)',
+         'Consent collection and withdrawal logs under the Malawi Data Protection Act 2024.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_BW (Botswana): Data Protection Act No. 18 of 2024 — Information & Data Protection Commission
+    'DPA_BW': [
+        ('Customer Personal Data (Botswana DPA)',
+         'Names, Omang (national ID) numbers, phone numbers, email addresses of Botswana data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Botswana / BPSA)',
+         'Employment contracts, GIPF/BPSA pension records, and payroll under Botswana employment law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Botswana DPA)',
+         'Consent collection and withdrawal logs under the Botswana Data Protection Act 2024.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_MU (Mauritius): Data Protection Act 2017 — Data Protection Office
+    'DPA_MU': [
+        ('Customer Personal Data (Mauritius DPA)',
+         'Names, national ID (CNID) numbers, phone numbers, email addresses of Mauritian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Mauritius)',
+         'Employment contracts, NPF/NSF contributions, and payroll under Mauritian labour law.',
+         'legal_obligation', 2555, '7 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Financial Records (MRA)',
+         'Tax returns, VAT records, and Mauritius Revenue Authority correspondence.',
+         'legal_obligation', 2555, '7 years (MRA requirement)', 'archive', 'date_based', False, 'annually'),
+        ('Consent Records (Mauritius DPA)',
+         'Consent collection and withdrawal logs under the Mauritius Data Protection Act 2017.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_SC (Seychelles): Data Protection Act 2023 (Act 24) — Information Commission
+    'DPA_SC': [
+        ('Customer Personal Data (Seychelles DPA)',
+         'Names, NIN references, phone numbers, email addresses of Seychellois data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Seychelles / SNPF)',
+         'Employment contracts, SNPF contributions, and payroll under Seychellois employment law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Seychelles DPA)',
+         'Consent collection and withdrawal logs under the Seychelles Data Protection Act 2023.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_SZ (Eswatini): Data Protection Act No. 5 of 2022 — Eswatini DPA
+    'DPA_SZ': [
+        ('Customer Personal Data (Eswatini DPA)',
+         'Names, national ID numbers, phone numbers, email addresses of Eswatini data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Eswatini / FSP)',
+         'Employment contracts, FSP pension contributions, and payroll under Swazi employment law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Eswatini DPA)',
+         'Consent collection and withdrawal logs under the Eswatini Data Protection Act 2022.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_LS (Lesotho): Data Protection Act 2011 — Data Protection Commissioner
+    'DPA_LS': [
+        ('Customer Personal Data (Lesotho DPA)',
+         'Names, national ID numbers, phone numbers, email addresses of Basotho data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Lesotho / LNPS)',
+         'Employment contracts, LNPS pension contributions, and payroll under Lesotho employment law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Lesotho DPA)',
+         'Consent collection and withdrawal logs under the Lesotho Data Protection Act 2011.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_CV (Cabo Verde): Law 133/V/2001 on Protection of Personal Data (amended 2013) — CNPD
+    'DPA_CV': [
+        ('Customer Personal Data (Cabo Verde DPA)',
+         'Names, NIF numbers, phone numbers, email addresses of Cabo Verdean data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Cabo Verde / INPS)',
+         'Employment contracts, INPS contributions, and payroll under Cabo Verdean labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Cabo Verde DPA)',
+         'Consent collection and withdrawal logs under Law No. 133/V/2001.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_SN (Senegal): Act No. 2008-12 on Personal Data Protection — CDP
+    'DPA_SN': [
+        ('Customer Personal Data (Senegal DPA)',
+         'Names, CNP numbers, phone numbers, email addresses of Senegalese data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Senegal / IPRES)',
+         'Employment contracts, IPRES/CSS contributions, and payroll under Senegalese labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Senegal DPA)',
+         'Consent collection and withdrawal logs under Senegal Act No. 2008-12.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_CI (Côte d'Ivoire): Law No. 2013-450 on Protection of Personal Data — ARTCI
+    'DPA_CI': [
+        ('Customer Personal Data (Côte d\'Ivoire DPA)',
+         'Names, CNI numbers, phone numbers, email addresses of Ivorian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Côte d\'Ivoire / CNPS)',
+         'Employment contracts, CNPS contributions, and payroll under Ivorian labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Côte d\'Ivoire DPA)',
+         'Consent collection and withdrawal logs under Law No. 2013-450.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_MA (Morocco): Law No. 09-08 — CNDP
+    'DPA_MA': [
+        ('Customer Personal Data (Morocco Law 09-08)',
+         'Names, CNIE references, phone numbers, email addresses of Moroccan data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Morocco / CNSS)',
+         'Employment contracts, CNSS contributions, and payroll under Moroccan labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Morocco CNDP)',
+         'Consent collection and withdrawal logs under Article 5 of Law No. 09-08.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_BJ (Benin): Law No. 2009-09 — APDP
+    'DPA_BJ': [
+        ('Customer Personal Data (Benin DPA)',
+         'Names, CIP numbers, phone numbers, email addresses of Beninese data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Benin / CNSS)',
+         'Employment contracts, CNSS contributions, and payroll under Beninese labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Benin DPA)',
+         'Consent collection and withdrawal logs under Law No. 2009-09.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_TG (Togo): Law No. 2019-014 — IPDCP
+    'DPA_TG': [
+        ('Customer Personal Data (Togo DPA)',
+         'Names, national ID numbers, phone numbers, email addresses of Togolese data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Togo / CNSS)',
+         'Employment contracts, CNSS contributions, and payroll under Togolese labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Togo DPA)',
+         'Consent collection and withdrawal logs under Law No. 2019-014.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_BF (Burkina Faso): Law No. 010-2004/AN (amended 2021) — CIL
+    'DPA_BF': [
+        ('Customer Personal Data (Burkina Faso DPA)',
+         'Names, national ID numbers, phone numbers, email addresses of Burkina Faso data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Burkina Faso / CNSS)',
+         'Employment contracts, CNSS contributions, and payroll under Burkinabè labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Burkina Faso DPA)',
+         'Consent collection and withdrawal logs under Law No. 010-2004/AN.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_ML (Mali): Law No. 2013-015 — APDP
+    'DPA_ML': [
+        ('Customer Personal Data (Mali DPA)',
+         'Names, national ID (NINA) numbers, phone numbers, email addresses of Malian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Mali / INPS)',
+         'Employment contracts, INPS contributions, and payroll under Malian labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Mali DPA)',
+         'Consent collection and withdrawal logs under Law No. 2013-015.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_CM (Cameroon): Law No. 2024/017 — DPA (regulator being established)
+    'DPA_CM': [
+        ('Customer Personal Data (Cameroon DPA)',
+         'Names, national ID (CNI) numbers, phone numbers, email addresses of Cameroonian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Cameroon / CNPS)',
+         'Employment contracts, CNPS contributions, and payroll under Cameroonian labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Cameroon DPA)',
+         'Consent collection and withdrawal logs under Law No. 2024/017.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_GA (Gabon): Law No. 001/2011 — CNPDCP
+    'DPA_GA': [
+        ('Customer Personal Data (Gabon DPA)',
+         'Names, national ID numbers, phone numbers, email addresses of Gabonese data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Gabon / CNSS)',
+         'Employment contracts, CNSS contributions, and payroll under Gabonese labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Gabon DPA)',
+         'Consent collection and withdrawal logs under Law No. 001/2011.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_AO (Angola): Law No. 22/11 — APD
+    'DPA_AO': [
+        ('Customer Personal Data (Angola DPA)',
+         'Names, BI (identity card) numbers, phone numbers, email addresses of Angolan data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Angola / INSS)',
+         'Employment contracts, INSS contributions, and payroll under Angolan labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Angola DPA)',
+         'Consent collection and withdrawal logs under Law No. 22/11.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_TN (Tunisia): Organic Law 2004-63 — INPDP
+    'DPA_TN': [
+        ('Customer Personal Data (Tunisia DPA)',
+         'Names, national ID numbers, phone numbers, email addresses of Tunisian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Tunisia / CNSS)',
+         'Employment contracts, CNSS contributions, and payroll under Tunisian labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Tunisia DPA)',
+         'Consent collection and withdrawal logs under Organic Law 2004-63.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # DPA_DZ (Algeria): Law No. 18-07 — ANPDP
+    'DPA_DZ': [
+        ('Customer Personal Data (Algeria Law 18-07)',
+         'Names, national ID (NIN) numbers, phone numbers, email addresses of Algerian data subjects.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (Algeria / CNAS)',
+         'Employment contracts, CNAS/CNR contributions, and payroll under Algerian labour law.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (Algeria DPA)',
+         'Consent collection and withdrawal logs under Law No. 18-07.',
+         'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
+    ],
+
+    # ──────────────────────────────────────────────────────────────────────
+    #  GDPR_ALIGN — baseline for African countries whose national law is
+    #  still in draft (Namibia, Mozambique, Gambia). Uses GDPR-aligned
+    #  obligations until a national law enters into force.
+    # ──────────────────────────────────────────────────────────────────────
+    'GDPR_ALIGN': [
+        ('Customer Personal Data (GDPR-aligned baseline)',
+         'Names, national ID references, phone numbers, and email addresses '
+         'processed under a GDPR-aligned national baseline while the country\'s '
+         'own data protection law is finalised.',
+         'contract', 1095, '3 years post-relationship', 'anonymise', 'date_based', False, 'quarterly'),
+        ('Employee Records (GDPR-aligned baseline)',
+         'Employment contracts, social security records, and payroll data '
+         'retained under general labour-law recordkeeping obligations.',
+         'legal_obligation', 1825, '5 years post-employment', 'delete', 'date_based', False, 'annually'),
+        ('Consent Records (GDPR-aligned baseline)',
+         'Consent collection and withdrawal logs maintained under GDPR-aligned '
+         'consent principles pending national law.',
          'consent', 0, 'Until consent withdrawn + 1 year evidence', 'delete', 'consent_withdrawal', False, 'quarterly'),
     ],
 }

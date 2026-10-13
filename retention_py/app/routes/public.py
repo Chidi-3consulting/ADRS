@@ -64,6 +64,17 @@ def view_landing(request: Request, db: Session = Depends(get_db)):
     })
 
 
+@router.get("/safedata", response_class=HTMLResponse)
+def view_safedata_content(request: Request):
+    return templates.TemplateResponse(request=request, name="safedata_content.html", context={
+        "page_title": "SafeData — Data Retention & Governance",
+        "page_description": "A practical, accountable approach to information retention and lifecycle governance.",
+        "wl_name": "SafeData",
+        "wl_footer": "3Consulting Limited",
+        "app_url": APP_URL,
+    })
+
+
 @router.get("/login", response_class=HTMLResponse)
 def view_login(request: Request):
     session = get_session(request)

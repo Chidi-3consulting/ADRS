@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" role="img" aria-labelledby="title description">
+  <title id="title">SafeData InMotion shared cPanel deployment readiness</title>
+  <desc id="description">Compatibility gate between the SafeData FastAPI ASGI application and cPanel Passenger WSGI shared hosting, with requirements that must be confirmed before production deployment and a supported VPS route if shared hosting is incompatible.</desc>
+  <defs>
+    <style>
+      .bg { fill: #111827; }
+      .panel { fill: #f7f4ee; }
+      .white { fill: #ffffff; }
+      .ink { fill: #111827; }
+      .muted { fill: #475569; }
+      .orange { fill: #ff914d; }
+      .red { fill: #b84638; }
+      .green { fill: #18725f; }
+      .title { font: 700 39px 'Segoe UI', Arial, sans-serif; }
+      .subtitle { font: 400 20px 'Segoe UI', Arial, sans-serif; }
+      .heading { font: 700 23px 'Segoe UI', Arial, sans-serif; }
+      .body { font: 400 18px 'Segoe UI', Arial, sans-serif; }
+      .small { font: 400 16px 'Segoe UI', Arial, sans-serif; }
+      .label { font: 700 15px 'Segoe UI', Arial, sans-serif; letter-spacing: 1.4px; }
+      .box { rx: 18; }
+      .arrow { stroke: #ff914d; stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="8" refY="6" orient="auto">
+      <path d="M 0 0 L 10 6 L 0 12 z" fill="#ff914d"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1600" height="1040"/>
+  <rect class="orange" x="72" y="62" width="98" height="8" rx="4"/>
+  <text class="title white" x="72" y="125">SafeData on InMotion Shared cPanel</text>
+  <text class="subtitle white" x="72" y="165">Production compatibility gate · SafeData remains a distinct product</text>
+
+  <rect class="panel box" x="72" y="218" width="420" height="250"/>
+  <text class="label red" x="105" y="263">CURRENT SAFEDATA RELEASE</text>
+  <text class="heading ink" x="105" y="310">FastAPI application</text>
+  <text class="body muted" x="105" y="350">ASGI interface · Uvicorn/Gunicorn</text>
+  <text class="body muted" x="105" y="382">Python 3.12 · PostgreSQL · S3</text>
+  <text class="body muted" x="105" y="414">Separate persistent worker process</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 504 342 L 574 342"/>
+  <rect x="600" y="218" width="438" height="250" rx="18" fill="#ffffff"/>
+  <text class="label red" x="635" y="263">SHARED cPANEL / PASSENGER</text>
+  <text class="heading ink" x="635" y="310">Provider check required</text>
+  <text class="body muted" x="635" y="350">cPanel docs show Passenger + WSGI entry</text>
+  <text class="body muted" x="635" y="382">WSGI is not FastAPI's ASGI interface</text>
+  <text class="body muted" x="635" y="414">Worker and data services need confirmation</text>
+  <rect x="635" y="435" width="160" height="26" rx="13" fill="#f6e4df"/>
+  <text class="label red" x="653" y="454">NOT ASSUMED READY</text>
+
+  <path class="arrow" marker-end="url(#arrowhead)" d="M 1050 342 L 1120 342"/>
+  <rect x="1148" y="218" width="380" height="250" rx="18" fill="#f7f4ee"/>
+  <text class="label green" x="1184" y="263">GO / NO-GO</text>
+  <text class="heading ink" x="1184" y="310">Go only on proof</text>
+  <text class="body muted" x="1184" y="350">Written ASGI support</text>
+  <text class="body muted" x="1184" y="382">Managed worker + restart/logs</text>
+  <text class="body muted" x="1184" y="414">PostgreSQL + S3 + TLS confirmed</text>
+  <text class="body muted" x="1184" y="446">Unknown = stop before DNS cutover</text>
+
+  <rect x="72" y="520" width="1456" height="220" rx="18" fill="#ffffff"/>
+  <text class="heading ink" x="108" y="568">Deployment order — keep the live service safe</text>
+  <g>
+    <circle cx="128" cy="630" r="23" fill="#ff914d"/><text class="heading ink" x="121" y="638">1</text>
+    <text class="body ink" x="168" y="624">Ask InMotion</text><text class="small muted" x="168" y="650">Get plan-specific answers</text>
+    <path class="arrow" marker-end="url(#arrowhead)" d="M 385 630 L 450 630"/>
+    <circle cx="495" cy="630" r="23" fill="#ff914d"/><text class="heading ink" x="488" y="638">2</text>
+    <text class="body ink" x="535" y="624">Stage privately</text><text class="small muted" x="535" y="650">No production data</text>
+    <path class="arrow" marker-end="url(#arrowhead)" d="M 737 630 L 802 630"/>
+    <circle cx="847" cy="630" r="23" fill="#ff914d"/><text class="heading ink" x="840" y="638">3</text>
+    <text class="body ink" x="887" y="624">Test every dependency</text><text class="small muted" x="887" y="650">App, worker, DB, storage, restore</text>
+    <path class="arrow" marker-end="url(#arrowhead)" d="M 1190 630 L 1255 630"/>
+    <circle cx="1300" cy="630" r="23" fill="#ff914d"/><text class="heading ink" x="1293" y="638">4</text>
+    <text class="body ink" x="1340" y="624">Cut over last</text><text class="small muted" x="1340" y="650">Keep rollback ready</text>
+  </g>
+  <text class="small muted" x="108" y="704">Do not change nameservers or email DNS records just to publish the application.</text>
+
+  <rect x="72" y="782" width="1456" height="184" rx="18" fill="#193049"/>
+  <text class="label orange" x="108" y="825">IF SHARED HOSTING DOES NOT PASS</text>
+  <text class="heading white" x="108" y="866">Ask InMotion for a VPS / ASGI-capable plan that preserves the current architecture.</text>
+  <text class="body white" x="108" y="906">HTTPS domain → reverse proxy → SafeData ASGI web process + supervised worker</text>
+  <text class="body white" x="108" y="938">PostgreSQL + S3-compatible storage + encrypted backups · no WSGI conversion by guesswork</text>
+
+  <text class="small white" x="72" y="1008">SafeData by 3Consulting · InMotion account capabilities must be confirmed with the provider</text>
+</svg>

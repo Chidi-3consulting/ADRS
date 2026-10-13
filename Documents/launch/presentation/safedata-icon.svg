@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SafeData icon</title>
+  <desc id="desc">SafeData lifecycle ring icon for app and browser use.</desc>
+  <rect width="512" height="512" rx="48" fill="#f7f4ee"/>
+  <path d="M 160 340 A 120 120 0 1 1 352 340" fill="none" stroke="#111827" stroke-width="20" stroke-linecap="round"/>
+  <circle cx="352" cy="340" r="15" fill="#ff914d"/>
+  <circle cx="196" cy="176" r="10" fill="#ff914d"/>
+  <circle cx="228" cy="148" r="8" fill="#ff914d"/>
+  <circle cx="260" cy="146" r="7" fill="#ff914d"/>
+</svg>

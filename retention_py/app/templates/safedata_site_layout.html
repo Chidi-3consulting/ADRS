@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="{{ page_description or 'SafeData helps organisations govern information across its lifecycle.' }}">
+  <title>{{ page_title }}</title>
+  <link rel="stylesheet" href="/static/css/safedata-site.css?v=1">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="SafeData home">
+      <img src="/static/brand/safedata-wordmark-lockup.svg" alt="SafeData by 3Consulting">
+    </a>
+    <nav aria-label="SafeData navigation">
+      <a href="/safedata">Product overview</a>
+      <a class="nav-cta" href="{{ app_url }}/login">Sign in</a>
+    </nav>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  <footer class="site-footer">
+    <span>SafeData by 3Consulting Limited</span>
+    <span>Keep what you must. Release what you should.</span>
+  </footer>
+</body>
+</html>

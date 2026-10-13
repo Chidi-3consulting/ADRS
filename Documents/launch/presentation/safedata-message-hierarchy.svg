@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title description">
+  <title id="title">SafeData website wording hierarchy</title>
+  <desc id="description">A standalone SafeData landing-page visual showing the SafeData by 3Consulting lockup, primary tagline, supporting line, product explanation, call to action, four lifecycle steps, and legal qualification.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f4ee; }
+      .navy { fill: #111827; }
+      .orange { fill: #ff914d; }
+      .muted { fill: #475569; }
+      .white { fill: #ffffff; }
+      .brand { font: 700 30px 'Segoe UI', Arial, sans-serif; }
+      .headline { font: 700 53px 'Segoe UI', Arial, sans-serif; letter-spacing: -1.5px; }
+      .support { font: 600 24px 'Segoe UI', Arial, sans-serif; }
+      .body { font: 400 21px 'Segoe UI', Arial, sans-serif; }
+      .step { font: 700 20px 'Segoe UI', Arial, sans-serif; }
+      .stepbody { font: 400 16px 'Segoe UI', Arial, sans-serif; }
+      .small { font: 400 15px 'Segoe UI', Arial, sans-serif; }
+      .label { font: 700 14px 'Segoe UI', Arial, sans-serif; letter-spacing: 1.7px; }
+    </style>
+  </defs>
+  <rect class="bg" width="1440" height="900"/>
+  <rect class="navy" x="0" y="0" width="1440" height="84"/>
+  <circle cx="92" cy="42" r="25" fill="none" stroke="#ff914d" stroke-width="3"/>
+  <path d="M 78 43 A 14 14 0 1 1 105 43" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="104" cy="43" r="3" class="orange"/>
+  <text x="135" y="52" class="brand white">SafeData</text>
+  <text x="267" y="50" class="small orange">by 3Consulting</text>
+  <text x="1093" y="50" class="small white">Product overview</text>
+  <rect x="1240" y="22" width="142" height="40" rx="8" fill="#ff914d"/>
+  <text x="1274" y="48" class="small navy" font-weight="700">Open SafeData</text>
+
+  <text x="92" y="145" class="label" fill="#a84f1d">DATA RETENTION &amp; GOVERNANCE</text>
+  <text x="92" y="222" class="headline navy">Keep what you must.</text>
+  <text x="92" y="286" class="headline navy">Release what you should.</text>
+  <text x="95" y="343" class="support muted">We govern your data without hoarding it.</text>
+  <text x="95" y="401" class="body muted">SafeData helps teams manage information across its lifecycle:</text>
+  <text x="95" y="432" class="body muted">organise records, understand retention obligations, review actions,</text>
+  <text x="95" y="463" class="body muted">and document decisions.</text>
+  <rect x="95" y="495" width="175" height="50" rx="8" class="navy"/>
+  <text x="122" y="527" class="small white" font-weight="700">Open SafeData  →</text>
+
+  <rect x="925" y="140" width="420" height="380" rx="18" class="white"/>
+  <text x="965" y="192" class="label" fill="#a84f1d">A CLEAR LIFECYCLE</text>
+  <g>
+    <circle cx="989" cy="250" r="19" class="navy"/><text x="983" y="256" class="small white">1</text>
+    <text x="1024" y="247" class="step navy">Understand</text><text x="1024" y="271" class="stepbody muted">Inventory and ownership</text>
+    <circle cx="989" cy="318" r="19" class="navy"/><text x="983" y="324" class="small white">2</text>
+    <text x="1024" y="315" class="step navy">Set the schedule</text><text x="1024" y="339" class="stepbody muted">Approved periods and reviews</text>
+    <circle cx="989" cy="386" r="19" class="navy"/><text x="983" y="392" class="small white">3</text>
+    <text x="1024" y="383" class="step navy">Review and decide</text><text x="1024" y="407" class="stepbody muted">Authorised review checkpoints</text>
+    <circle cx="989" cy="454" r="19" class="navy"/><text x="983" y="460" class="small white">4</text>
+    <text x="1024" y="451" class="step navy">Record the evidence</text><text x="1024" y="475" class="stepbody muted">Decisions and actions</text>
+  </g>
+
+  <rect x="92" y="622" width="1253" height="142" rx="14" fill="#111827"/>
+  <rect x="92" y="622" width="7" height="142" rx="3" class="orange"/>
+  <text x="127" y="666" class="label orange">RESPONSIBLE PRODUCT CLAIM</text>
+  <text x="127" y="707" class="body white">SafeData helps teams operationalise approved policies. Your organisation remains responsible</text>
+  <text x="127" y="738" class="body white">for confirming applicable laws, setting retention schedules, and authorising disposal.</text>
+  <text x="92" y="821" class="small muted">SafeData is a governance workflow product—not legal advice or a guarantee of compliance.</text>
+  <text x="92" y="854" class="small muted">Use this copy consistently across the product page, launch material, and support onboarding.</text>
+</svg>

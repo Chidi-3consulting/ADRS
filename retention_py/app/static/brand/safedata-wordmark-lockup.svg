@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1450 520" role="img" aria-labelledby="title desc">
+  <title id="title">SafeData wordmark lockup</title>
+  <desc id="desc">SafeData by 3Consulting wordmark with the lifecycle ring icon, tagline and supporting text.</desc>
+  <defs>
+    <style>
+      .navy { fill: #111827; }
+      .orange { fill: #ff914d; }
+      .muted { fill: #475569; }
+      .sans { font-family: 'Segoe UI', Arial, sans-serif; }
+      .mono { font-family: 'Consolas', 'Courier New', monospace; }
+      .tag { font-size: 28px; font-weight: 600; }
+      .brand { font-size: 138px; font-weight: 700; letter-spacing: -4px; }
+      .by { font-size: 40px; font-weight: 500; }
+      .line { font-size: 50px; font-weight: 600; }
+      .sub { font-size: 30px; font-weight: 500; }
+    </style>
+  </defs>
+
+  <rect width="1450" height="520" fill="#f7f4ee"/>
+
+  <g transform="translate(35,35)">
+    <path d="M 120 220 A 120 120 0 1 1 360 220" fill="none" stroke="#111827" stroke-width="20" stroke-linecap="round"/>
+    <circle cx="360" cy="220" r="15" fill="#ff914d"/>
+    <circle cx="184" cy="96" r="10" fill="#ff914d"/>
+    <circle cx="218" cy="74" r="7" fill="#ff914d"/>
+  </g>
+
+  <g transform="translate(470,108)">
+    <text x="0" y="118" class="sans brand navy">SafeData</text>
+    <text x="560" y="92" class="sans by orange">by 3Consulting</text>
+    <text x="0" y="205" class="sans line navy">Keep what you must.</text>
+    <text x="0" y="270" class="sans line navy">Release what you should.</text>
+    <text x="0" y="340" class="sans sub muted">We govern your data without hoarding it.</text>
+  </g>
+</svg>

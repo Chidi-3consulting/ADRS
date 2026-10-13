@@ -29,6 +29,43 @@ SafeData supports **14+ regulatory frameworks** across international jurisdictio
 
 All EU/EEA member states (Austria, Belgium, Bulgaria, Croatia, Cyprus, Czech Republic, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Ireland, Italy, Latvia, Lithuania, Luxembourg, Malta, Netherlands, Poland, Portugal, Romania, Slovakia, Slovenia, Spain, Sweden, Iceland, Liechtenstein, Norway, Switzerland) are mapped to the GDPR framework.
 
+### 1.3 African Continental Coverage
+
+SafeData covers the entire African continent. Each African country maps to its national data protection law (`DPA_*` framework) with country-specific seeded categories, or to a **GDPR-aligned baseline** (`GDPR_ALIGN`) while the national law is still in draft.
+
+| Region | Country | Law | Code | Authority | Categories |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| East | Rwanda | Law No. 058/2021 (Personal Data & Privacy) | `DPA_RW` | NCSA | 3 |
+| East | Uganda | Data Protection and Privacy Act 2019 | `DPA_UG` | PDPO (NITA-U) | 3 |
+| East | Tanzania | Personal Data Protection Act 2022 | `DPA_TZ` | PDPC | 3 |
+| East | Ethiopia | Proclamation No. 1321/2024 | `DPA_ET` | Ethiopian Communications Authority | 3 |
+| Southern | Zambia | Data Protection Act No. 3 of 2021 | `DPA_ZM` | Data Protection Commissioner | 4 |
+| Southern | Zimbabwe | Cyber & Data Protection Act [Ch. 12:07] | `DPA_ZW` | POTRAZ | 4 |
+| Southern | Malawi | Data Protection Act 2024 | `DPA_MW` | MACRA (designated) | 3 |
+| Southern | Botswana | Data Protection Act No. 18 of 2024 | `DPA_BW` | Information & Data Protection Commission | 3 |
+| Southern | Mauritius | Data Protection Act 2017 | `DPA_MU` | Data Protection Office | 4 |
+| Southern | Seychelles | Data Protection Act 2023 | `DPA_SC` | Information Commission | 3 |
+| Southern | Eswatini | Data Protection Act No. 5 of 2022 | `DPA_SZ` | Eswatini DPA | 3 |
+| Southern | Lesotho | Data Protection Act 2011 | `DPA_LS` | Data Protection Commissioner | 3 |
+| Southern | Cabo Verde | Law No. 133/V/2001 (am. 2013) | `DPA_CV` | CNPD | 3 |
+| Southern | Mozambique | draft law (as of 2026) | `GDPR_ALIGN` | — (baseline) | 3 |
+| Southern | Namibia | draft bill (as of 2026) | `GDPR_ALIGN` | — (baseline) | 3 |
+| West | Senegal | Act No. 2008-12 | `DPA_SN` | CDP | 3 |
+| West | Côte d'Ivoire | Law No. 2013-450 | `DPA_CI` | ARTCI | 3 |
+| West | Benin | Law No. 2009-09 | `DPA_BJ` | APDP | 3 |
+| West | Togo | Law No. 2019-014 | `DPA_TG` | IPDCP | 3 |
+| West | Burkina Faso | Law No. 010-2004/AN (am. 2021) | `DPA_BF` | CIL | 3 |
+| West | Mali | Law No. 2013-015 | `DPA_ML` | APDP | 3 |
+| West | Gambia | 2025 law (pending verification) | `GDPR_ALIGN` | — (baseline) | 3 |
+| West/Central | Cameroon | Law No. 2024/017 | `DPA_CM` | DPA (being established) | 3 |
+| West/Central | Gabon | Law No. 001/2011 | `DPA_GA` | CNPDCP | 3 |
+| Central | Angola | Law No. 22/11 | `DPA_AO` | APD | 3 |
+| North | Morocco | Law No. 09-08 (2009) | `DPA_MA` | CNDP | 3 |
+| North | Tunisia | Organic Law 2004-63 | `DPA_TN` | INPDP | 3 |
+| North | Algeria | Law No. 18-07 (2018) | `DPA_DZ` | ANPDP | 3 |
+
+African seed sets follow the same shape as other jurisdictions: customer personal data (3 years, anonymise), employee records aligned to national social-security retention norms (5 years, delete), financial/tax records where a national revenue authority sets retention (e.g. ZRA 6 years Zambia, MRA 7 years Mauritius), and consent records (until withdrawal + 1 year evidence). Cameroon's regulator is noted as being established; its categories apply the 2024 law's principles in the meantime.
+
 Every jurisdiction also receives the **5 Dual-Framework** categories (BOTH): Cross-Border Transfer Records, Privacy Notices, Children's Data, Whistleblowing Records, and Biometric Data.
 
 ### 1.2 Regulatory Article Alignment

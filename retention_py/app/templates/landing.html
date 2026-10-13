@@ -1,416 +1,272 @@
 {% extends "public_layout.html" %}
+{% block page_styles %}
+  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+{% endblock %}
 {% block content %}
-<main class="flex-grow-1">
-  <!-- Hero Section -->
-  <section class="text-white py-5 position-relative overflow-hidden" style="background: radial-gradient(circle at 80% 20%, rgba(var(--sd-primary-rgb), 0.15) 0%, var(--sd-dark-bg) 65%); min-height: 700px; display: flex; align-items: center;">
-    <!-- Grid Overlay -->
-    <div class="position-absolute w-100 h-100 top-0 start-0" style="opacity: 0.07; background-image: radial-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 0); background-size: 24px 24px; z-index: 1; pointer-events: none;"></div>
-    <!-- Ambient Glows -->
-    <div class="position-absolute rounded-circle" style="width: 400px; height: 400px; background: rgba(var(--sd-primary-rgb), 0.15); filter: blur(100px); top: 10%; right: 10%; pointer-events: none; z-index: 1;"></div>
-    <div class="position-absolute rounded-circle" style="width: 300px; height: 300px; background: rgba(26, 97, 135, 0.15); filter: blur(80px); bottom: 10%; left: 5%; pointer-events: none; z-index: 1;"></div>
-    
-    <div class="container py-5 position-relative" style="z-index: 5;">
+<main class="safedata-home">
+  <section class="sd-hero" aria-labelledby="hero-title">
+    <div class="container sd-container">
       <div class="row align-items-center g-5">
-        <div class="col-lg-7 text-center text-lg-start">
-          <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10 text-white mb-4 shadow-sm">
-            <span class="d-inline-block rounded-circle bg-success" style="width: 8px; height: 8px;"></span>
-            <span class="font-monospace small text-uppercase tracking-wider" style="color: #f1f5f9 !important;">Automated Data Retention</span>
+        <div class="col-lg-6 sd-hero-copy">
+          <p class="sd-eyebrow"><span aria-hidden="true"></span> DATA RETENTION &amp; GOVERNANCE</p>
+          <h1 id="hero-title">Give every data record a <span>clear retention path.</span></h1>
+          <p class="sd-hero-lead">Know what you hold, why you hold it, and what should happen next. SafeData helps your team manage retention policies, review deadlines, approvals, and evidence in one place.</p>
+          <div class="sd-hero-actions">
+            <a href="/register" class="btn btn-primary btn-lg sd-button-primary">Start your 14-day free trial <span aria-hidden="true">→</span></a>
+            <a href="#how-it-works" class="btn btn-lg sd-button-secondary">See how it works</a>
           </div>
-          <h1 class="display-3 fw-extrabold mb-3 lh-sm text-white" style="letter-spacing: -0.03em; font-family: var(--font-headings); color: #ffffff !important;">
-            <span style="color: #ffffff !important;">Stop guessing when to</span>
-            <span class="hero-highlight-phrase" style="color: #ff8e3c !important; font-weight: 800; background: linear-gradient(135deg, #ff7e33 0%, #ffc078 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; display: inline-block; text-shadow: 0 0 35px rgba(255, 126, 51, 0.35);">delete, archive, or retain</span>
-            <span style="color: #ffffff !important;">your organisation's data</span>
-          </h1>
-          <p class="lead mb-4 fs-5" style="max-width: 620px; line-height: 1.6; color: #cbd5e1 !important;">
-            SafeData tracks every data record your business collects, monitors retention timelines based on your compliance requirements, and automatically disposes of data when the time is right. No spreadsheets. No guesswork. Full audit proof.
-          </p>
-          <div class="d-flex flex-wrap justify-content-center justify-content-lg-start gap-3">
-            <a href="/register" class="btn btn-primary btn-lg px-4 py-3 shadow-lg hover-lift fw-bold">Start Your 14-Day Free Trial</a>
-            <a href="/login" class="btn btn-outline-light btn-lg px-4 py-3 fw-semibold">Sign In</a>
-          </div>
-          <div class="mt-5 pt-3 d-flex flex-wrap justify-content-center justify-content-lg-start gap-4 small border-top border-white border-opacity-10">
-            <span class="d-flex align-items-center gap-2" style="color: #f1f5f9 !important;"><i class="bi bi-shield-check text-success fs-5"></i> Multi-Regulation Compliant</span>
-            <span class="d-flex align-items-center gap-2" style="color: #f1f5f9 !important;"><i class="bi bi-lock text-success fs-5"></i> Tamper-Proof Audit Chain</span>
-            <span class="d-flex align-items-center gap-2" style="color: #f1f5f9 !important;"><i class="bi bi-credit-card-2-front text-success fs-5"></i> No credit card required</span>
-          </div>
+          <p class="sd-trial-note"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> No credit card required <span aria-hidden="true">·</span> Cancel anytime</p>
         </div>
-        <div class="col-lg-5">
-          <div class="card shadow-lg border-0 text-white p-4 position-relative" style="background: rgba(18, 22, 38, 0.9) !important; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: var(--radius-xl);">
-            <div class="position-absolute top-0 end-0 p-3"><span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-20 px-2 py-1 rounded">Fully Automated</span></div>
-            <h3 class="h5 mb-4 text-white fw-bold d-flex align-items-center gap-2" style="color: #ffffff !important;">
-              <i class="bi bi-activity text-primary"></i> How SafeData Works
-            </h3>
-            
-            <div class="position-relative ps-4 border-start border-white border-opacity-10" style="margin-left: 10px;">
-              <div class="mb-4 position-relative">
-                <div class="position-absolute rounded-circle bg-primary shadow-glow" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
-                <h4 class="h6 mb-1 text-white fw-semibold" style="color: #ffffff !important;">1. Connect Your Systems</h4>
-                <p class="small mb-0" style="color: #cbd5e1 !important; line-height: 1.5;">Register your CRM, database, or billing system. Generate API keys and set up auto-categorisation rules.</p>
+        <div class="col-lg-6">
+          <div class="sd-workflow-card" aria-label="Illustration of a data retention workflow">
+            <div class="sd-workflow-topline">
+              <div>
+                <span class="sd-card-kicker">RETENTION WORKFLOW</span>
+                <h2>From collection to evidence</h2>
               </div>
-              <div class="mb-4 position-relative">
-                <div class="position-absolute rounded-circle bg-primary shadow-glow" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
-                <h4 class="h6 mb-1 text-white fw-semibold" style="color: #ffffff !important;">2. Ingest Data Records</h4>
-                <p class="small mb-0" style="color: #cbd5e1 !important; line-height: 1.5;">Your systems push data references to SafeData via REST API. Each record is mapped to a retention category automatically.</p>
-              </div>
-              <div class="mb-4 position-relative">
-                <div class="position-absolute rounded-circle bg-warning shadow-glow" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
-                <h4 class="h6 mb-1 text-white fw-semibold" style="color: #ffffff !important;">3. Monitor Retention Clocks</h4>
-                <p class="small mb-0" style="color: #cbd5e1 !important; line-height: 1.5;">SafeData tracks every record's retention deadline. DPOs and data owners are notified before expiry.</p>
-              </div>
-              <div class="mb-4 position-relative">
-                <div class="position-absolute rounded-circle bg-danger shadow-glow" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
-                <h4 class="h6 mb-1 text-white fw-semibold" style="color: #ffffff !important;">4. Review and Approve</h4>
-                <p class="small mb-0" style="color: #cbd5e1 !important; line-height: 1.5;">Sensitive categories require dual approval before disposal. Legal holds can freeze the clock at any time.</p>
-              </div>
-              <div class="position-relative">
-                <div class="position-absolute rounded-circle bg-success shadow-glow" style="width: 12px; height: 12px; left: -31px; top: 6px;"></div>
-                <h4 class="h6 mb-1 text-white fw-semibold" style="color: #ffffff !important;">5. Automated Disposal</h4>
-                <p class="small mb-0" style="color: #cbd5e1 !important; line-height: 1.5;">SafeData sends signed deletion instructions to your systems. Every action is recorded in a tamper-proof audit ledger.</p>
-              </div>
+              <span class="sd-live-label"><span aria-hidden="true"></span> POLICY-LED</span>
             </div>
+            <p class="sd-workflow-intro">A clear, reviewable lifecycle for the data your organisation manages.</p>
+            <ol class="sd-workflow-list">
+              <li>
+                <span class="sd-step-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                <span><strong>Register a record</strong><small>Track a reference, category, and owner</small></span>
+                <i class="bi bi-check2 sd-step-check" aria-hidden="true"></i>
+              </li>
+              <li>
+                <span class="sd-step-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></span>
+                <span><strong>Apply a retention rule</strong><small>Set the period and the next review date</small></span>
+                <i class="bi bi-check2 sd-step-check" aria-hidden="true"></i>
+              </li>
+              <li>
+                <span class="sd-step-icon"><i class="bi bi-bell" aria-hidden="true"></i></span>
+                <span><strong>Review what is due</strong><small>Notify owners before action is required</small></span>
+                <i class="bi bi-arrow-right sd-step-next" aria-hidden="true"></i>
+              </li>
+              <li>
+                <span class="sd-step-icon"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
+                <span><strong>Approve and record action</strong><small>Keep an audit trail of decisions and outcomes</small></span>
+                <i class="bi bi-lock sd-step-next" aria-hidden="true"></i>
+              </li>
+            </ol>
+            <div class="sd-workflow-foot"><i class="bi bi-info-circle" aria-hidden="true"></i> Your systems remain responsible for the underlying data and any disposal action.</div>
           </div>
         </div>
+      </div>
+      <div class="sd-value-strip" aria-label="SafeData capabilities">
+        <div><i class="bi bi-list-check" aria-hidden="true"></i><span>Policy-led retention</span></div>
+        <div><i class="bi bi-person-check" aria-hidden="true"></i><span>Human review and approval</span></div>
+        <div><i class="bi bi-journal-text" aria-hidden="true"></i><span>Traceable decisions</span></div>
       </div>
     </div>
   </section>
 
-  <!-- Who It's For -->
-  <section class="py-5" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-    <div class="container py-4">
-      <div class="text-center mb-5">
-        <span class="badge bg-primary-subtle text-primary mb-2 px-3 py-2 rounded-pill font-monospace small">GLOBAL INDUSTRIES</span>
-        <h2 class="h3 fw-bold text-dark">Built for organisations that take data seriously</h2>
-        <p class="text-muted" style="max-width: 640px; margin: 0 auto;">Whether you are a bank managing KYC documents, a telco storing call records, or a consulting firm tracking client engagement data, SafeData handles the retention lifecycle so your team does not have to.</p>
+  <section class="sd-section sd-audience" aria-labelledby="audience-title">
+    <div class="container sd-container">
+      <div class="sd-section-heading">
+        <p class="sd-eyebrow sd-eyebrow-light">BUILT FOR RESPONSIBLE DATA TEAMS</p>
+        <h2 id="audience-title">Make retention part of the way you work.</h2>
+        <p>Bring retention schedules, ownership, reviews, and evidence into a process your people can follow.</p>
       </div>
-      <div class="row g-4 text-center justify-content-center">
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-          <div class="card border-0 shadow-sm p-4 bg-white h-100 hover-lift">
-            <i class="bi bi-bank fs-2 text-primary mb-2 d-block"></i>
-            <span class="small fw-semibold text-dark">Banks &amp; Fintech</span>
-          </div>
-        </div>
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-          <div class="card border-0 shadow-sm p-4 bg-white h-100 hover-lift">
-            <i class="bi bi-phone fs-2 text-primary mb-2 d-block"></i>
-            <span class="small fw-semibold text-dark">Telecoms &amp; ISPs</span>
-          </div>
-        </div>
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-          <div class="card border-0 shadow-sm p-4 bg-white h-100 hover-lift">
-            <i class="bi bi-cart3 fs-2 text-primary mb-2 d-block"></i>
-            <span class="small fw-semibold text-dark">E-commerce</span>
-          </div>
-        </div>
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-          <div class="card border-0 shadow-sm p-4 bg-white h-100 hover-lift">
-            <i class="bi bi-hospital fs-2 text-primary mb-2 d-block"></i>
-            <span class="small fw-semibold text-dark">Healthcare</span>
-          </div>
-        </div>
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-          <div class="card border-0 shadow-sm p-4 bg-white h-100 hover-lift">
-            <i class="bi bi-briefcase fs-2 text-primary mb-2 d-block"></i>
-            <span class="small fw-semibold text-dark">Consulting &amp; Services</span>
-          </div>
-        </div>
-        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-          <div class="card border-0 shadow-sm p-4 bg-white h-100 hover-lift">
-            <i class="bi bi-building fs-2 text-primary mb-2 d-block"></i>
-            <span class="small fw-semibold text-dark">Insurance &amp; FMCG</span>
-          </div>
-        </div>
+      <div class="sd-audience-grid">
+        <article class="sd-audience-card"><i class="bi bi-bank" aria-hidden="true"></i><h3>Banks &amp; fintech</h3><p>Keep customer and KYC retention decisions visible.</p></article>
+        <article class="sd-audience-card"><i class="bi bi-phone" aria-hidden="true"></i><h3>Telecoms &amp; ISPs</h3><p>Coordinate retention across high-volume records.</p></article>
+        <article class="sd-audience-card"><i class="bi bi-cart3" aria-hidden="true"></i><h3>Retail &amp; e-commerce</h3><p>Give teams a repeatable way to review customer data.</p></article>
+        <article class="sd-audience-card"><i class="bi bi-hospital" aria-hidden="true"></i><h3>Healthcare</h3><p>Make data ownership and review dates easier to track.</p></article>
+        <article class="sd-audience-card"><i class="bi bi-briefcase" aria-hidden="true"></i><h3>Consulting &amp; services</h3><p>Manage client-record lifecycles with clear accountability.</p></article>
+        <article class="sd-audience-card"><i class="bi bi-building" aria-hidden="true"></i><h3>Insurance &amp; FMCG</h3><p>Organise retention practices across business functions.</p></article>
       </div>
     </div>
   </section>
 
-  <!-- Feature Grid -->
-  <section class="py-5 bg-white">
-    <div class="container py-4">
-      <div class="text-center mb-5">
-        <span class="badge bg-primary-subtle text-primary mb-2 px-3 py-2 rounded-pill font-monospace small">FEATURES & CAPABILITIES</span>
-        <h2 class="h3 fw-bold text-dark">Everything you need to manage data retention properly</h2>
-        <p class="text-muted">One platform to classify, track, dispose, and prove compliance across all your data categories.</p>
+  <section class="sd-section sd-features" id="features" aria-labelledby="features-title">
+    <div class="container sd-container">
+      <div class="sd-section-heading">
+        <p class="sd-eyebrow sd-eyebrow-light">A PRACTICAL GOVERNANCE TOOLKIT</p>
+        <h2 id="features-title">Clarity for the full retention lifecycle.</h2>
+        <p>Give your team the controls and records it needs to make considered, accountable decisions.</p>
       </div>
-      <div class="row g-4">
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 border border-light-subtle shadow-sm p-4 bg-white hover-lift">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle p-3 mb-3" style="width: 50px; height: 50px;">
-              <i class="bi bi-journal-check fs-4"></i>
-            </div>
-            <h3 class="h5 text-dark fw-bold">Retention Policy Register</h3>
-            <p class="text-muted small mb-0">Define retention periods, lawful bases, and disposal methods for every data category your organisation handles. Start with pre-built regulatory templates or create your own.</p>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 border border-light-subtle shadow-sm p-4 bg-white hover-lift">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle p-3 mb-3" style="width: 50px; height: 50px;">
-              <i class="bi bi-cpu fs-4"></i>
-            </div>
-            <h3 class="h5 text-dark fw-bold">REST API Integration</h3>
-            <p class="text-muted small mb-0">Connect your existing systems (CRM, billing, databases) directly to SafeData. Data records are ingested, categorised, and tracked automatically via API.</p>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 border border-light-subtle shadow-sm p-4 bg-white hover-lift">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle p-3 mb-3" style="width: 50px; height: 50px;">
-              <i class="bi bi-shield-lock-fill fs-4"></i>
-            </div>
-            <h3 class="h5 text-dark fw-bold">Tamper-Proof Audit Trail</h3>
-            <p class="text-muted small mb-0">Every action is cryptographically chained into an immutable ledger. When a regulator asks for proof of disposal, you have it instantly.</p>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 border border-light-subtle shadow-sm p-4 bg-white hover-lift">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle p-3 mb-3" style="width: 50px; height: 50px;">
-              <i class="bi bi-bell fs-4"></i>
-            </div>
-            <h3 class="h5 text-dark fw-bold">Automated Notifications</h3>
-            <p class="text-muted small mb-0">DPOs and data owners receive alerts before retention periods expire. No record slips through the cracks.</p>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 border border-light-subtle shadow-sm p-4 bg-white hover-lift">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle p-3 mb-3" style="width: 50px; height: 50px;">
-              <i class="bi bi-key-fill fs-4"></i>
-            </div>
-            <h3 class="h5 text-dark fw-bold">Dual-Signature Safeguards</h3>
-            <p class="text-muted small mb-0">Sensitive data categories require two authorised users to approve disposal. Prevents accidental or unauthorised data loss.</p>
-          </div>
-        </div>
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 border border-light-subtle shadow-sm p-4 bg-white hover-lift">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle p-3 mb-3" style="width: 50px; height: 50px;">
-              <i class="bi bi-globe fs-4"></i>
-            </div>
-            <h3 class="h5 text-dark fw-bold">Multi-Regulation Support</h3>
-            <p class="text-muted small mb-0">Tailored to the country regulations of your client's accounts. Configure retention rules per regulation and let SafeData enforce them automatically.</p>
-          </div>
-        </div>
+      <div class="sd-feature-grid">
+        <article class="sd-feature-card">
+          <span class="sd-feature-icon"><i class="bi bi-journal-check" aria-hidden="true"></i></span>
+          <h3>Retention policy register</h3>
+          <p>Define periods, owners, review dates, and intended actions for each data category. Configure your own policies and use supported category templates as a starting point.</p>
+        </article>
+        <article class="sd-feature-card">
+          <span class="sd-feature-icon"><i class="bi bi-cpu" aria-hidden="true"></i></span>
+          <h3>System integration</h3>
+          <p>Connect business systems through the API and pass record references and lifecycle events into your retention workflow.</p>
+        </article>
+        <article class="sd-feature-card">
+          <span class="sd-feature-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+          <h3>Verifiable audit history</h3>
+          <p>Keep a tamper-evident, cryptographically chained history of relevant actions, approvals, and recorded outcomes.</p>
+        </article>
+        <article class="sd-feature-card">
+          <span class="sd-feature-icon"><i class="bi bi-bell" aria-hidden="true"></i></span>
+          <h3>Review reminders</h3>
+          <p>Alert data owners and governance teams as retention deadlines approach, so reviews can happen on time.</p>
+        </article>
+        <article class="sd-feature-card">
+          <span class="sd-feature-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+          <h3>Approval safeguards</h3>
+          <p>Use configurable approval steps for sensitive categories and record the people and decisions involved.</p>
+        </article>
+        <article class="sd-feature-card">
+          <span class="sd-feature-icon"><i class="bi bi-globe2" aria-hidden="true"></i></span>
+          <h3>Configurable rule sets</h3>
+          <p>Map retention practices to the needs of your organisation and the jurisdictions in which you operate. SafeData supports governance; it does not replace legal advice.</p>
+        </article>
       </div>
     </div>
   </section>
 
-  <!-- How Integration Works -->
-  <section class="py-5" style="background: linear-gradient(135deg, #141426 0%, #1e293b 100%);">
-    <div class="container py-4">
-      <div class="text-center mb-5">
-        <span class="badge bg-white bg-opacity-10 text-white mb-2 px-3 py-2 rounded-pill font-monospace small" style="color: #f1f5f9 !important;">INTEGRATION FLOW</span>
-        <h2 class="h3 fw-bold text-white" style="color: #ffffff !important;">Connects to your existing infrastructure</h2>
-        <p class="opacity-75" style="max-width: 640px; margin: 0 auto; color: #cbd5e1 !important;">SafeData does not store your actual data. It tracks references to your data records and tells your systems when to delete, anonymise, or archive them.</p>
+  <section class="sd-section sd-lifecycle" id="how-it-works" aria-labelledby="lifecycle-title">
+    <div class="container sd-container">
+      <div class="sd-section-heading">
+        <p class="sd-eyebrow">HOW IT FITS YOUR SYSTEMS</p>
+        <h2 id="lifecycle-title">Your data stays in your systems. Your process gets clearer.</h2>
+        <p>SafeData manages record references and governance workflow; your connected systems remain the source of the underlying data.</p>
       </div>
-      <div class="row g-4 justify-content-center">
-        <div class="col-md-4">
-          <div class="card border-0 bg-dark text-white p-4 h-100" style="background: rgba(20, 20, 38, 0.75) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: var(--radius-lg);">
-            <div class="text-primary mb-3 fs-2"><i class="bi bi-arrow-right-circle"></i></div>
-            <h4 class="h5 text-white fw-bold" style="color: #ffffff !important;">Inbound: Data Intake</h4>
-            <p class="small mb-0" style="color: #cbd5e1 !important; line-height: 1.6;">Your system sends a record reference to SafeData when data is collected. SafeData assigns a retention category and starts the clock.</p>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card border-0 bg-dark text-white p-4 h-100" style="background: rgba(20, 20, 38, 0.75) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: var(--radius-lg);">
-            <div class="text-warning mb-3 fs-2"><i class="bi bi-clock-history"></i></div>
-            <h4 class="h5 text-white fw-bold" style="color: #ffffff !important;">Lifecycle: Monitoring</h4>
-            <p class="small mb-0" style="color: #cbd5e1 !important; line-height: 1.6;">SafeData monitors retention deadlines daily. Lifecycle events like account closures or consent withdrawals adjust the timeline automatically.</p>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card border-0 bg-dark text-white p-4 h-100" style="background: rgba(20, 20, 38, 0.75) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: var(--radius-lg);">
-            <div class="text-success mb-3 fs-2"><i class="bi bi-arrow-left-circle"></i></div>
-            <h4 class="h5 text-white fw-bold" style="color: #ffffff !important;">Outbound: Disposal</h4>
-            <p class="small mb-0" style="color: #cbd5e1 !important; line-height: 1.6;">When a record's retention period expires, SafeData sends a cryptographically signed webhook to your system instructing it to delete or anonymise the data.</p>
-          </div>
-        </div>
+      <div class="sd-lifecycle-grid">
+        <article class="sd-lifecycle-card">
+          <span class="sd-lifecycle-number">01</span><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>
+          <h3>Register</h3><p>Send a record reference and the context your retention process needs.</p>
+        </article>
+        <article class="sd-lifecycle-card">
+          <span class="sd-lifecycle-number">02</span><i class="bi bi-hourglass-split" aria-hidden="true"></i>
+          <h3>Monitor</h3><p>Track deadlines, lifecycle changes, holds, and upcoming reviews.</p>
+        </article>
+        <article class="sd-lifecycle-card">
+          <span class="sd-lifecycle-number">03</span><i class="bi bi-clipboard2-check" aria-hidden="true"></i>
+          <h3>Review &amp; act</h3><p>Route due records for review, approval, and action by your authorised team.</p>
+        </article>
+        <article class="sd-lifecycle-card">
+          <span class="sd-lifecycle-number">04</span><i class="bi bi-file-earmark-check" aria-hidden="true"></i>
+          <h3>Record evidence</h3><p>Capture the decision and outcome so your team can trace what happened.</p>
+        </article>
       </div>
+      <p class="sd-disclaimer"><i class="bi bi-info-circle" aria-hidden="true"></i> Disposal depends on your configured integrations, policies, and authorised actions. SafeData does not make your organisation compliant by itself.</p>
     </div>
   </section>
 
-  <!-- Pricing -->
-  <section class="py-5" style="background: #f1f5f9; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
-    <div class="container py-4">
-      <div class="text-center mb-4">
-        <span class="badge bg-primary-subtle text-primary mb-2 px-3 py-2 rounded-pill font-monospace small">PRICING PLANS</span>
-        <h2 class="h3 fw-bold text-dark">Simple, transparent pricing</h2>
-        <p class="text-muted">Start with a 14-day free trial. No credit card required. Cancel anytime.</p>
+  <section class="sd-section sd-pricing" id="pricing" aria-labelledby="pricing-title">
+    <div class="container sd-container">
+      <div class="sd-section-heading">
+        <p class="sd-eyebrow sd-eyebrow-light">SIMPLE PRICING</p>
+        <h2 id="pricing-title">Start with the complete toolkit.</h2>
+        <p>Try SafeData for 14 days. No credit card required.</p>
       </div>
-
-      <!-- Premium Pill Switcher Button Group & Currency Selector -->
-      <div class="d-flex flex-column flex-sm-row justify-content-center align-items-center gap-3 mb-5">
-        <div class="pricing-switch d-inline-flex align-items-center bg-white p-1 rounded-pill shadow-sm border">
-          <button type="button" class="btn btn-sm rounded-pill px-4 py-2 fw-semibold" id="btn-monthly" style="transition: all 0.25s;">Monthly</button>
-          <button type="button" class="btn btn-sm rounded-pill px-4 py-2 fw-semibold" id="btn-yearly" style="transition: all 0.25s;">Yearly <span class="badge bg-success text-white ms-1" style="font-size:0.7rem; vertical-align: middle;">Save 17%</span></button>
+      <div class="sd-pricing-controls" aria-label="Choose billing period and currency">
+        <div class="sd-period-switch" role="group" aria-label="Billing period">
+          <button type="button" id="btn-monthly" aria-pressed="false">Monthly</button>
+          <button type="button" id="btn-yearly" aria-pressed="true">Yearly <span>Save 17%</span></button>
         </div>
-
-        <!-- Local Currency Switcher -->
-        <div class="d-inline-flex align-items-center gap-2 bg-white px-3 py-1.5 rounded-pill shadow-sm border">
-          <i class="bi bi-globe text-primary"></i>
-          <span class="small text-muted fw-semibold">Currency:</span>
-          <select id="currency-select" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark py-0" style="width: auto; cursor: pointer;">
-            <option value="USD" data-symbol="$" data-rate="1.0" {% if pricing.currency_code == 'USD' %}selected{% endif %}>USD ($ - Global)</option>
-            <option value="NGN" data-symbol="₦" data-rate="1500.0" {% if pricing.currency_code == 'NGN' %}selected{% endif %}>NGN (₦ - Nigeria)</option>
-            <option value="ZAR" data-symbol="R" data-rate="18.5" {% if pricing.currency_code == 'ZAR' %}selected{% endif %}>ZAR (R - South Africa)</option>
-            <option value="GBP" data-symbol="£" data-rate="0.78" {% if pricing.currency_code == 'GBP' %}selected{% endif %}>GBP (£ - United Kingdom)</option>
-            <option value="EUR" data-symbol="€" data-rate="0.92" {% if pricing.currency_code == 'EUR' %}selected{% endif %}>EUR (€ - European Union)</option>
-            <option value="KES" data-symbol="KSh " data-rate="130.0" {% if pricing.currency_code == 'KES' %}selected{% endif %}>KES (KSh - Kenya)</option>
-            <option value="GHS" data-symbol="GH₵ " data-rate="14.5" {% if pricing.currency_code == 'GHS' %}selected{% endif %}>GHS (GH₵ - Ghana)</option>
-            <option value="CAD" data-symbol="CA$ " data-rate="1.36" {% if pricing.currency_code == 'CAD' %}selected{% endif %}>CAD (CA$ - Canada)</option>
-            <option value="AUD" data-symbol="A$ " data-rate="1.52" {% if pricing.currency_code == 'AUD' %}selected{% endif %}>AUD (A$ - Australia)</option>
-            <option value="INR" data-symbol="₹" data-rate="83.5" {% if pricing.currency_code == 'INR' %}selected{% endif %}>INR (₹ - India)</option>
-            <option value="AED" data-symbol="AED " data-rate="3.67" {% if pricing.currency_code == 'AED' %}selected{% endif %}>AED (د.إ - UAE)</option>
-            <option value="SGD" data-symbol="S$ " data-rate="1.35" {% if pricing.currency_code == 'SGD' %}selected{% endif %}>SGD (S$ - Singapore)</option>
-            <option value="BRL" data-symbol="R$ " data-rate="5.4" {% if pricing.currency_code == 'BRL' %}selected{% endif %}>BRL (R$ - Brazil)</option>
-            <option value="EGP" data-symbol="E£ " data-rate="48.0" {% if pricing.currency_code == 'EGP' %}selected{% endif %}>EGP (E£ - Egypt)</option>
+        <label class="sd-currency-control" for="currency-select">
+          <i class="bi bi-globe2" aria-hidden="true"></i><span>Currency</span>
+          <select id="currency-select" class="form-select form-select-sm">
+            <option value="USD" data-symbol="$" data-rate="1.0" {% if pricing.currency_code == 'USD' %}selected{% endif %}>USD ($)</option>
+            <option value="NGN" data-symbol="₦" data-rate="1500.0" {% if pricing.currency_code == 'NGN' %}selected{% endif %}>NGN (₦)</option>
+            <option value="ZAR" data-symbol="R" data-rate="18.5" {% if pricing.currency_code == 'ZAR' %}selected{% endif %}>ZAR (R)</option>
+            <option value="GBP" data-symbol="£" data-rate="0.78" {% if pricing.currency_code == 'GBP' %}selected{% endif %}>GBP (£)</option>
+            <option value="EUR" data-symbol="€" data-rate="0.92" {% if pricing.currency_code == 'EUR' %}selected{% endif %}>EUR (€)</option>
+            <option value="KES" data-symbol="KSh " data-rate="130.0" {% if pricing.currency_code == 'KES' %}selected{% endif %}>KES (KSh)</option>
+            <option value="GHS" data-symbol="GH₵ " data-rate="14.5" {% if pricing.currency_code == 'GHS' %}selected{% endif %}>GHS (GH₵)</option>
+            <option value="CAD" data-symbol="CA$ " data-rate="1.36" {% if pricing.currency_code == 'CAD' %}selected{% endif %}>CAD (CA$)</option>
+            <option value="AUD" data-symbol="A$ " data-rate="1.52" {% if pricing.currency_code == 'AUD' %}selected{% endif %}>AUD (A$)</option>
+            <option value="INR" data-symbol="₹" data-rate="83.5" {% if pricing.currency_code == 'INR' %}selected{% endif %}>INR (₹)</option>
+            <option value="AED" data-symbol="AED " data-rate="3.67" {% if pricing.currency_code == 'AED' %}selected{% endif %}>AED</option>
+            <option value="SGD" data-symbol="S$ " data-rate="1.35" {% if pricing.currency_code == 'SGD' %}selected{% endif %}>SGD (S$)</option>
+            <option value="BRL" data-symbol="R$ " data-rate="5.4" {% if pricing.currency_code == 'BRL' %}selected{% endif %}>BRL (R$)</option>
+            <option value="EGP" data-symbol="E£ " data-rate="48.0" {% if pricing.currency_code == 'EGP' %}selected{% endif %}>EGP (E£)</option>
           </select>
-        </div>
+        </label>
       </div>
-
-      <!-- 2-Column Premium Layout -->
-      <div class="row justify-content-center">
-        <div class="col-lg-9 col-xl-8" style="max-width: 840px;">
-          <div class="card border-0 shadow-lg bg-white overflow-hidden" style="border-top: 5px solid var(--3c-primary) !important; border-radius: var(--radius-xl);">
-            <div class="row g-0">
-              <!-- Left side: Pricing Summary & CTA -->
-              <div class="col-md-6 p-5 border-end bg-light-subtle d-flex flex-column justify-content-between" style="background-color: #fafbfc;">
-                <div>
-                  <span class="badge bg-primary-subtle text-primary mb-2 px-3 py-1.5 rounded-pill font-monospace small">ALL ENTERPRISE CAPABILITIES</span>
-                  <h3 class="h4 fw-bold text-dark">Platform Plan</h3>
-                  <p class="text-muted small">Everything your organisation needs to automate, monitor, and legally audit your data retention lifecycle.</p>
-                </div>
-                <div class="my-4">
-                  <div class="d-flex align-items-baseline">
-                    <span class="display-3 fw-extrabold text-dark" id="price-value">$399</span>
-                    <span class="text-muted fs-5 ms-2" id="price-interval"> / year</span>
-                  </div>
-                  <div id="local-price-container" class="mt-2">
-                    <span class="badge bg-primary text-white fw-bold px-2.5 py-1.5 rounded-pill font-monospace small shadow-sm" id="local-price-badge">
-                      <i class="bi bi-tag-fill me-1"></i> <span id="local-price-value">Approx. {{ pricing.yearly.display_local }} / year</span>
-                    </span>
-                  </div>
-                </div>
-                <a href="/register" class="btn btn-primary btn-lg w-100 shadow hover-lift py-3 fw-bold" style="border-radius: var(--radius-md);">Start Your 14-Day Free Trial &rarr;</a>
-              </div>
-              <!-- Right side: Checklist -->
-              <div class="col-md-6 p-5 bg-white">
-                <h4 class="h6 fw-bold text-dark mb-4 text-uppercase tracking-wider">Included Capabilities:</h4>
-                <ul class="list-unstyled mb-0 small">
-                  <li class="mb-3 d-flex align-items-start gap-2">
-                    <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
-                    <span>REST API for intake & lifecycle events</span>
-                  </li>
-                  <li class="mb-3 d-flex align-items-start gap-2">
-                    <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
-                    <span>Auto-categorisation with custom mapping</span>
-                  </li>
-                  <li class="mb-3 d-flex align-items-start gap-2">
-                    <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
-                    <span>Outbound webhook disposal (Real-Time Dispatch)</span>
-                  </li>
-                  <li class="mb-3 d-flex align-items-start gap-2">
-                    <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
-                    <span>Safe Delete step-up re-authentication</span>
-                  </li>
-                  <li class="mb-3 d-flex align-items-start gap-2">
-                    <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
-                    <span>Bulk expired record safe purging</span>
-                  </li>
-                  <li class="mb-3 d-flex align-items-start gap-2">
-                    <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
-                    <span>Cryptographic tamper-proof SHA-256 audit chain</span>
-                  </li>
-                  <li class="mb-3 d-flex align-items-start gap-2">
-                    <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
-                    <span>30+ pre-built multi-regulation categories</span>
-                  </li>
-                  <li class="mb-3 d-flex align-items-start gap-2">
-                    <i class="bi bi-check-circle-fill text-success mt-0.5"></i>
-                    <span>Automated DPO alerts & disposal certificates</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
+      <article class="sd-plan-card">
+        <div class="sd-plan-summary">
+          <p class="sd-plan-kicker">SAFE DATA PLATFORM</p>
+          <h3>Platform plan</h3>
+          <p class="sd-plan-description">Retention workflow, integrations, reviews, and audit history for your organisation.</p>
+          <div class="sd-plan-price"><span id="price-value">$399</span><span id="price-interval"> / year</span></div>
+          <div id="local-price-container" class="sd-local-price-container">
+            <span id="local-price-badge" class="sd-local-price"><i class="bi bi-tag-fill" aria-hidden="true"></i> <span id="local-price-value">Approx. {{ pricing.yearly.display_local }} / year</span></span>
           </div>
+          <a href="/register" class="btn btn-primary btn-lg sd-button-primary sd-plan-cta">Start your 14-day free trial <span aria-hidden="true">→</span></a>
+          <p class="sd-plan-note">No credit card required. Cancel anytime.</p>
         </div>
-      </div>
+        <div class="sd-plan-includes">
+          <h4>Included capabilities</h4>
+          <ul>
+            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> REST API for record references and lifecycle events</li>
+            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Configurable categories and retention mappings</li>
+            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Webhook dispatch for connected workflows</li>
+            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Step-up re-authentication for Safe Delete</li>
+            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Bulk review and eligible-record management</li>
+            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> SHA-256 chained audit history</li>
+            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Multi-regulation category templates</li>
+            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> DPO alerts and disposal records</li>
+          </ul>
+        </div>
+      </article>
     </div>
   </section>
 
-  <script nonce="{{ csp_nonce }}">
-  document.addEventListener('DOMContentLoaded', function() {
-      const btnMonthly = document.getElementById('btn-monthly');
-      const btnYearly = document.getElementById('btn-yearly');
-      const priceDisplay = document.getElementById('price-value');
-      const intervalDisplay = document.getElementById('price-interval');
-      const localBadge = document.getElementById('local-price-badge');
-      const localValue = document.getElementById('local-price-value');
-      const currencySelect = document.getElementById('currency-select');
-      
-      let isYearlyMode = true;
-
-      function updatePricing() {
-          const selectedOption = currencySelect.options[currencySelect.selectedIndex];
-          const symbol = selectedOption.getAttribute('data-symbol') || '$';
-          const rate = parseFloat(selectedOption.getAttribute('data-rate') || '1.0');
-          const code = currencySelect.value;
-
-          if (isYearlyMode) {
-              priceDisplay.textContent = '$399';
-              intervalDisplay.textContent = ' / year';
-              btnYearly.classList.add('btn-primary', 'text-white');
-              btnYearly.classList.remove('text-muted');
-              btnMonthly.classList.remove('btn-primary', 'text-white');
-              btnMonthly.classList.add('text-muted');
-
-              if (code === 'USD') {
-                  localBadge.style.display = 'none';
-              } else {
-                  localBadge.style.display = 'inline-block';
-                  const localAmount = Math.round(399 * rate).toLocaleString();
-                  localValue.textContent = `Approx. ${symbol}${localAmount} / year`;
-              }
-          } else {
-              priceDisplay.textContent = '$40';
-              intervalDisplay.textContent = ' / month';
-              btnMonthly.classList.add('btn-primary', 'text-white');
-              btnMonthly.classList.remove('text-muted');
-              btnYearly.classList.remove('btn-primary', 'text-white');
-              btnYearly.classList.add('text-muted');
-
-              if (code === 'USD') {
-                  localBadge.style.display = 'none';
-              } else {
-                  localBadge.style.display = 'inline-block';
-                  const localAmount = Math.round(40 * rate).toLocaleString();
-                  localValue.textContent = `Approx. ${symbol}${localAmount} / month`;
-              }
-          }
-      }
-      
-      btnMonthly.addEventListener('click', () => {
-          isYearlyMode = false;
-          updatePricing();
-      });
-
-      btnYearly.addEventListener('click', () => {
-          isYearlyMode = true;
-          updatePricing();
-      });
-
-      currencySelect.addEventListener('change', updatePricing);
-      
-      // Initialize
-      updatePricing();
-  });
-  </script>
-
-  <!-- CTA section -->
-  <section class="py-5 text-white text-center" style="background: linear-gradient(135deg, #141426 0%, #1e293b 100%);">
-    <div class="container py-4">
-      <h2 class="h3 fw-bold mb-3" style="font-family: var(--font-headings); color: #ffffff !important;">Your data has a shelf life. SafeData makes sure you respect it.</h2>
-      <p class="mb-4" style="max-width: 600px; margin: 0 auto; color: #cbd5e1 !important; line-height: 1.6;">Thousands of data records sit in your systems right now with no clear plan for when they should be deleted. SafeData changes that.</p>
-      <div class="d-flex justify-content-center gap-3">
-        <a href="/register" class="btn btn-primary btn-lg px-4 hover-lift">Get Started Free</a>
-        <a href="/login" class="btn btn-outline-light btn-lg px-4">Sign In</a>
+  <section class="sd-final-cta" aria-labelledby="final-cta-title">
+    <div class="container sd-container">
+      <p class="sd-eyebrow">MAKE THE NEXT REVIEW EASIER</p>
+      <h2 id="final-cta-title">Know what you hold. Know what happens next.</h2>
+      <p>Bring structure and accountability to your organisation’s data retention process with SafeData.</p>
+      <div class="sd-hero-actions sd-final-actions">
+        <a href="/register" class="btn btn-primary btn-lg sd-button-primary">Start your free trial <span aria-hidden="true">→</span></a>
+        <a href="/login" class="btn btn-lg sd-button-secondary">Sign in</a>
       </div>
     </div>
   </section>
 </main>
+<script nonce="{{ csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function () {
+  const monthlyButton = document.getElementById('btn-monthly');
+  const yearlyButton = document.getElementById('btn-yearly');
+  const priceDisplay = document.getElementById('price-value');
+  const intervalDisplay = document.getElementById('price-interval');
+  const localBadge = document.getElementById('local-price-badge');
+  const localValue = document.getElementById('local-price-value');
+  const currencySelect = document.getElementById('currency-select');
+
+  if (!monthlyButton || !yearlyButton || !priceDisplay || !intervalDisplay || !localBadge || !localValue || !currencySelect) {
+    return;
+  }
+
+  let yearly = true;
+
+  function updatePricing() {
+    const option = currencySelect.options[currencySelect.selectedIndex];
+    const symbol = option.getAttribute('data-symbol') || '$';
+    const rate = Number.parseFloat(option.getAttribute('data-rate') || '1');
+    const amount = yearly ? 399 : 40;
+    const period = yearly ? 'year' : 'month';
+    const localAmount = Math.round(amount * rate).toLocaleString();
+
+    priceDisplay.textContent = `$${amount}`;
+    intervalDisplay.textContent = ` / ${period}`;
+    yearlyButton.setAttribute('aria-pressed', String(yearly));
+    monthlyButton.setAttribute('aria-pressed', String(!yearly));
+    yearlyButton.classList.toggle('is-selected', yearly);
+    monthlyButton.classList.toggle('is-selected', !yearly);
+    localBadge.hidden = currencySelect.value === 'USD';
+    localValue.textContent = `Approx. ${symbol}${localAmount} / ${period}`;
+  }
+
+  monthlyButton.addEventListener('click', function () {
+    yearly = false;
+    updatePricing();
+  });
+  yearlyButton.addEventListener('click', function () {
+    yearly = true;
+    updatePricing();
+  });
+  currencySelect.addEventListener('change', updatePricing);
+  updatePricing();
+});
+</script>
 {% endblock %}

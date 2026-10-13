@@ -1,6 +1,6 @@
 # SafeData — Automated Data Retention & Governance Platform
 
-A compliance-first, multi-tenant, multi-jurisdiction data lifecycle management platform engineered by **3Consulting**. SafeData governs personal and corporate data assets from point-of-collection to verified, compliant disposal across **14+ international and regional jurisdictions (40+ countries)**.
+A compliance-first, multi-tenant, multi-jurisdiction data lifecycle management platform engineered by **3Consulting**. SafeData governs personal and corporate data assets from point-of-collection to verified, compliant disposal across **14+ international frameworks and full African continental coverage (66+ countries)**.
 
 Built with **Python 3.10+ (FastAPI) + SQLAlchemy ORM (SQLite / MySQL / PostgreSQL) + Jinja2 (Bootstrap 5.3)** — lightweight, secure, and production-ready. The application lives in [`retention_py/`](retention_py/).
 
@@ -24,6 +24,16 @@ SafeData automatically provisions jurisdiction-specific retention categories and
 * **Canada:** Personal Information Protection and Electronic Documents Act (PIPEDA)
 * **Australia:** Australian Privacy Principles (Privacy Act 1988)
 * **Egypt:** Egyptian Data Protection Law (EGDPL)
+
+**Full African continental coverage** — every African country maps to its national data protection law or a GDPR-aligned baseline:
+
+* **East Africa:** Rwanda (Law No. 058/2021 — NCSA), Uganda (DP&PA 2019 — PDPO), Tanzania (PDPA 2022 — PDPC), Ethiopia (Proclamation 1321/2024 — ECA)
+* **Southern Africa:** Zambia (DPA No. 3 of 2021), Zimbabwe (Cyber & Data Protection Act 2021 — POTRAZ), Malawi (DPA 2024 — MACRA), Botswana (DPA No. 18 of 2024), Mauritius (DPA 2017), Seychelles (DPA 2023 — Information Commission), Eswatini (DPA No. 5 of 2022), Lesotho (DPA 2011), Cabo Verde (Law 133/V/2001 — CNPD), Mozambique (draft law — GDPR-aligned baseline), Namibia (draft bill — GDPR-aligned baseline)
+* **West Africa:** Senegal (Act 2008-12 — CDP), Côte d'Ivoire (Law 2013-450 — ARTCI), Benin (Law 2009-09 — APDP), Togo (Law 2019-014 — IPDCP), Burkina Faso (Law 010-2004/AN — CIL), Mali (Law 2013-015 — APDP), Cameroon (Law 2024/017), Gabon (Law 001/2011 — CNPDCP), Angola (Law 22/11 — APD), Gambia (2025 law pending verification — GDPR-aligned baseline)
+* **North Africa:** Morocco (Law 09-08 — CNDP), Tunisia (Organic Law 2004-63 — INPDP), Algeria (Law 18-07 — ANPDP)
+
+Countries whose national law is still in draft fall back to a GDPR-aligned category baseline until the law enters into force.
+
 * **Information Security Standard:** ISO/IEC 27001:2022 Controls (A.8.3 Information Disposal)
 
 ---
@@ -150,6 +160,12 @@ python main.py                   # Starts on http://127.0.0.1:8200
    uvicorn main:app --host 0.0.0.0 --port 8200 --workers 4
    ```
 
+### InMotion shared cPanel deployment gate
+
+SafeData is a FastAPI ASGI application launched with Uvicorn/Gunicorn. cPanel's documented Python Application Manager path uses Passenger and a WSGI entry point. Do not upload the production app and assume it will run on shared hosting: first ask InMotion to confirm ASGI support, persistent process/background-job support, Python 3.12 availability, outbound database/object-storage access, and the production database requirements for this account.
+
+Until those checks are confirmed, use the compatibility-first runbook in [`Documents/launch/08_INMOTION_SHARED_CPANEL_DEPLOYMENT.md`](Documents/launch/08_INMOTION_SHARED_CPANEL_DEPLOYMENT.md). It does not change the application runtime or claim that the cPanel plan is compatible. SafeData remains a standalone product; the separately hosted company website and FraudGuard demo are not part of this application deployment.
+
 ---
 
 ## Security
@@ -157,4 +173,3 @@ python main.py                   # Starts on http://127.0.0.1:8200
 SafeData incorporates OWASP Top 10 controls, RBAC, native TOTP 2FA, session rotation, dynamic CSP nonces, CSRF protection, login rate-throttling, tamper-evident audit hashing, and zero-knowledge data protections.
 
 Security disclosures: `security@3consult-ng.com` ([`/.well-known/security.txt`](.well-known/security.txt)).
-

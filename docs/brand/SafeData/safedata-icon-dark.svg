@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SafeData icon dark</title>
+  <desc id="desc">SafeData icon variant for use on dark backgrounds.</desc>
+  <rect width="512" height="512" rx="48" fill="#111827"/>
+  <path d="M 160 340 A 120 120 0 1 1 352 340" fill="none" stroke="#f8fafc" stroke-width="20" stroke-linecap="round"/>
+  <circle cx="352" cy="340" r="15" fill="#ff914d"/>
+  <circle cx="196" cy="176" r="10" fill="#ff914d"/>
+  <circle cx="228" cy="148" r="8" fill="#ff914d"/>
+  <circle cx="260" cy="146" r="7" fill="#ff914d"/>
+</svg>

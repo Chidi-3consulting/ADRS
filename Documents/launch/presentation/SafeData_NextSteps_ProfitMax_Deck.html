@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>SafeData by 3Consulting — Executive Business & Profit Strategy Deck</title>
+<meta name="description" content="Executive business deck for SafeData by 3Consulting: SaaS unit economics, 6-phase roadmap, Africa-first market opportunity, and profit maximization.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     BRAND DESIGN SYSTEM & RESPONSIVE TOKENS
+     Colors from: docs/brand/SafeData & docs/brand/3consulting_Parent Company
+     ============================================================ */
+  :root {
+    --ink-navy:       #111827;
+    --navy-surface:   #1a2234;
+    --navy-card:      #1f293d;
+    --orange:         #ff914d;
+    --orange-dark:    #e07331;
+    --orange-glow:    rgba(255, 145, 77, 0.16);
+    --warm-white:     #f7f4ee;
+    --warm-white-sub: #eee9df;
+    --card-light:     #ffffff;
+    --muted:          #475569;
+    --muted-light:    #94a3b8;
+    --teal:           #14b8a6;
+    --teal-glow:      rgba(20, 184, 166, 0.14);
+    --amber:          #f59e0b;
+    --green:          #22c55e;
+    --font-sans:      'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono:      'IBM Plex Mono', monospace;
+  }
+
+  /* ============================================================
+     RESET & ACCESSIBLE FLUID SCALING (Supports 200% Zoom & Mobile)
+     ============================================================ */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: #090c10;
+    color: var(--ink-navy);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    padding: 0;
+  }
+
+  /* ---- STICKY PRESENTATION CONTROLS BAR ---- */
+  .deck-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(17, 24, 39, 0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 145, 77, 0.25);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    color: #fff;
+  }
+  .deck-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #fff;
+  }
+  .deck-header-brand span {
+    font-weight: 700;
+    font-size: clamp(14px, 2vw, 17px);
+    letter-spacing: -0.3px;
+  }
+  .deck-header-brand .dot-sub {
+    color: var(--orange);
+    font-weight: 500;
+  }
+  .deck-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  .btn-orange {
+    background: var(--orange);
+    color: #fff;
+  }
+  .btn-orange:hover {
+    background: var(--orange-dark);
+  }
+  .btn-outline {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
+  .btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* ---- DECK WRAPPER ---- */
+  .deck-container {
+    width: 100%;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: clamp(16px, 3vw, 40px) clamp(12px, 2.5vw, 32px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(24px, 4vw, 48px);
+  }
+
+  /* ---- INDIVIDUAL SLIDE CARD ---- */
+  .slide {
+    width: 100%;
+    border-radius: clamp(14px, 2vw, 24px);
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+      0 0 0 1px rgba(255, 145, 77, 0.12),
+      0 20px 60px rgba(0, 0, 0, 0.6);
+    page-break-after: always;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .slide:hover {
+    box-shadow:
+      0 0 0 2px rgba(255, 145, 77, 0.35),
+      0 28px 80px rgba(0, 0, 0, 0.7);
+  }
+
+  /* ---- BACKGROUND THEMES ---- */
+  .theme-navy {
+    background: linear-gradient(145deg, var(--ink-navy) 0%, #172033 100%);
+    color: var(--warm-white);
+  }
+  .theme-warm {
+    background: var(--warm-white);
+    color: var(--ink-navy);
+  }
+  .theme-gradient {
+    background: linear-gradient(135deg, #0b0f19 0%, #162035 50%, #0d1322 100%);
+    color: var(--warm-white);
+  }
+  .theme-business {
+    background: linear-gradient(160deg, #f7f4ee 0%, #fbf9f4 60%, #fff4ec 100%);
+    color: var(--ink-navy);
+  }
+
+  /* ---- SLIDE INTERIOR ---- */
+  .slide-body {
+    padding: clamp(24px, 4.5vw, 56px) clamp(20px, 4.5vw, 64px);
+    display: flex;
+    flex-direction: column;
+    min-height: clamp(520px, 70vh, 760px);
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ---- TYPOGRAPHY ---- */
+  .slide-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(11px, 1.2vw, 13px);
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 12px;
+  }
+  .slide-title {
+    font-size: clamp(26px, 4vw, 44px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.8px;
+    margin-bottom: 10px;
+  }
+  .theme-warm .slide-title,
+  .theme-business .slide-title {
+    color: var(--ink-navy);
+  }
+  .slide-subtitle {
+    font-size: clamp(14px, 1.8vw, 19px);
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--muted-light);
+    margin-bottom: clamp(20px, 3vw, 36px);
+    max-width: 900px;
+  }
+  .theme-warm .slide-subtitle,
+  .theme-business .slide-subtitle {
+    color: var(--muted);
+  }
+
+  /* ---- SECTION HEADINGS INSIDE SLIDE ---- */
+  .section-h {
+    font-size: clamp(14px, 1.4vw, 16px);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .theme-navy .section-h,
+  .theme-gradient .section-h {
+    color: var(--orange);
+  }
+  .theme-warm .section-h,
+  .theme-business .section-h {
+    color: var(--ink-navy);
+    border-left: 3px solid var(--orange);
+    padding-left: 10px;
+  }
+
+  /* ---- RESPONSIVE GRIDS ---- */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: clamp(16px, 2.5vw, 32px);
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: clamp(14px, 2vw, 24px);
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+    gap: clamp(12px, 1.8vw, 20px);
+  }
+
+  /* ---- CARDS ---- */
+  .kpi-card {
+    border-radius: 14px;
+    padding: clamp(16px, 2.5vw, 24px);
+    transition: all 0.25s ease;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .theme-navy .kpi-card,
+  .theme-gradient .kpi-card {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .theme-navy .kpi-card:hover,
+  .theme-gradient .kpi-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 145, 77, 0.4);
+    transform: translateY(-2px);
+  }
+  .theme-warm .kpi-card,
+  .theme-business .kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+  .theme-warm .kpi-card:hover,
+  .theme-business .kpi-card:hover {
+    border-color: var(--orange);
+    box-shadow: 0 6px 20px rgba(255, 145, 77, 0.12);
+    transform: translateY(-2px);
+  }
+
+  .kpi-num {
+    font-size: clamp(32px, 4.5vw, 52px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, var(--orange), #ff6315);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  .kpi-label {
+    font-size: clamp(12px, 1.2vw, 14px);
+    font-weight: 600;
+    color: var(--muted-light);
+  }
+  .theme-warm .kpi-label,
+  .theme-business .kpi-label {
+    color: var(--muted);
+  }
+
+  /* ---- LISTS ---- */
+  .bullet-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bullet-list li {
+    position: relative;
+    padding-left: 22px;
+    font-size: clamp(13px, 1.3vw, 15px);
+    line-height: 1.6;
+  }
+  .bullet-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--orange);
+  }
+  .theme-warm .bullet-list li,
+  .theme-business .bullet-list li {
+    color: #334155;
+  }
+  .theme-navy .bullet-list li,
+  .theme-gradient .bullet-list li {
+    color: #cbd5e1;
+  }
+
+  /* ---- BADGES & PILLS ---- */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .pill-orange { background: var(--orange-glow); color: var(--orange); border: 1px solid rgba(255, 145, 77, 0.3); }
+  .pill-teal   { background: var(--teal-glow); color: var(--teal); border: 1px solid rgba(20, 184, 166, 0.3); }
+  .pill-green  { background: rgba(34, 197, 94, 0.12); color: var(--green); border: 1px solid rgba(34, 197, 94, 0.3); }
+
+  /* ---- DATA TABLES (Auto-Scrollable on small mobile screens) ---- */
+  .table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+    margin: 8px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(12px, 1.2vw, 14px);
+    min-width: 440px;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+  }
+  th {
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--orange);
+  }
+  .theme-warm th,
+  .theme-business th {
+    color: var(--ink-navy);
+  }
+  .theme-warm td,
+  .theme-business td {
+    color: #334155;
+  }
+
+  /* ---- ROADMAP PHASES ---- */
+  .phase-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 12px 0;
+  }
+  .phase-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--orange);
+    color: #fff;
+    font-weight: 800;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .phase-text h4 {
+    font-size: 14.5px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+  .phase-text p {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted-light);
+  }
+  .theme-warm .phase-text p,
+  .theme-business .phase-text p {
+    color: var(--muted);
+  }
+
+  /* ---- BRAND FOOTER ON EACH SLIDE ---- */
+  .slide-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 24px;
+    border-top: 1px solid rgba(128, 128, 128, 0.14);
+    font-size: clamp(11px, 1.1vw, 13px);
+    color: var(--muted-light);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .theme-warm .slide-footer,
+  .theme-business .slide-footer {
+    color: var(--muted);
+  }
+  .footer-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+  .footer-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--orange);
+    display: inline-block;
+  }
+
+  /* ---- DECORATIVE WATERMARK ---- */
+  .watermark {
+    position: absolute;
+    right: -40px;
+    bottom: -40px;
+    width: clamp(160px, 25vw, 320px);
+    height: clamp(160px, 25vw, 320px);
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ---- REVENUE CALCULATOR HIGHLIGHT BOX ---- */
+  .highlight-box {
+    border: 2px solid var(--orange);
+    border-radius: 14px;
+    padding: clamp(16px, 2.5vw, 24px);
+    background: rgba(255, 145, 77, 0.06);
+    margin: 12px 0;
+  }
+
+  /* ============================================================
+     PRINT & MEDIA QUERIES (FULL 200% ZOOM & MOBILE ADAPTATION)
+     ============================================================ */
+  @media (max-width: 768px) {
+    .deck-container {
+      padding: 12px 8px;
+      gap: 20px;
+    }
+    .slide-body {
+      padding: 24px 18px;
+      min-height: auto;
+    }
+    .grid-2, .grid-3, .grid-4 {
+      grid-template-columns: 1fr;
+    }
+    .slide-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .deck-header { display: none; }
+    .deck-container { padding: 0; max-width: 100%; gap: 0; }
+    .slide {
+      box-shadow: none;
+      border: 1px solid #ccc;
+      page-break-inside: avoid;
+      margin-bottom: 20px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- STICKY GLOBAL HEADER -->
+<header class="deck-header">
+  <a href="#slide-1" class="deck-header-brand">
+    <svg width="28" height="28" viewBox="0 0 512 512" aria-hidden="true">
+      <path d="M 154 370 A 150 150 0 1 1 358 370" fill="none" stroke="#f7f4ee" stroke-width="34" stroke-linecap="round"/>
+      <circle cx="358" cy="370" r="24" fill="#ff914d"/>
+    </svg>
+    <span>SafeData <span class="dot-sub">by 3Consulting</span></span>
+  </a>
+  <div class="deck-header-actions">
+    <a href="http://127.0.0.1:8200" target="_blank" class="btn-action btn-orange">Launch App (Localhost)</a>
+    <a href="https://early-rings-cheat.loca.lt" target="_blank" class="btn-action btn-outline">Worldwide Tunnel</a>
+    <button onclick="window.print()" class="btn-action btn-outline">Save PDF / Print</button>
+  </div>
+</header>
+
+<main class="deck-container">
+
+  <!-- ==========================================================
+       SLIDE 1: COVER & EXECUTIVE PURPOSE
+       ========================================================== -->
+  <section class="slide theme-gradient" id="slide-1">
+    <div class="slide-body" style="justify-content:center; align-items:center; text-align:center;">
+      <svg width="100" height="100" viewBox="0 0 512 512" style="margin-bottom:24px;" aria-label="SafeData Lifecycle Ring Logo">
+        <path d="M 154 370 A 150 150 0 1 1 358 370" fill="none" stroke="#f7f4ee" stroke-width="26" stroke-linecap="round"/>
+        <circle cx="358" cy="370" r="18" fill="#ff914d"/>
+        <circle cx="212" cy="188" r="14" fill="rgba(247,244,238,0.2)"/>
+        <circle cx="252" cy="150" r="10" fill="rgba(247,244,238,0.15)"/>
+        <circle cx="292" cy="148" r="9"  fill="rgba(247,244,238,0.1)"/>
+      </svg>
+      <p class="slide-tag">Executive Strategy Deck &bull; 3Consulting Limited</p>
+      <h1 class="slide-title" style="font-size:clamp(30px, 4.8vw, 56px);">SafeData <span style="color:var(--orange)">by</span> 3Consulting</h1>
+      <p class="slide-subtitle" style="margin-left:auto; margin-right:auto; font-size:clamp(16px, 2.2vw, 24px); color:var(--warm-white);">
+        “Keep what you must. Release what you should.”
+      </p>
+      <p style="font-size:clamp(13px, 1.4vw, 16px); color:var(--muted-light); max-width:680px; margin-bottom:32px;">
+        We govern your data without hoarding it &mdash; Turning corporate compliance liabilities into defensible, recurring SaaS and advisory revenue.
+      </p>
+
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <span class="pill pill-orange">Next Steps Roadmap</span>
+        <span class="pill pill-teal">Profit Maximization</span>
+        <span class="pill pill-green">Live Prototype Ready</span>
+      </div>
+
+      <div class="slide-footer" style="width:100%; margin-top:40px;">
+        <span>Commercial & Technical Briefing</span>
+        <span class="footer-center"><span class="footer-dot"></span> 3Consulting Limited &copy; 2026</span>
+        <span>Version 2.0</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       SLIDE 2: THE BUSINESS PROBLEM & MARKET DRIVER (29% RESEARCH)
+       ========================================================== -->
+  <section class="slide theme-warm" id="slide-2">
+    <div class="slide-body">
+      <p class="slide-tag">Slide 1 &bull; Market Context</p>
+      <h2 class="slide-title">The Commercial Problem: Data Hoarding Liability</h2>
+      <p class="slide-subtitle">Corporations face massive fines not for losing data, but for holding it past legal retention dates.</p>
+
+      <div class="grid-2">
+        <div>
+          <h3 class="section-h">The Enterprise Pain Point</h3>
+          <ul class="bullet-list">
+            <li><strong>The "Data Hoarder's Dilemma":</strong> Companies retain customer records indefinitely because deleting data manually across databases carries high business anxiety.</li>
+            <li><strong>Skyrocketing Regulatory Fines:</strong> NDPA (Nigeria, up to 2% annual turnover or &pound;10m), GDPR (&euro;20m or 4% turnover), POPIA, CCPA actively penalize over-retention.</li>
+            <li><strong>Legal Hold & Audit Failures:</strong> In audits or litigation, teams scramble manually through spreadsheets, creating severe defensibility gaps.</li>
+            <li><strong>Controller vs. Processor Blindspot:</strong> Banks and telcos cannot verify if their 3rd-party vendors actually deleted customer data.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="section-h">The SafeData Solution</h3>
+          <div class="kpi-card" style="border-left:4px solid var(--teal); margin-bottom:12px;">
+            <h4 style="font-size:15px; margin-bottom:6px; color:var(--ink-navy);">Automated 9-Step Lifecycle</h4>
+            <p style="font-size:13px; color:#475569;">Calculates statutory expiry dates per jurisdiction, notifies record owners, and executes verified disposals with dual-approval safeguards.</p>
+          </div>
+          <div class="kpi-card" style="border-left:4px solid var(--orange);">
+            <h4 style="font-size:15px; margin-bottom:6px; color:var(--ink-navy);">Provable Cryptographic Proof</h4>
+            <p style="font-size:13px; color:#475569;">SHA-256 hash-chained audit ledger proves to regulators that data was retained lawfully and disposed of on schedule.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Target: Financial Institutions, Telcos, Healthcare, Gov Agencies</span>
+        <span class="footer-center"><span class="footer-dot"></span> SafeData by 3Consulting</span>
+        <span>Market Pain &amp; Opportunity</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       SLIDE 3: CURRENT TECHNICAL STATUS & PROGRESS
+       ========================================================== -->
+  <section class="slide theme-navy" id="slide-3">
+    <div class="slide-body">
+      <p class="slide-tag">Slide 2 &bull; Current State</p>
+      <h2 class="slide-title">Where We Are Now: Working Prototype</h2>
+      <p class="slide-subtitle">The platform core is fully built, tested, and running locally with complete continental legal rules seeded.</p>
+
+      <div class="grid-4" style="margin-bottom:24px;">
+        <div class="kpi-card" style="text-align:center;">
+          <div class="kpi-num">14+</div>
+          <div class="kpi-label">Legal Baselines</div>
+        </div>
+        <div class="kpi-card" style="text-align:center;">
+          <div class="kpi-num">66+</div>
+          <div class="kpi-label">African Countries</div>
+        </div>
+        <div class="kpi-card" style="text-align:center;">
+          <div class="kpi-num">69</div>
+          <div class="kpi-label">Data Categories</div>
+        </div>
+        <div class="kpi-card" style="text-align:center;">
+          <div class="kpi-num">199</div>
+          <div class="kpi-label">Passing Pytests</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="kpi-card">
+          <h4 style="font-size:15px; margin-bottom:10px; color:var(--orange);">What is Fully Working Today</h4>
+          <ul class="bullet-list">
+            <li>FastAPI backend + SQLite/Postgres + Jinja2 + Bootstrap 5.3</li>
+            <li>Role-Based Access Control (Admin, DPO, Officer, Auditor)</li>
+            <li>Dual-Approval four-eyes review on AML & confidential files</li>
+            <li>REST API v1 + Async intake queue + Outbound webhooks</li>
+            <li>Zero-knowledge design: Reference hashing & notes PII scans</li>
+          </ul>
+        </div>
+        <div class="kpi-card">
+          <h4 style="font-size:15px; margin-bottom:10px; color:var(--teal);">Immediate Gating Tasks (Pre-Launch)</h4>
+          <ul class="bullet-list">
+            <li>Finalize the Group &rarr; Entity &rarr; Unit multi-org hierarchy</li>
+            <li>Deploy production hosting in Europe behind Cloudflare TLS</li>
+            <li>Connect live payment webhooks (Paystack &amp; Stripe)</li>
+            <li>Publish Legal, Trust Center &amp; Support SLAs</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Running on Port 8200 &bull; Tunnel Active</span>
+        <span class="footer-center"><span class="footer-dot"></span> SafeData by 3Consulting</span>
+        <span>Technical Readiness</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       SLIDE 4: WHAT TO GET READY NOW (ORDERED CHECKLIST)
+       ========================================================== -->
+  <section class="slide theme-business" id="slide-4">
+    <div class="slide-body">
+      <p class="slide-tag">Slide 3 &bull; Execution Roadmap</p>
+      <h2 class="slide-title">What We Can Get Ready Now</h2>
+      <p class="slide-subtitle">Structured workstreams broken into immediate, 30-day, and launch-day deliverables.</p>
+
+      <div class="grid-3">
+        <div class="kpi-card">
+          <div style="font-size:24px; margin-bottom:8px;">⚡</div>
+          <h4 style="color:var(--orange); font-size:16px; margin-bottom:10px;">Ready This Week</h4>
+          <ul class="bullet-list">
+            <li><strong>Brand Lockup:</strong> Embed Lifecycle Ring across all pitch decks and contracts.</li>
+            <li><strong>Seller Entity:</strong> Decide UK Ltd vs. 3Consulting Nigeria for billing.</li>
+            <li><strong>Domain Decision:</strong> safedata.3consult-ng.com vs. standalone .com.</li>
+            <li><strong>Launch Scope:</strong> Confirm Retention Engine as initial commercial focus.</li>
+          </ul>
+        </div>
+
+        <div class="kpi-card">
+          <div style="font-size:24px; margin-bottom:8px;">📅</div>
+          <h4 style="color:var(--teal); font-size:16px; margin-bottom:10px;">Next 30 Days</h4>
+          <ul class="bullet-list">
+            <li><strong>Multi-Tenancy:</strong> Complete Group &rarr; Entity &rarr; Unit permissions.</li>
+            <li><strong>Billing Engine:</strong> Finalize 14-day trials, tiers &amp; grace periods.</li>
+            <li><strong>Compliance Pack:</strong> Generate regulator audit proof package.</li>
+            <li><strong>Pilot Customers:</strong> Onboard 3 early-adopter Nigerian financial firms.</li>
+          </ul>
+        </div>
+
+        <div class="kpi-card">
+          <div style="font-size:24px; margin-bottom:8px;">🚀</div>
+          <h4 style="color:var(--green); font-size:16px; margin-bottom:10px;">Before Commercial Launch</h4>
+          <ul class="bullet-list">
+            <li><strong>Security Audit:</strong> Complete pen-test and disaster recovery drill.</li>
+            <li><strong>Support Model:</strong> 1-business-day response SLA with tokenized access.</li>
+            <li><strong>Trust Center:</strong> Publish security disclosures and sub-processor lists.</li>
+            <li><strong>Turn On Billing:</strong> Launch self-serve Paystack subscription checkout.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>From Documents/launch/00_READY_NOW_CHECKLIST.md</span>
+        <span class="footer-center"><span class="footer-dot"></span> SafeData by 3Consulting</span>
+        <span>Timeline &amp; Gating Milestones</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       SLIDE 5: 6-PHASE ENGINEERING & COMMERCIAL PROGRAMME
+       ========================================================== -->
+  <section class="slide theme-navy" id="slide-5">
+    <div class="slide-body">
+      <p class="slide-tag">Slide 4 &bull; Engineering Architecture</p>
+      <h2 class="slide-title">The 6-Phase Technical &amp; Product Roadmap</h2>
+      <p class="slide-subtitle">A disciplined progression ensuring security and compliance integrity before scale.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="phase-card">
+            <div class="phase-icon">1B</div>
+            <div class="phase-text">
+              <h4>Tenancy &amp; Permissions</h4>
+              <p>Group &rarr; Entity &rarr; Unit structure, scoped RBAC, platform-owner bootstrap, audited support access.</p>
+            </div>
+          </div>
+          <div class="phase-card">
+            <div class="phase-icon">1C</div>
+            <div class="phase-text">
+              <h4>Compliance Core</h4>
+              <p>Jurisdiction rules as cited statutory data, legal countdown arithmetic, tamper-evident SHA-256 ledger.</p>
+            </div>
+          </div>
+          <div class="phase-card">
+            <div class="phase-icon">2</div>
+            <div class="phase-text">
+              <h4>Design System &amp; Onboarding</h4>
+              <p>Lifecycle Ring brand integration, executive compliance dashboard, 8-chapter built-in help center.</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="phase-card">
+            <div class="phase-icon">3</div>
+            <div class="phase-text">
+              <h4>Billing &amp; Commercial Engine</h4>
+              <p>Tiered pricing catalog, regional currencies (NGN/USD/GBP), Paystack/Stripe webhooks, automated grace period.</p>
+            </div>
+          </div>
+          <div class="phase-card">
+            <div class="phase-icon">4</div>
+            <div class="phase-text">
+              <h4>Consent &amp; DSAR Hub</h4>
+              <p>External consent revocation webhooks, 6 statutory DSAR types with 30-day compliance clocks.</p>
+            </div>
+          </div>
+          <div class="phase-card">
+            <div class="phase-icon" style="background:var(--teal);">5–6</div>
+            <div class="phase-text">
+              <h4>Governance Modules &amp; Go-Live</h4>
+              <p>Article 30 RoPA, DPIA risk scoring, 72-hour breach register, independent penetration test and deployment.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Aligned to OWASP Top 10 &bull; ISO 27001 A.8.3</span>
+        <span class="footer-center"><span class="footer-dot"></span> SafeData by 3Consulting</span>
+        <span>Phased Engineering Delivery</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       SLIDE 6: PROFIT MAXIMIZATION & UNIT ECONOMICS
+       ========================================================== -->
+  <section class="slide theme-business" id="slide-6">
+    <div class="slide-body">
+      <p class="slide-tag">Slide 5 &bull; Business &amp; Monetization</p>
+      <h2 class="slide-title">Profit Maximization: 8 Revenue Streams</h2>
+      <p class="slide-subtitle">3Consulting moves from one-off consulting fees to recurring software ARR plus advisory retainers.</p>
+
+      <div class="grid-2">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Revenue Channel</th><th>Model</th><th>Margin</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td><strong>SaaS Subscriptions</strong> (Core / Suite)</td><td>Monthly / Annual ARR</td><td><span class="pill pill-green">85%+</span></td></tr>
+              <tr><td>2</td><td><strong>Expert Advisory</strong> (DPIA &amp; RoPA)</td><td>One-time project fee</td><td><span class="pill pill-teal">60%</span></td></tr>
+              <tr><td>3</td><td><strong>DPO-as-a-Service Retainers</strong></td><td>Monthly recurring advisory</td><td><span class="pill pill-orange">70%</span></td></tr>
+              <tr><td>4</td><td><strong>MSP &amp; Reseller Partners</strong></td><td>White-label revenue split</td><td><span class="pill pill-green">50%</span></td></tr>
+              <tr><td>5</td><td><strong>Public Free Gap-Check Tool</strong></td><td>Lead generation funnel</td><td><span class="pill pill-teal">Growth</span></td></tr>
+              <tr><td>6</td><td><strong>Volume Record Add-Ons</strong></td><td>Consumption pricing</td><td><span class="pill pill-green">90%</span></td></tr>
+              <tr><td>7</td><td><strong>Country Rule Pack Templates</strong></td><td>Modular add-ons</td><td><span class="pill pill-orange">80%</span></td></tr>
+              <tr><td>8</td><td><strong>Compliance Training</strong></td><td>Executive workshops</td><td><span class="pill pill-teal">65%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <div class="highlight-box">
+            <h4 style="color:var(--ink-navy); font-size:15px; margin-bottom:8px;">Why This Maximizes Profit</h4>
+            <p style="font-size:13px; color:#475569; line-height:1.6; margin-bottom:12px;">
+              Compliance software creates <strong>negative churn</strong>. Once an enterprise integrates their core banking or HR data into SafeData’s retention engine, disconnecting is legally hazardous.
+            </p>
+            <p style="font-size:13px; color:#475569; line-height:1.6;">
+              <strong>The 3Consulting Synergy:</strong> Software generates high-margin SaaS revenue; complex gaps found during software onboarding feed directly into 3Consulting’s high-value consulting services.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>From Documents/launch/07_NEXT_STEPS_AND_PROFIT_MAXIMIZATION_SLIDE.md</span>
+        <span class="footer-center"><span class="footer-dot"></span> SafeData by 3Consulting</span>
+        <span>Commercial Expansion Model</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       SLIDE 7: CUSTOMER & SHAREHOLDER VALUE STORY
+       ========================================================== -->
+  <section class="slide theme-navy" id="slide-7">
+    <div class="slide-body">
+      <p class="slide-tag">Slide 6 &bull; The Money Story</p>
+      <h2 class="slide-title">The Value Proposition: Why Both Sides Win</h2>
+      <p class="slide-subtitle">A clear ROI case for corporate buyers paired with predictable ARR for 3Consulting.</p>
+
+      <div class="grid-2">
+        <div class="kpi-card">
+          <h3 style="color:var(--orange); font-size:16px; margin-bottom:12px;">Value to the Customer (Enterprise Buyer)</h3>
+          <ul class="bullet-list">
+            <li><strong>Fines Avoidance:</strong> Protects against multi-million dollar regulatory fines and reputation damage.</li>
+            <li><strong>Audit Certainty:</strong> Produce tamper-evident audit certificates instantly when regulators ask.</li>
+            <li><strong>Automation Efficiency:</strong> Replaces fragile, error-prone manual Excel data retention tracking.</li>
+            <li><strong>No Hostage Model:</strong> If an organization downgrades, their data remains exportable in read-only mode.</li>
+          </ul>
+        </div>
+
+        <div class="kpi-card">
+          <h3 style="color:var(--teal); font-size:16px; margin-bottom:12px;">Value to 3Consulting (The Parent Company)</h3>
+          <ul class="bullet-list">
+            <li><strong>Software Multiplier:</strong> Transforms consulting billable hours into scalable, recurring equity value.</li>
+            <li><strong>Africa-First Moat:</strong> First mover with native legal mapping for 66+ African jurisdictions.</li>
+            <li><strong>Defensible IP:</strong> Cryptographically hash-chained audit trails and dual-approval deletion locks.</li>
+            <li><strong>Cross-Sell Engine:</strong> SafeData serves as the entry wedge for 3Consulting's cybersecurity &amp; AI assurance practices.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Brand Tagline: “Keep what you must. Release what you should.”</span>
+        <span class="footer-center"><span class="footer-dot"></span> SafeData by 3Consulting</span>
+        <span>Strategic Value Proposition</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       SLIDE 8: BRAND IDENTITY & SYSTEM
+       ========================================================== -->
+  <section class="slide theme-warm" id="slide-8">
+    <div class="slide-body">
+      <p class="slide-tag">Slide 7 &bull; Brand Identity</p>
+      <h2 class="slide-title">Brand Architecture: Calm Authority</h2>
+      <p class="slide-subtitle">A cohesive design system connecting the parent company and the product family.</p>
+
+      <div class="grid-2">
+        <div>
+          <h3 class="section-h">Brand Design Decisions</h3>
+          <div class="table-scroll">
+            <table>
+              <tbody>
+                <tr><td><strong>Product Name</strong></td><td>SafeData by 3Consulting</td></tr>
+                <tr><td><strong>Primary Mark</strong></td><td>The Lifecycle Ring (open timer arc with orange release dot)</td></tr>
+                <tr><td><strong>Primary Tagline</strong></td><td style="color:var(--orange); font-weight:600;">Keep what you must. Release what you should.</td></tr>
+                <tr><td><strong>Secondary Tagline</strong></td><td>We govern your data without hoarding it.</td></tr>
+                <tr><td><strong>Parent Mark</strong></td><td>3Consulting 3C double-ring in Fraunces &amp; IBM Plex Mono</td></tr>
+                <tr><td><strong>Typography</strong></td><td>Inter (UI sans-serif) + IBM Plex Mono (Code/Status)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="section-h">Color Palette Specification</h3>
+          <div class="grid-2" style="gap:10px;">
+            <div style="background:#111827; border-radius:10px; padding:16px; color:#fff; text-align:center;">
+              <div style="font-weight:700; font-size:13px;">Ink Navy</div>
+              <div style="font-family:var(--font-mono); font-size:11px; color:#94a3b8;">#111827</div>
+            </div>
+            <div style="background:#ff914d; border-radius:10px; padding:16px; color:#fff; text-align:center;">
+              <div style="font-weight:700; font-size:13px;">3C Orange</div>
+              <div style="font-family:var(--font-mono); font-size:11px; color:#fff;">#ff914d</div>
+            </div>
+            <div style="background:#f7f4ee; border:1px solid #e2e8f0; border-radius:10px; padding:16px; color:#111827; text-align:center;">
+              <div style="font-weight:700; font-size:13px;">Warm White</div>
+              <div style="font-family:var(--font-mono); font-size:11px; color:#64748b;">#f7f4ee</div>
+            </div>
+            <div style="background:#14b8a6; border-radius:10px; padding:16px; color:#fff; text-align:center;">
+              <div style="font-weight:700; font-size:13px;">Teal (Status)</div>
+              <div style="font-family:var(--font-mono); font-size:11px; color:#fff;">#14b8a6</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Assets: docs/brand/SafeData &bull; docs/brand/3consulting_Parent Company</span>
+        <span class="footer-center"><span class="footer-dot"></span> SafeData by 3Consulting</span>
+        <span>Design Guidelines</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       SLIDE 9: LEADERSHIP DECISION GATES (CALL TO ACTION)
+       ========================================================== -->
+  <section class="slide theme-gradient" id="slide-9">
+    <div class="slide-body" style="justify-content:center;">
+      <p class="slide-tag">Slide 8 &bull; Executive Call to Action</p>
+      <h2 class="slide-title" style="font-size:clamp(28px, 4.2vw, 48px);">Decisions Required From Leadership Today</h2>
+      <p class="slide-subtitle">Clear commercial alignments to authorize the next engineering sprint and pilot rollout.</p>
+
+      <div class="highlight-box" style="background:rgba(255, 145, 77, 0.08); border-color:var(--orange);">
+        <ol style="padding-left:20px; display:flex; flex-direction:column; gap:12px; font-size:clamp(13px, 1.4vw, 16px); color:#cbd5e1;">
+          <li><strong>Confirm Legal &amp; Commercial Seller:</strong> Authorize UK limited company or 3Consulting Nigeria for international Stripe / regional Paystack billing.</li>
+          <li><strong>Approve Launch Domain:</strong> Authorize whether initial launch is on <code>safedata.3consult-ng.com</code> or a dedicated standalone domain.</li>
+          <li><strong>Confirm Market Rollout Sequence:</strong> Confirm Nigeria &amp; West Africa first (banking/fintech priority) before expanding to UK/EU.</li>
+          <li><strong>Authorize Pilot Adopters:</strong> Approve outreach to 3 target financial institutions for private beta deployment.</li>
+          <li><strong>Sign Off on Phase 1B Security Sprint:</strong> Gating item before accepting any live production customer data.</li>
+        </ol>
+      </div>
+
+      <p style="text-align:center; margin-top:24px; font-size:clamp(14px, 1.6vw, 18px); color:var(--warm-white); font-weight:500;">
+        SafeData is ready to demonstrate live. Let's inspect the local solution together.
+      </p>
+
+      <div class="slide-footer" style="margin-top:32px;">
+        <span>Executive Sign-off Required</span>
+        <span class="footer-center"><span class="footer-dot"></span> SafeData by 3Consulting</span>
+        <span>Decision Gates</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

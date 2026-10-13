@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SafeData Lifecycle Ring</title>
+  <desc id="desc">An open data-retention ring with an orange record marker and a gap marking lawful release.</desc>
+  <defs>
+    <style>
+      .navy { fill: #111827; }
+      .orange { fill: #ff914d; }
+      .track { stroke: #111827; stroke-width: 26; fill: none; stroke-linecap: round; }
+      .dot { fill: #ff914d; }
+      .soft { fill: #f7f4ee; }
+    </style>
+  </defs>
+
+  <rect width="512" height="512" fill="#f7f4ee"/>
+
+  <g transform="translate(6 6)">
+    <path class="track" d="M 154 370 A 150 150 0 1 1 358 370"/>
+    <circle class="dot" cx="358" cy="370" r="18"/>
+    <circle class="soft" cx="212" cy="188" r="14"/>
+    <circle class="soft" cx="252" cy="150" r="10"/>
+    <circle class="soft" cx="292" cy="148" r="9"/>
+  </g>
+</svg>

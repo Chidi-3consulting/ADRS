@@ -78,6 +78,36 @@ def test_get_country_regulations():
     assert "EGDPL" in get_country_regulations("EG")
 
 
+def test_african_continent_coverage():
+    """Every African country with an enacted DPA maps to its national framework;
+    draft-law countries fall back to a GDPR-aligned baseline."""
+    african_codes = ["RW", "UG", "TZ", "ET",            # East Africa
+                     "ZM", "ZW", "MW", "BW", "MU", "SC", "SZ", "LS", "CV",  # Southern
+                     "SN", "CI", "MA", "BJ", "TG", "BF", "ML", "CM", "GA", "AO", "TN", "DZ"]  # West/North
+    for code in african_codes:
+        frameworks = get_country_regulations(code)
+        assert frameworks, f"{code} must have a regulation mapping"
+        for fw in frameworks:
+            assert fw in CATEGORY_SEEDS, f"{code} framework {fw} must have seeded categories"
+    # Draft-law countries use the GDPR-aligned baseline
+    for code in ("MZ", "NA", "GM"):
+        assert get_country_regulations(code) == ["GDPR_ALIGN"], f"{code} should use GDPR_ALIGN"
+    assert "DPA_RW" in get_country_regulations("RW")
+    assert "DPA_ZM" in get_country_regulations("ZM")
+    assert "DPA_MA" in get_country_regulations("MA")
+
+
+def test_african_authority_labels():
+    assert get_country_regulation_labels("RW")["authority"] == "NCSA"
+    assert get_country_regulation_labels("UG")["authority"] == "PDPO"
+    assert get_country_regulation_labels("ZM")["authority"] == "Data Protection Commissioner (Zambia)"
+    assert get_country_regulation_labels("ZW")["authority"] == "POTRAZ"
+    assert get_country_regulation_labels("MA")["authority"] == "CNDP (Morocco)"
+    assert get_country_regulation_labels("SN")["authority"] == "CDP (Senegal)"
+    assert get_country_regulation_labels("DZ")["authority"] == "ANPDP"
+    assert get_country_regulation_labels("TN")["authority"] == "INPDP"
+
+
 def test_country_currency_and_labels():
     """Ensure currencies and labels resolve gracefully for all regions."""
     assert detect_visitor_currency("NG")["code"] == "NGN"
@@ -106,6 +136,10 @@ def test_country_currency_and_labels():
     ("CA", "torontomedia.ca"),
     ("AU", "sydneysystems.com.au"),
     ("JP", "tokyoanalytics.jp"),  # Unmapped country testing global fallback
+    ("RW", "kigalifintech.rw"),
+    ("ZM", "lusakabusiness.co.zm"),
+    ("MA", "casablancaconnect.ma"),
+    ("MU", "portlouisleasing.mu"),
 ])
 def test_global_registration_and_end_to_end_journey(client, db, country_code, expected_domain):
     """
