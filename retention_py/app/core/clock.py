@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-UTC = timezone.utc  # datetime.UTC is 3.11+; this keeps Python 3.10 (cPanel) working
+UTC = timezone.utc  # noqa: UP017 - datetime.UTC is 3.11+; keeps Python 3.10 (cPanel) working
 
 
 def utcnow() -> datetime:
