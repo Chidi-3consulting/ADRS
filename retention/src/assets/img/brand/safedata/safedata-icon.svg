@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SafeData icon</title>
+  <desc id="desc">Two guardian figures beneath a halo arc, shielding a record — SafeData's mark for app and browser use.</desc>
+  <rect width="512" height="512" rx="48" fill="#f7f4ee"/>
+  <path d="M 120 170 A 180 180 0 0 1 392 170" fill="none" stroke="#111827" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="392" cy="170" r="9" fill="#ff914d"/>
+  <circle cx="160" cy="258" r="34" fill="#111827"/>
+  <path d="M 96 404 Q 96 320 160 320 Q 224 320 224 404 Z" fill="#111827"/>
+  <circle cx="352" cy="258" r="34" fill="#111827"/>
+  <path d="M 288 404 Q 288 320 352 320 Q 416 320 416 404 Z" fill="#111827"/>
+  <path d="M 256 300 L 304 318 L 304 368 Q 304 404 256 428 Q 208 404 208 368 L 208 318 Z" fill="#ff914d" stroke="#f7f4ee" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M 240 364 L 252 376 L 276 348" fill="none" stroke="#111827" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
