@@ -40,17 +40,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+$__wlName = get_setting($pdo, 'white_label_name', APP_NAME) ?: APP_NAME;
+$__wlLogo = get_setting($pdo, 'white_label_logo_url', '') ?: (APP_URL . '/src/assets/img/brand/icon-white.svg');
 ?>
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login — <?= escape_html(APP_NAME) ?></title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23C85C1A'/><text x='16' y='23' font-size='18' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial,sans-serif'>A</text></svg>">
+<meta name="color-scheme" content="light dark">
+<title>Login — <?= escape_html($__wlName) ?></title>
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('adrs_theme') || <?= json_encode(get_setting($pdo, 'ui_theme_default', 'system') ?: 'system') ?>;
+    if (t === 'light' || t === 'dark') { document.documentElement.setAttribute('data-theme', t); }
+    else { document.documentElement.removeAttribute('data-theme'); }
+  }catch(e){}
+})();
+</script>
+<link rel="icon" type="image/x-icon" sizes="32x32" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo_32x32.ico">
+<link rel="shortcut icon" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo.ico">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
 </head><body class="d-flex align-items-center" style="min-height:100vh;">
 <div class="container" style="max-width:420px;">
   <div class="card shadow-sm">
-    <div class="card-header card-header-orange text-center"><h1 class="h4 mb-0">ADRS</h1></div>
+    <div class="card-header card-header-orange text-center d-flex align-items-center justify-content-center gap-2">
+      <img src="<?= escape_html($__wlLogo) ?>" alt="<?= escape_html($__wlName) ?>" style="height:24px;width:24px">
+      <h1 class="h4 mb-0"><?= escape_html($__wlName) ?></h1>
+    </div>
     <div class="card-body">
       <?php if ($error): ?><div class="alert alert-danger"><?= escape_html($error) ?></div><?php endif; ?>
       <form method="post" novalidate>
