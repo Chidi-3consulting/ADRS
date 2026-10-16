@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0c0f1a">
   <meta name="description" content="SafeData — Enterprise data retention & compliance governance platform by 3Consulting">
+  <script nonce="{{ csp_nonce }}">(function(){try{var m=localStorage.getItem('tc-theme')||'system',d=m==='system'?matchMedia('(prefers-color-scheme: dark)').matches:m==='dark',t=d?'dark':'light',r=document.documentElement;r.setAttribute('data-theme',t);r.setAttribute('data-bs-theme',t);r.setAttribute('data-theme-mode',m)}catch(e){}})()</script>
   <title>{{ page_title or 'SafeData' }}</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/static/css/app.css?v=4.2">
   {% block page_styles %}{% endblock %}
+  <link rel="stylesheet" href="/static/css/theme.css?v=1">
 </head>
 <body class="public-page">
 
@@ -18,7 +20,7 @@
   <nav class="navbar navbar-expand-lg navbar-dark public-navbar">
     <div class="container public-navbar-container">
       <a class="navbar-brand public-brand" href="/" aria-label="SafeData home">
-        <img src="/static/brand/safedata-wordmark-lockup-dark.svg" alt="SafeData by 3Consulting" width="145" height="52">
+        <img src="/static/brand/safedata-wordmark-lockup-dark.svg" alt="SafeData by 3Consulting" width="176" height="63">
       </a>
       <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -28,7 +30,8 @@
           <li class="nav-item"><a class="nav-link public-nav-link" href="/safedata">About SafeData</a></li>
           <li class="nav-item"><a class="nav-link public-nav-link" href="/#features">Features</a></li>
           <li class="nav-item"><a class="nav-link public-nav-link" href="/#pricing">Pricing</a></li>
-          <li class="nav-item ms-lg-2">
+          <li class="nav-item ms-lg-2"><div class="tc-theme-switch on-dark" role="group" aria-label="Colour theme"><button type="button" data-mode="light" aria-pressed="false" title="Light">&#9728;<span>Light</span></button><button type="button" data-mode="dark" aria-pressed="false" title="Dark">&#9790;<span>Dark</span></button><button type="button" data-mode="system" aria-pressed="true" title="System">&#9680;<span>System</span></button></div></li>
+          <li class="nav-item">
             <a class="btn btn-outline-light btn-sm px-3 public-nav-action" href="/login">Sign In</a>
           </li>
           <li class="nav-item">
@@ -68,5 +71,6 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="/static/js/theme.js?v=1" nonce="{{ csp_nonce }}"></script>
 </body>
 </html>

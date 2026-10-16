@@ -1,0 +1,120 @@
+/* SafeData — Light / Dark theme layer. Loaded after app.css / landing.css.
+   Light = the existing look (untouched). Dark = deep navy with the brand orange. */
+
+/* ---------- Theme switch (segmented control) ---------- */
+.tc-theme-switch{display:inline-flex;gap:2px;padding:3px;border-radius:9999px;background:var(--sd-surface-1);border:1px solid var(--sd-border)}
+.tc-theme-switch button{font:600 12px/1 var(--font-sans);color:var(--sd-text-secondary);background:transparent;border:0;border-radius:9999px;padding:7px 10px;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+.tc-theme-switch button[aria-pressed="true"]{background:#ff914d;color:#111827}
+.tc-theme-switch button:focus-visible{outline:2px solid #ff914d;outline-offset:2px}
+.tc-theme-switch.on-dark{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+.tc-theme-switch.on-dark button{color:#c3cbd6}
+.tc-theme-switch.on-dark button[aria-pressed="true"]{color:#111827}
+@media (max-width:640px){.tc-theme-switch button span{display:none}.tc-theme-switch button{padding:8px 10px}}
+
+/* ---------- Dark tokens ---------- */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --sd-primary:#ff914d; --sd-primary-hover:#ffb06e; --sd-primary-active:#ffc690;
+  --sd-primary-subtle:rgba(255,145,77,.14); --sd-primary-rgb:255,145,77;
+  --sd-teal:#5eb4e0; --sd-teal-hover:#8cc9ea; --sd-teal-subtle:rgba(94,180,224,.14);
+  --sd-success:#34d399; --sd-success-hover:#6ee7b7; --sd-success-subtle:rgba(52,211,153,.14); --sd-success-text:#6ee7b7;
+  --sd-warning:#fbbf24; --sd-warning-hover:#fcd34d; --sd-warning-subtle:rgba(251,191,36,.14); --sd-warning-text:#fcd34d;
+  --sd-danger:#f87171;  --sd-danger-hover:#fca5a5;  --sd-danger-subtle:rgba(248,113,113,.14);  --sd-danger-text:#fca5a5;
+  --sd-info:#60a5fa;    --sd-info-hover:#93c5fd;    --sd-info-subtle:rgba(96,165,250,.14);     --sd-info-text:#93c5fd;
+  --sd-destructive:#fb7185; --sd-destructive-hover:#fda4af; --sd-destructive-subtle:rgba(251,113,133,.14); --sd-destructive-text:#fda4af;
+  /* inverted neutral scale so everything built on --sd-gray-* flips automatically */
+  --sd-gray-50:#0b1426; --sd-gray-100:#101c33; --sd-gray-200:#22334f; --sd-gray-300:#33466a; --sd-gray-400:#8393a8;
+  --sd-gray-500:#9fb0c3; --sd-gray-600:#b9c6d6; --sd-gray-700:#d3dce8; --sd-gray-800:#eceff4; --sd-gray-900:#f7f4ee;
+  --sd-bg:#070d1a; --sd-surface-0:#0b1426; --sd-surface-1:#101c33; --sd-surface-2:#142340; --sd-surface-raised:#172743;
+  --sd-text:#eceff4; --sd-text-secondary:#a9b6c8; --sd-text-muted:#8393a8; --sd-text-inverse:#ffffff;
+  --sd-border:#22334f; --sd-border-strong:#33466a; --sd-focus-ring:rgba(255,145,77,.45);
+  --sd-sidebar-bg:#0a1122;
+}
+:root[data-theme="dark"] body{background:var(--sd-bg);color:var(--sd-text)}
+:root[data-theme="dark"] a:not(.btn):not(.nav-link):not(.public-nav-link){color:#ffb06e}
+
+/* Bootstrap "light only" utilities */
+:root[data-theme="dark"] .bg-white,
+:root[data-theme="dark"] .bg-light{background-color:var(--sd-surface-1)!important}
+:root[data-theme="dark"] .bg-light-subtle,
+:root[data-theme="dark"] .bg-body-tertiary,
+:root[data-theme="dark"] .bg-body-secondary{background-color:var(--sd-surface-2)!important;color:var(--sd-text)}
+:root[data-theme="dark"] .text-dark,
+:root[data-theme="dark"] .link-dark{color:var(--sd-text)!important}
+:root[data-theme="dark"] .text-muted,
+:root[data-theme="dark"] .text-secondary{color:var(--sd-text-secondary)!important}
+:root[data-theme="dark"] .border,
+:root[data-theme="dark"] .border-light,
+:root[data-theme="dark"] .border-bottom,
+:root[data-theme="dark"] .border-top{border-color:var(--sd-border)!important}
+:root[data-theme="dark"] .table-light,
+:root[data-theme="dark"] .table > :not(caption) > * > *{--bs-table-bg:transparent;--bs-table-color:var(--sd-text);--bs-table-border-color:var(--sd-border);color:var(--sd-text)}
+:root[data-theme="dark"] .table-light{--bs-table-bg:var(--sd-surface-2)}
+:root[data-theme="dark"] .btn-dark{--bs-btn-bg:#ff914d;--bs-btn-border-color:#ff914d;--bs-btn-color:#111827;--bs-btn-hover-bg:#ffb06e;--bs-btn-hover-border-color:#ffb06e;--bs-btn-hover-color:#111827}
+:root[data-theme="dark"] .btn-outline-dark,
+:root[data-theme="dark"] .btn-outline-secondary{--bs-btn-color:var(--sd-text);--bs-btn-border-color:var(--sd-border-strong);--bs-btn-hover-bg:var(--sd-surface-raised);--bs-btn-hover-color:#fff;--bs-btn-hover-border-color:var(--sd-border-strong)}
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .modal-content,
+:root[data-theme="dark"] .dropdown-menu,
+:root[data-theme="dark"] .list-group-item,
+:root[data-theme="dark"] .accordion-item{background:var(--sd-surface-1);color:var(--sd-text);border-color:var(--sd-border)}
+:root[data-theme="dark"] .card-header,
+:root[data-theme="dark"] .card-footer{background:var(--sd-surface-2);border-color:var(--sd-border)}
+:root[data-theme="dark"] .form-control,
+:root[data-theme="dark"] .form-select,
+:root[data-theme="dark"] .input-group-text{background-color:var(--sd-surface-0);color:var(--sd-text);border-color:var(--sd-border-strong)}
+:root[data-theme="dark"] .form-control::placeholder{color:var(--sd-text-muted)}
+:root[data-theme="dark"] .form-control:focus,
+:root[data-theme="dark"] .form-select:focus{background-color:var(--sd-surface-0);color:var(--sd-text);border-color:#ff914d;box-shadow:0 0 0 .2rem rgba(255,145,77,.25)}
+:root[data-theme="dark"] .alert-success{background:var(--sd-success-subtle);color:var(--sd-success-text);border-color:rgba(52,211,153,.35)}
+:root[data-theme="dark"] .alert-danger{background:var(--sd-danger-subtle);color:var(--sd-danger-text);border-color:rgba(248,113,113,.35)}
+:root[data-theme="dark"] .alert-warning{background:var(--sd-warning-subtle);color:var(--sd-warning-text);border-color:rgba(251,191,36,.35)}
+:root[data-theme="dark"] .alert-info{background:var(--sd-info-subtle);color:var(--sd-info-text);border-color:rgba(96,165,250,.35)}
+:root[data-theme="dark"] code{color:#ffb06e}
+:root[data-theme="dark"] hr{border-color:var(--sd-border);opacity:1}
+
+/* components that paint a dark-grey background behind white text in light mode */
+:root[data-theme="dark"] .btn-dark,
+:root[data-theme="dark"] .settings-pills .nav-link.active,
+:root[data-theme="dark"] .pagination .page-item.active .page-link,
+:root[data-theme="dark"] .skip-link{background:#ff914d;border-color:#ff914d;color:#111827}
+:root[data-theme="dark"] .btn-dark:hover{background:#ffb06e;border-color:#ffb06e;color:#111827}
+:root[data-theme="dark"] .btn-light{background:var(--sd-surface-raised);border-color:var(--sd-border-strong);color:var(--sd-text)}
+:root[data-theme="dark"] .btn-light:hover{background:var(--sd-gray-300);color:#fff}
+
+/* App chrome */
+:root[data-theme="dark"] .topbar{background:var(--sd-surface-0);border-color:var(--sd-border)}
+:root[data-theme="dark"] .topbar-title{color:var(--sd-text)}
+:root[data-theme="dark"] .main-content,
+:root[data-theme="dark"] .content-area{background:var(--sd-bg)}
+
+/* ---------- Landing page (landing.css hard-codes light sections) ---------- */
+:root[data-theme="dark"]{--sd-home-ink:#f4f1ea;--sd-home-muted:#a9b6c8;--sd-home-paper:#0b1426;--sd-home-line:#22334f}
+:root[data-theme="dark"] .public-page .safedata-home{background:#070d1a}
+:root[data-theme="dark"] .sd-audience{background:#0b1426}
+:root[data-theme="dark"] .sd-features{background:#070d1a}
+:root[data-theme="dark"] .sd-lifecycle{background:#0b1426}
+:root[data-theme="dark"] .sd-pricing{background:#0a1122}
+:root[data-theme="dark"] .sd-audience-card,
+:root[data-theme="dark"] .sd-feature-card,
+:root[data-theme="dark"] .sd-lifecycle-card{background:#101c33;border-color:#22334f;box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 14px 34px rgba(0,0,0,.35)}
+:root[data-theme="dark"] .sd-feature-icon{background:rgba(255,145,77,.14);color:#ffb06e}
+:root[data-theme="dark"] .sd-disclaimer{background:rgba(255,145,77,.08);border-color:rgba(255,145,77,.28);color:#d9c9b8}
+:root[data-theme="dark"] .sd-period-switch,
+:root[data-theme="dark"] .sd-currency-control{background:#101c33;border-color:#22334f;color:#a9b6c8}
+:root[data-theme="dark"] .sd-period-switch button{color:#a9b6c8}
+:root[data-theme="dark"] .sd-period-switch button.is-selected{background:#ff914d;color:#111827}
+:root[data-theme="dark"] .sd-plan-card{background:#101c33;box-shadow:0 18px 55px rgba(0,0,0,.5)}
+:root[data-theme="dark"] .sd-plan-summary{background:#0f1a30}
+:root[data-theme="dark"] .sd-local-price{background:rgba(255,145,77,.14);color:#ffb06e}
+:root[data-theme="dark"] .safedata-home h2,
+:root[data-theme="dark"] .safedata-home h3,
+:root[data-theme="dark"] .safedata-home h4{color:#f4f1ea}
+:root[data-theme="dark"] .safedata-home p,
+:root[data-theme="dark"] .safedata-home li{color:#a9b6c8}
+/* keep hero / final CTA text as designed */
+:root[data-theme="dark"] .sd-final-cta h2,
+:root[data-theme="dark"] .sd-hero h1,
+:root[data-theme="dark"] .sd-workflow-topline h2{color:#fff}
+
+@media (max-width:640px){.topbar-subtitle{display:none}.topbar .tc-theme-switch{flex:none}}
