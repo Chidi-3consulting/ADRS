@@ -11,3 +11,4 @@ retention/storage/
 .playwright-mcp/
 retention/.playwright-mcp/
 audit-*.png
+.env
