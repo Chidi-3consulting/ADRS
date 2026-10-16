@@ -190,7 +190,12 @@ def _import_config(**env):
 
     base = {k: v for k, v in os.environ.items() if not k.startswith(("S3_", "STORAGE_"))}
     base.update(
-        {"APP_ENV": "production", "SECRET_KEY": "x" * 64, "BACKUP_ENCRYPTION_KEY": Fernet.generate_key().decode()}
+        {
+            "APP_ENV": "production",
+            "SECRET_KEY": "x" * 64,
+            "BACKUP_ENCRYPTION_KEY": Fernet.generate_key().decode(),
+            "DATABASE_URL": "postgresql://u:p@localhost/db",
+        }
     )
     base.update(env)
     return subprocess.run(  # noqa: S603
@@ -206,6 +211,15 @@ def test_production_requires_s3_storage():
     r = _import_config()
     assert r.returncode != 0 and "STORAGE_BACKEND" in r.stderr
     r = _import_config(STORAGE_BACKEND="S3", S3_BUCKET="b", S3_ACCESS_KEY_ID="k", S3_SECRET_ACCESS_KEY="s")  # noqa: S106
+    assert r.returncode == 0, r.stderr
+
+
+def test_production_local_storage_requires_explicit_persistent_opt_in(tmp_path):
+    r = _import_config(STORAGE_BACKEND="local")
+    assert r.returncode != 0 and "STORAGE_BACKEND" in r.stderr
+    r = _import_config(STORAGE_BACKEND="local", STORAGE_LOCAL_PERSISTENT="1")
+    assert r.returncode != 0 and "STORAGE_LOCAL_ROOT" in r.stderr
+    r = _import_config(STORAGE_BACKEND="local", STORAGE_LOCAL_PERSISTENT="1", STORAGE_LOCAL_ROOT=str(tmp_path))
     assert r.returncode == 0, r.stderr
 
 

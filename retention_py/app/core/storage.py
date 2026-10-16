@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import functools
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc  # datetime.UTC is 3.11+; this keeps Python 3.10 (cPanel) working
 from pathlib import Path
 from typing import Protocol
 

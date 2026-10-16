@@ -1,6 +1,8 @@
 import json
 import logging
-from datetime import UTC
+from datetime import timezone
+
+UTC = timezone.utc
 
 from app.core.logging import JsonFormatter, request_id_var
 

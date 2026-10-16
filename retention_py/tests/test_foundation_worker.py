@@ -7,7 +7,7 @@ from app.models import JobLock, JobRun
 from app.worker import jobs as jobs_mod
 from app.worker import runner as runner_mod
 from app.worker.locks import acquire, release, renew
-from app.worker.runner import Job, is_due, run_forever, run_job
+from app.worker.runner import Job, is_due, run_forever, run_job, run_once
 
 
 def test_two_holders_only_one_acquires(db):
@@ -151,3 +151,19 @@ def test_release_failure_is_logged_not_raised(db, monkeypatch):
 
     monkeypatch.setattr(runner_mod, "release", bad_release)
     assert run_job(Job("rel", 60, lambda s: {}), SessionLocal, "w1") == "success"
+
+
+def test_run_once_runs_due_jobs_then_respects_interval(db):
+    calls = []
+    job = Job("once_job", 600, lambda s: calls.append(1) or {})
+    assert run_once(SessionLocal, "cron", [job]) == {"once_job": "success"}
+    assert run_once(SessionLocal, "cron", [job]) == {"once_job": "not_due"}
+    assert len(calls) == 1
+    assert db.query(JobRun).filter_by(job_name="once_job").count() == 1
+
+
+def test_run_once_reports_failure_without_raising(db):
+    def boom(_s):
+        raise RuntimeError("cron kaboom")
+
+    assert run_once(SessionLocal, "cron", [Job("once_boom", 60, boom)]) == {"once_boom": "failed"}
