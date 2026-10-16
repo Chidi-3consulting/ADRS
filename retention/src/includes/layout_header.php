@@ -19,7 +19,18 @@ function navlink(string $key, string $active, string $route, string $icon, strin
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title><?= escape_html($page_title) ?> — <?= escape_html($__wlName) ?></title>
+<script>
+// Apply saved theme BEFORE any CSS paints to avoid a flash. Modes: 'light' | 'dark' | 'system'.
+(function(){
+  try{
+    var t = localStorage.getItem('adrs_theme') || <?= json_encode(get_setting($__pdo, 'ui_theme_default', 'system') ?: 'system') ?>;
+    if (t === 'light' || t === 'dark') { document.documentElement.setAttribute('data-theme', t); }
+    else { document.documentElement.removeAttribute('data-theme'); } // system = follow OS
+  }catch(e){}
+})();
+</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23C85C1A'/><text x='16' y='23' font-size='18' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial,sans-serif'>A</text></svg>">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
@@ -63,10 +74,51 @@ function navlink(string $key, string $active, string $route, string $icon, strin
   <div class="main-content">
     <div class="topbar d-flex justify-content-between align-items-center">
       <div class="h5 mb-0 fw-semibold"><?= escape_html($page_title) ?></div>
-      <a class="position-relative" href="<?= APP_URL ?>/notifications">
-        <i class="bi bi-bell fs-5"></i>
-        <?php if ($__unread > 0): ?><span class="badge bg-danger position-absolute top-0 start-100 translate-middle"><?= $__unread ?></span><?php endif; ?>
-      </a>
+      <div class="d-flex align-items-center gap-3">
+        <button type="button" class="theme-toggle" id="themeToggleBtn" title="Change colour mode" aria-label="Change colour mode">
+          <i class="bi bi-circle-half" aria-hidden="true"></i>
+          <span id="themeToggleLabel">System</span>
+        </button>
+        <a class="position-relative" href="<?= APP_URL ?>/notifications">
+          <i class="bi bi-bell fs-5"></i>
+          <?php if ($__unread > 0): ?><span class="badge bg-danger position-absolute top-0 start-100 translate-middle"><?= $__unread ?></span><?php endif; ?>
+        </a>
+      </div>
     </div>
+    <script>
+    // Theme-toggle behaviour: cycle system → light → dark → system.
+    (function(){
+      var btn = document.getElementById('themeToggleBtn');
+      var lbl = document.getElementById('themeToggleLabel');
+      if (!btn) return;
+      function current(){
+        var t = localStorage.getItem('adrs_theme');
+        return (t === 'light' || t === 'dark') ? t : 'system';
+      }
+      function render(){
+        var t = current();
+        lbl.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+        var icon = btn.querySelector('.bi');
+        icon.className = 'bi ' + (t === 'light' ? 'bi-sun'
+                              : t === 'dark'  ? 'bi-moon-stars'
+                                              : 'bi-circle-half');
+      }
+      function apply(t){
+        if (t === 'light' || t === 'dark') {
+          localStorage.setItem('adrs_theme', t);
+          document.documentElement.setAttribute('data-theme', t);
+        } else {
+          localStorage.setItem('adrs_theme', 'system');
+          document.documentElement.removeAttribute('data-theme');
+        }
+        render();
+      }
+      btn.addEventListener('click', function(){
+        var order = ['system','light','dark'];
+        apply(order[(order.indexOf(current()) + 1) % order.length]);
+      });
+      render();
+    })();
+    </script>
     <div class="content-area p-4">
       <?= render_flash() ?>

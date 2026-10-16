@@ -1,21 +1,102 @@
+/* ADRS / SafeData — theming
+ *
+ * Three modes: system (default), light, dark. The mode is applied by setting
+ * data-theme="light" | "dark" on <html>; absent attribute = follow the OS.
+ * The topbar toggle writes the choice to localStorage.
+ *
+ * All UI surfaces read theme-aware tokens (--3c-bg, --3c-surface, --3c-text, …).
+ * The existing brand tokens (--3c-orange, --3c-teal, …) remain for anywhere that
+ * referenced them directly.
+ */
+
+/* ---------- Default (light) ---------- */
 :root{
+  /* Brand (kept for backward compat with inline/legacy styles) */
   --3c-orange:#C85C1A; --3c-teal:#1A6187; --3c-yellow:#E8A84C;
   --3c-light:#F7F7F7; --3c-dark:#1A1A2E;
+
+  /* Theme-aware surfaces */
+  --3c-bg:         #F7F7F7;
+  --3c-surface:    #FFFFFF;      /* cards, topbar */
+  --3c-surface-2:  #F0F1F4;      /* subtle panels */
+  --3c-text:       #1A1A2E;
+  --3c-muted:      #5F6475;
+  --3c-border:     #E5E5E5;
+  --3c-sidebar-bg: #1A1A2E;      /* sidebar stays dark in light mode */
+  --3c-sidebar-fg: #FFFFFF;
+  --3c-input-bg:   #FFFFFF;
+  --3c-input-fg:   #1A1A2E;
+  color-scheme: light;
 }
-body{ background:var(--3c-light); }
+
+/* ---------- Dark (explicit, OR system when user hasn't chosen light) ---------- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --3c-bg:         #0F1117;
+    --3c-surface:    #171A22;
+    --3c-surface-2:  #1F2330;
+    --3c-text:       #E8E9EE;
+    --3c-muted:      #9AA0B1;
+    --3c-border:     #2A2F3D;
+    --3c-sidebar-bg: #0A0C13;
+    --3c-sidebar-fg: #E8E9EE;
+    --3c-input-bg:   #1F2330;
+    --3c-input-fg:   #E8E9EE;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --3c-bg:         #0F1117;
+  --3c-surface:    #171A22;
+  --3c-surface-2:  #1F2330;
+  --3c-text:       #E8E9EE;
+  --3c-muted:      #9AA0B1;
+  --3c-border:     #2A2F3D;
+  --3c-sidebar-bg: #0A0C13;
+  --3c-sidebar-fg: #E8E9EE;
+  --3c-input-bg:   #1F2330;
+  --3c-input-fg:   #E8E9EE;
+  color-scheme: dark;
+}
+
+/* ---------- Layout (now reads theme tokens) ---------- */
+html, body{ background:var(--3c-bg); color:var(--3c-text); }
 body.public-page{ display:flex; flex-direction:column; min-height:100vh; }
 .wrapper{ min-height:100vh; }
-.sidebar{ width:260px; min-height:100vh; background:var(--3c-dark); color:#fff; position:fixed; top:0; left:0; display:flex; flex-direction:column; }
+.sidebar{ width:260px; min-height:100vh; background:var(--3c-sidebar-bg); color:var(--3c-sidebar-fg); position:fixed; top:0; left:0; display:flex; flex-direction:column; }
 .sidebar .brand{ color:var(--3c-orange); font-weight:700; font-size:1.4rem; padding:1rem 1.25rem; }
 .sidebar a{ color:#cfd2dc; text-decoration:none; display:block; padding:.6rem 1.25rem; border-left:4px solid transparent; }
 .sidebar a:hover{ background:rgba(255,255,255,.06); color:#fff; }
 .sidebar a.active{ border-left-color:var(--3c-orange); background:rgba(255,255,255,.08); color:#fff; }
 .main-content{ margin-left:260px; }
-.topbar{ background:#fff; border-bottom:1px solid #e5e5e5; padding:.75rem 1.5rem; }
+.topbar{ background:var(--3c-surface); color:var(--3c-text); border-bottom:1px solid var(--3c-border); padding:.75rem 1.5rem; }
+
+/* Bootstrap-component surface overrides so dark mode looks right without rewriting pages */
+.card{ background:var(--3c-surface); color:var(--3c-text); border-color:var(--3c-border); }
+.card .text-muted, .text-muted{ color:var(--3c-muted) !important; }
+.table{ color:var(--3c-text); --bs-table-bg:var(--3c-surface); --bs-table-color:var(--3c-text); --bs-table-border-color:var(--3c-border); }
+.form-control, .form-select{ background-color:var(--3c-input-bg); color:var(--3c-input-fg); border-color:var(--3c-border); }
+.form-control:focus, .form-select:focus{ background-color:var(--3c-input-bg); color:var(--3c-input-fg); }
+.modal-content{ background:var(--3c-surface); color:var(--3c-text); border-color:var(--3c-border); }
+.dropdown-menu{ background:var(--3c-surface); color:var(--3c-text); border-color:var(--3c-border); }
+.dropdown-item{ color:var(--3c-text); }
+.dropdown-item:hover{ background:var(--3c-surface-2); }
+.alert{ border-color:var(--3c-border); }
+
+/* Buttons & brand accents */
 .btn-primary{ background:var(--3c-orange); border-color:var(--3c-orange); }
 .btn-primary:hover{ background:#a94c14; border-color:#a94c14; }
+.btn-outline-primary{ color:var(--3c-orange); border-color:var(--3c-orange); }
+.btn-outline-primary:hover{ background:var(--3c-orange); border-color:var(--3c-orange); color:#fff; }
 .card-header-teal{ background:var(--3c-teal); color:#fff; }
 .card-header-orange{ background:var(--3c-orange); color:#fff; }
 .badge-gdpr{ background:#003399; } .badge-ndpr{ background:#008751; } .badge-both{ background:#6f42c1; }
+
+/* Topbar theme toggle */
+.theme-toggle{ background:transparent; border:1px solid var(--3c-border); color:var(--3c-text); border-radius:999px; padding:.25rem .6rem; font-size:.85rem; display:inline-flex; gap:.4rem; align-items:center; cursor:pointer; }
+.theme-toggle:hover{ background:var(--3c-surface-2); }
+.theme-toggle .bi{ font-size:1rem; }
+
+/* Responsive & print */
 @media (max-width: 768px){ .sidebar{ position:static; width:100%; min-height:auto; } .main-content{ margin-left:0; } }
 @media print{ .sidebar,.topbar,.btn{ display:none!important; } .main-content{ margin-left:0; } }
