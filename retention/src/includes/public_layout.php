@@ -62,17 +62,19 @@ function import_category_seed(PDO $pdo, int $organizationId = 1): int {
     $file = dirname(__DIR__, 2) . '/sql/seed_categories_only.sql';
     if (!is_file($file)) { return 0; }
     $sql = file_get_contents($file);
-    $sql = preg_replace(
-        '/INSERT INTO `data_categories`\s*\(/i',
-        'INSERT INTO `data_categories` (`organization_id`,',
-        $sql
-    );
-    $sql = preg_replace_callback(
-        '/VALUES\s*\(/i',
-        static fn () => 'VALUES (' . (int) $organizationId . ',',
-        $sql
-    );
+    // The seed is one multi-row INSERT with comments between rows, so rewriting its VALUES
+    // tuples is fragile. Load it into a temporary copy of the table instead, then copy the
+    // rows across with the target organisation id.
+    if (!preg_match('/INSERT INTO `data_categories`\s*\(([^)]*)\)/i', $sql, $m)) { return 0; }
+    $cols = implode(',', array_map('trim', explode(',', $m[1])));
+    $sql = preg_replace('/INSERT INTO `data_categories`/i', 'INSERT INTO `tmp_seed_categories`', $sql);
+    $pdo->exec('DROP TEMPORARY TABLE IF EXISTS `tmp_seed_categories`');
+    $pdo->exec('CREATE TEMPORARY TABLE `tmp_seed_categories` LIKE `data_categories`');
     $pdo->exec($sql);
+    $ins = $pdo->prepare("INSERT INTO `data_categories` (`organization_id`, $cols)
+                          SELECT :o, $cols FROM `tmp_seed_categories` ORDER BY `id`");
+    $ins->execute(['o' => $organizationId]);
+    $pdo->exec('DROP TEMPORARY TABLE IF EXISTS `tmp_seed_categories`');
     $stmt->execute(['o' => $organizationId]);
     return (int) $stmt->fetchColumn();
 }
