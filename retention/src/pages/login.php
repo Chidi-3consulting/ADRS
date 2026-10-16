@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 $__wlName = get_setting($pdo, 'white_label_name', APP_NAME) ?: APP_NAME;
-$__wlLogo = get_setting($pdo, 'white_label_logo_url', '') ?: (APP_URL . '/src/assets/img/brand/icon-white.svg');
+$__wlLogo = get_setting($pdo, 'white_label_logo_url', '') ?: (APP_URL . '/src/assets/img/brand/safedata/safedata-mark-on-dark.svg');
 ?>
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -56,8 +56,9 @@ $__wlLogo = get_setting($pdo, 'white_label_logo_url', '') ?: (APP_URL . '/src/as
   }catch(e){}
 })();
 </script>
-<link rel="icon" type="image/x-icon" sizes="32x32" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo_32x32.ico">
-<link rel="shortcut icon" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo.ico">
+<link rel="icon" type="image/svg+xml" href="<?= APP_URL ?>/src/assets/img/brand/safedata/safedata-icon.svg">
+<link rel="icon" type="image/x-icon" sizes="32x32" href="<?= APP_URL ?>/src/assets/img/brand/safedata/favicon/safedata_32x32.ico">
+<link rel="shortcut icon" href="<?= APP_URL ?>/src/assets/img/brand/safedata/favicon/safedata.ico">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
 </head><body class="d-flex align-items-center" style="min-height:100vh;">

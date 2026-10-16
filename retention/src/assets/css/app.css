@@ -12,7 +12,7 @@
 /* ---------- Default (light) ---------- */
 :root{
   /* Brand (kept for backward compat with inline/legacy styles) */
-  --3c-orange:#C85C1A; --3c-teal:#1A6187; --3c-yellow:#E8A84C;
+  --3c-orange:#ff914d; --3c-teal:#1A6187; --3c-yellow:#E8A84C;
   --3c-light:#F7F7F7; --3c-dark:#1A1A2E;
 
   /* Theme-aware surfaces */

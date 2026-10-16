@@ -8,9 +8,9 @@ $active_nav = $active_nav ?? '';
 $__unread = get_unread_notification_count($__pdo, (int) $__user['id']);
 // White-label theming (Phase 3)
 $__wlName    = get_setting($__pdo, 'white_label_name', APP_NAME) ?: APP_NAME;
-$__wlPrimary = get_setting($__pdo, 'white_label_primary', '#C85C1A');
-if (!preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $__wlPrimary)) { $__wlPrimary = '#C85C1A'; }
-$__wlLogo    = get_setting($__pdo, 'white_label_logo_url', '') ?: (APP_URL . '/src/assets/img/brand/icon.svg');
+$__wlPrimary = get_setting($__pdo, 'white_label_primary', '#ff914d');
+if (!preg_match('/^#[0-9A-Fa-f]{6}$/', (string) $__wlPrimary)) { $__wlPrimary = '#ff914d'; }
+$__wlLogo    = get_setting($__pdo, 'white_label_logo_url', '') ?: (APP_URL . '/src/assets/img/brand/safedata/safedata-mark-on-dark.svg');
 function navlink(string $key, string $active, string $route, string $icon, string $label): string {
     $cls = $key === $active ? 'active' : '';
     return '<a class="' . $cls . '" href="' . APP_URL . $route . '"><i class="bi ' . $icon . '"></i> ' . escape_html($label) . '</a>';
@@ -31,11 +31,12 @@ function navlink(string $key, string $active, string $route, string $icon, strin
   }catch(e){}
 })();
 </script>
-<link rel="icon" type="image/x-icon" sizes="16x16" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo_16x16.ico">
-<link rel="icon" type="image/x-icon" sizes="32x32" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo_32x32.ico">
-<link rel="icon" type="image/x-icon" sizes="48x48" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo_48x48.ico">
-<link rel="shortcut icon" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo.ico">
-<link rel="apple-touch-icon" sizes="128x128" href="<?= APP_URL ?>/src/assets/img/brand/favicon/3c_logo_128x128.ico">
+<link rel="icon" type="image/svg+xml" href="<?= APP_URL ?>/src/assets/img/brand/safedata/safedata-icon.svg">
+<link rel="icon" type="image/x-icon" sizes="16x16" href="<?= APP_URL ?>/src/assets/img/brand/safedata/favicon/safedata_16x16.ico">
+<link rel="icon" type="image/x-icon" sizes="32x32" href="<?= APP_URL ?>/src/assets/img/brand/safedata/favicon/safedata_32x32.ico">
+<link rel="icon" type="image/x-icon" sizes="48x48" href="<?= APP_URL ?>/src/assets/img/brand/safedata/favicon/safedata_48x48.ico">
+<link rel="shortcut icon" href="<?= APP_URL ?>/src/assets/img/brand/safedata/favicon/safedata.ico">
+<link rel="apple-touch-icon" sizes="128x128" href="<?= APP_URL ?>/src/assets/img/brand/safedata/favicon/safedata_128x128.ico">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
 <link href="<?= APP_URL ?>/src/assets/css/app.css" rel="stylesheet">
