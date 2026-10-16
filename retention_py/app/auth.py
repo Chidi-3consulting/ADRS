@@ -6,6 +6,7 @@ role-based access, login throttling, and password policy enforcement.
 """
 import time
 import secrets
+import os
 import bcrypt
 from datetime import datetime, timedelta, timezone
 from itsdangerous import URLSafeSerializer
@@ -67,6 +68,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(passwd_bytes, hashed_bytes)
     except Exception:
         return False
+
+
+# A fixed, never-matching hash so callers can run `verify_password` against it
+# when no user record was found — bcrypt.checkpw still does its full work, so
+# the response takes the same time as a wrong-password attempt on a real
+# account. Without this, "no such user" returns faster than "wrong password",
+# which lets an attacker enumerate valid emails from response latency alone.
+DUMMY_PASSWORD_HASH = bcrypt.hashpw(os.urandom(32).hex().encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 # ── Password Policy (Gap 2: strengthened) ──
