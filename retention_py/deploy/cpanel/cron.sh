@@ -7,6 +7,8 @@ APP_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$APP_ROOT"
 # Shared .env with the web app
 set -a; [ -f .env ] && . ./.env; set +a
+# Same as passenger_wsgi.py: cPanel databases are SQL_ASCII, so force a UTF-8 client.
+export PGCLIENTENCODING="${PGCLIENTENCODING:-UTF8}"
 # The virtualenv cPanel created for this app: ~/virtualenv/<app root, relative to $HOME>/<python version>/
 # (relative path, not basename, so a nested root like safedata_app/retention_py also works)
 VENV="$(ls -d "$HOME/virtualenv/${APP_ROOT#"$HOME"/}"/*/ 2>/dev/null | sort -V | tail -1)"

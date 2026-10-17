@@ -28,6 +28,10 @@ def _load_env(path: str) -> None:
 
 
 _load_env(os.path.join(ROOT, ".env"))
+# cPanel creates PostgreSQL databases as SQL_ASCII, which makes psycopg2 fall back to the
+# ascii codec and fail on any non-ASCII text (names with accents, etc.). libpq reads this
+# variable on every connect, so all connections in the process talk UTF-8.
+os.environ.setdefault("PGCLIENTENCODING", "UTF8")
 
 if os.environ.get("SAFEDATA_AUTO_MIGRATE", "1") == "1":
     # Idempotent: brings the schema to the latest Alembic revision on each (re)start.
