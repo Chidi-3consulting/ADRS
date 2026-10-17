@@ -1,0 +1,402 @@
+{
+  "loginStatus": 200,
+  "results": [
+    {
+      "key": "home",
+      "route": "/",
+      "status": 200,
+      "finalPath": "/",
+      "title": "SafeData — Automated Data Retention & Governance Platform",
+      "heading": "Give every data record a clear retention path.",
+      "screenshot": "home.png"
+    },
+    {
+      "key": "product_overview",
+      "route": "/safedata",
+      "status": 200,
+      "finalPath": "/safedata",
+      "title": "SafeData — Data Retention & Governance",
+      "heading": "Keep what you must. Release what you should.",
+      "screenshot": "product_overview.png"
+    },
+    {
+      "key": "sign_in",
+      "route": "/login",
+      "status": 200,
+      "finalPath": "/login",
+      "title": "Sign In — SafeData",
+      "heading": "Sign In to SafeData",
+      "screenshot": "sign_in.png"
+    },
+    {
+      "key": "register",
+      "route": "/register",
+      "status": 200,
+      "finalPath": "/register",
+      "title": "Start Free Trial — SafeData",
+      "heading": "Create Your Account",
+      "screenshot": "register.png"
+    },
+    {
+      "key": "forgot_password",
+      "route": "/forgot_password",
+      "status": 200,
+      "finalPath": "/forgot_password",
+      "title": "Forgot Password — SafeData",
+      "heading": "Reset Your Password",
+      "screenshot": "forgot_password.png"
+    },
+    {
+      "key": "legal",
+      "route": "/legal",
+      "status": 200,
+      "finalPath": "/legal",
+      "title": "Legal & Terms of Service",
+      "heading": "Legal Terms & Compliance Framework",
+      "screenshot": "legal.png"
+    },
+    {
+      "key": "dashboard",
+      "route": "/dashboard",
+      "status": 200,
+      "finalPath": "/dashboard",
+      "title": "Compliance Dashboard",
+      "heading": "Compliance Dashboard",
+      "screenshot": "dashboard.png"
+    },
+    {
+      "key": "categories",
+      "route": "/categories",
+      "status": 200,
+      "finalPath": "/categories",
+      "title": "Data Categories",
+      "heading": "Data Categories",
+      "screenshot": "categories.png"
+    },
+    {
+      "key": "category_detail",
+      "route": "/categories/view/1",
+      "status": 200,
+      "finalPath": "/categories/view/1",
+      "title": "Category: Customer KYC & Onboarding",
+      "heading": "Category: Customer KYC & Onboarding",
+      "screenshot": "category_detail.png"
+    },
+    {
+      "key": "category_create",
+      "route": "/categories/create",
+      "status": 200,
+      "finalPath": "/categories/create",
+      "title": "Create Data Category",
+      "heading": "Create Data Category",
+      "screenshot": "category_create.png"
+    },
+    {
+      "key": "category_edit",
+      "route": "/categories/edit/1",
+      "status": 200,
+      "finalPath": "/categories/edit/1",
+      "title": "Edit Data Category",
+      "heading": "Edit Data Category",
+      "screenshot": "category_edit.png"
+    },
+    {
+      "key": "retention_register",
+      "route": "/records",
+      "status": 200,
+      "finalPath": "/records",
+      "title": "Retention Register",
+      "heading": "Retention Register",
+      "screenshot": "retention_register.png"
+    },
+    {
+      "key": "record_detail",
+      "route": "/records/view/1",
+      "status": 200,
+      "finalPath": "/records/view/1",
+      "title": "Record SD-DEMO-KYC-1042",
+      "heading": "Record SD-DEMO-KYC-1042",
+      "screenshot": "record_detail.png"
+    },
+    {
+      "key": "record_edit",
+      "route": "/records/edit/1",
+      "status": 200,
+      "finalPath": "/records/edit/1",
+      "title": "Edit Record",
+      "heading": "Edit Record",
+      "screenshot": "record_edit.png"
+    },
+    {
+      "key": "record_pending_approval",
+      "route": "/records/view/5",
+      "status": 200,
+      "finalPath": "/records/view/5",
+      "title": "Record SD-DEMO-SUP-4112",
+      "heading": "Record SD-DEMO-SUP-4112",
+      "screenshot": "record_pending_approval.png"
+    },
+    {
+      "key": "record_legal_hold",
+      "route": "/records/view/6",
+      "status": 200,
+      "finalPath": "/records/view/6",
+      "title": "Record SD-DEMO-HLT-5206",
+      "heading": "Record SD-DEMO-HLT-5206",
+      "screenshot": "record_legal_hold.png"
+    },
+    {
+      "key": "bulk_import",
+      "route": "/import",
+      "status": 200,
+      "finalPath": "/import",
+      "title": "Bulk CSV Import",
+      "heading": "Bulk CSV Import",
+      "screenshot": "bulk_import.png"
+    },
+    {
+      "key": "evidence_attachments",
+      "route": "/attachments",
+      "status": 200,
+      "finalPath": "/attachments",
+      "title": "Evidence Attachments",
+      "heading": "Evidence Attachments",
+      "screenshot": "evidence_attachments.png"
+    },
+    {
+      "key": "compliance_reports",
+      "route": "/reports",
+      "status": 200,
+      "finalPath": "/reports",
+      "title": "Analytics & Reports",
+      "heading": "Analytics & Reports",
+      "screenshot": "compliance_reports.png"
+    },
+    {
+      "key": "pending_recalculations",
+      "route": "/recalculations",
+      "status": 200,
+      "finalPath": "/recalculations",
+      "title": "Pending Recalculations",
+      "heading": "Pending Recalculations",
+      "screenshot": "pending_recalculations.png"
+    },
+    {
+      "key": "audit_ledger",
+      "route": "/audit",
+      "status": 200,
+      "finalPath": "/audit",
+      "title": "Audit Log",
+      "heading": "Audit Log",
+      "screenshot": "audit_ledger.png"
+    },
+    {
+      "key": "notifications",
+      "route": "/notifications",
+      "status": 200,
+      "finalPath": "/notifications",
+      "title": "Notification Inbox",
+      "heading": "Notification Inbox",
+      "screenshot": "notifications.png"
+    },
+    {
+      "key": "ropa_create",
+      "route": "/ropa/create",
+      "status": 200,
+      "finalPath": "/ropa/create",
+      "title": "New ROPA Entry",
+      "heading": "New ROPA Entry",
+      "screenshot": "ropa_create.png"
+    },
+    {
+      "key": "ropa_detail",
+      "route": "/ropa/1",
+      "status": 200,
+      "finalPath": "/ropa/1",
+      "title": "ROPA — Customer onboarding & KYC review (demo)",
+      "heading": "ROPA — Customer onboarding & KYC review (demo)",
+      "screenshot": "ropa_detail.png"
+    },
+    {
+      "key": "solution_manual",
+      "route": "/help",
+      "status": 200,
+      "finalPath": "/help",
+      "title": "Solution Manual & Help",
+      "heading": "Solution Manual & Help",
+      "screenshot": "solution_manual.png"
+    },
+    {
+      "key": "team_access",
+      "route": "/users",
+      "status": 200,
+      "finalPath": "/users",
+      "title": "Team Users",
+      "heading": "Team Users",
+      "screenshot": "team_access.png"
+    },
+    {
+      "key": "settings_organization",
+      "route": "/settings?tab=organization",
+      "status": 200,
+      "finalPath": "/settings",
+      "title": "Settings",
+      "heading": "Settings",
+      "screenshot": "settings_organization.png"
+    },
+    {
+      "key": "settings_retention",
+      "route": "/settings?tab=general&sub_tab=retention",
+      "status": 200,
+      "finalPath": "/settings",
+      "title": "Settings",
+      "heading": "Settings",
+      "screenshot": "settings_retention.png"
+    },
+    {
+      "key": "settings_2fa",
+      "route": "/settings?tab=twofa",
+      "status": 200,
+      "finalPath": "/settings",
+      "title": "Settings",
+      "heading": "Settings",
+      "screenshot": "settings_2fa.png"
+    },
+    {
+      "key": "profile",
+      "route": "/profile",
+      "status": 200,
+      "finalPath": "/profile",
+      "title": "My Profile",
+      "heading": "My Profile",
+      "screenshot": "profile.png"
+    },
+    {
+      "key": "integration_hub",
+      "route": "/integrations",
+      "status": 200,
+      "finalPath": "/integrations",
+      "title": "Integrations",
+      "heading": "Integrations",
+      "screenshot": "integration_hub.png"
+    },
+    {
+      "key": "connected_systems",
+      "route": "/integrations/systems",
+      "status": 200,
+      "finalPath": "/integrations/systems",
+      "title": "Connected Systems",
+      "heading": "Connected Systems",
+      "screenshot": "connected_systems.png"
+    },
+    {
+      "key": "connected_system_create",
+      "route": "/integrations/systems/create",
+      "status": 200,
+      "finalPath": "/integrations/systems/create",
+      "title": "Add Connected System",
+      "heading": "Add Connected System",
+      "screenshot": "connected_system_create.png"
+    },
+    {
+      "key": "api_keys",
+      "route": "/integrations/keys",
+      "status": 200,
+      "finalPath": "/integrations/keys",
+      "title": "API Keys",
+      "heading": "API Keys",
+      "screenshot": "api_keys.png"
+    },
+    {
+      "key": "api_key_create",
+      "route": "/integrations/keys/create",
+      "status": 200,
+      "finalPath": "/integrations/keys/create",
+      "title": "Generate API Key",
+      "heading": "Generate API Key",
+      "screenshot": "api_key_create.png"
+    },
+    {
+      "key": "field_mappings",
+      "route": "/integrations/mappings",
+      "status": 200,
+      "finalPath": "/integrations/mappings",
+      "title": "Field Mappings",
+      "heading": "Field Mappings",
+      "screenshot": "field_mappings.png"
+    },
+    {
+      "key": "field_mapping_create",
+      "route": "/integrations/mappings/create",
+      "status": 200,
+      "finalPath": "/integrations/mappings/create",
+      "title": "Create Field Mapping",
+      "heading": "Create Field Mapping",
+      "screenshot": "field_mapping_create.png"
+    },
+    {
+      "key": "auto_categorization_rules",
+      "route": "/integrations/rules",
+      "status": 200,
+      "finalPath": "/integrations/rules",
+      "title": "Auto-Categorisation Rules",
+      "heading": "Auto-Categorisation Rules",
+      "screenshot": "auto_categorization_rules.png"
+    },
+    {
+      "key": "auto_rule_create",
+      "route": "/integrations/rules/create",
+      "status": 200,
+      "finalPath": "/integrations/rules/create",
+      "title": "New Auto-Categorisation Rule",
+      "heading": "New Auto-Categorisation Rule",
+      "screenshot": "auto_rule_create.png"
+    },
+    {
+      "key": "intake_queue",
+      "route": "/integrations/queue",
+      "status": 200,
+      "finalPath": "/integrations/queue",
+      "title": "Intake Queue",
+      "heading": "Intake Queue",
+      "screenshot": "intake_queue.png"
+    },
+    {
+      "key": "disposal_dispatch",
+      "route": "/integrations/dispatch",
+      "status": 200,
+      "finalPath": "/integrations/dispatch",
+      "title": "Disposal Dispatches",
+      "heading": "Disposal Dispatches",
+      "screenshot": "disposal_dispatch.png"
+    },
+    {
+      "key": "integration_logs",
+      "route": "/integrations/logs",
+      "status": 200,
+      "finalPath": "/integrations/logs",
+      "title": "Integration API Logs",
+      "heading": "Integration API Logs",
+      "screenshot": "integration_logs.png"
+    },
+    {
+      "key": "tier_licensing",
+      "route": "/integrations/tier",
+      "status": 200,
+      "finalPath": "/integrations/tier",
+      "title": "Product Tier & Licensing",
+      "heading": "Product Tier & Licensing",
+      "screenshot": "tier_licensing.png"
+    },
+    {
+      "key": "billing",
+      "route": "/billing",
+      "status": 200,
+      "finalPath": "/billing",
+      "title": "Billing & Subscription",
+      "heading": "Billing & Subscription",
+      "screenshot": "billing.png"
+    }
+  ],
+  "failures": []
+}
