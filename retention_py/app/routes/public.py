@@ -30,6 +30,7 @@ from app.helpers import (
     SafeData_SUPPORTED_COUNTRIES, detect_visitor_currency, get_country_regulation_labels,
     provision_org_categories, get_framework_badge, totp_verify, consume_recovery_code,
     send_system_email, log_audit, get_visitor_country, get_localized_pricing, CURRENCY_DATA,
+    is_free_tier_domain,
 )
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
@@ -472,7 +473,7 @@ def handle_register(
 
     # ── Create organisation ──
     now_utc = datetime.utcnow()
-    is_3consult = domain == "3consult-ng.com" or domain.endswith(".3consult-ng.com")
+    is_3consult = is_free_tier_domain(domain)
     org = Organization(
         name=org_name,
         slug=re.sub(r'[^a-z0-9]+', '-', org_name.lower()).strip('-')[:50],

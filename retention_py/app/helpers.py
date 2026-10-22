@@ -1111,6 +1111,21 @@ CATEGORY_SEEDS = {
 }
 
 
+FREE_TIER_DOMAIN = "3consult-ng.com"
+
+
+def is_free_tier_domain(domain: str) -> bool:
+    """True for 3Consulting's own domain and any subdomain of it.
+
+    Those organisations get Enterprise with no trial clock and no billing.
+    The subdomain test requires a leading dot, so look-alikes do not qualify:
+    "evil3consult-ng.com" has no dot before the apex, and
+    "3consult-ng.com.attacker.net" ends in a different apex entirely.
+    """
+    d = (domain or "").strip().lower().rstrip(".")
+    return d == FREE_TIER_DOMAIN or d.endswith("." + FREE_TIER_DOMAIN)
+
+
 def provision_org_categories(db: Session, org_id: int, country_code: str):
     """
     Seed data categories for a new organisation based on country → regulation mapping.
