@@ -1,35 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1450 520" role="img" aria-labelledby="title desc">
-  <title id="title">SafeData wordmark lockup</title>
-  <desc id="desc">SafeData by 3Consulting wordmark with the lifecycle ring icon, tagline and supporting text.</desc>
-  <defs>
-    <style>
-      .navy { fill: #111827; }
-      .orange { fill: #ff914d; }
-      .muted { fill: #475569; }
-      .sans { font-family: 'Segoe UI', Arial, sans-serif; }
-      .mono { font-family: 'Consolas', 'Courier New', monospace; }
-      .tag { font-size: 28px; font-weight: 600; }
-      .brand { font-size: 138px; font-weight: 700; letter-spacing: -4px; }
-      .by { font-size: 40px; font-weight: 500; }
-      .line { font-size: 50px; font-weight: 600; }
-      .sub { font-size: 30px; font-weight: 500; }
-    </style>
-  </defs>
-
-  <rect width="1450" height="520" fill="#f7f4ee"/>
-
-  <g transform="translate(35,35)">
-    <path d="M 120 220 A 120 120 0 1 1 360 220" fill="none" stroke="#111827" stroke-width="20" stroke-linecap="round"/>
-    <circle cx="360" cy="220" r="15" fill="#ff914d"/>
-    <circle cx="184" cy="96" r="10" fill="#ff914d"/>
-    <circle cx="218" cy="74" r="7" fill="#ff914d"/>
-  </g>
-
-  <g transform="translate(470,108)">
-    <text x="0" y="118" class="sans brand navy">SafeData</text>
-    <text x="560" y="92" class="sans by orange">by 3Consulting</text>
-    <text x="0" y="205" class="sans line navy">Keep what you must.</text>
-    <text x="0" y="270" class="sans line navy">Release what you should.</text>
-    <text x="0" y="340" class="sans sub muted">We govern your data without hoarding it.</text>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1450 520" role="img" aria-labelledby="t d"><title id="t">SafeData</title><desc id="d">SafeData by 3Consulting: two guardians with a shield between them.</desc>
+<g transform="translate(0,30) scale(0.46)"><defs><mask id="mL" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><rect width="1024" height="1024" fill="#fff"/><path d="M512 548 L644 596 V716 C644 796 586 850 512 892 C438 850 380 796 380 716 V596 Z" fill="#000" stroke="#000" stroke-width="30" stroke-linejoin="round"/></mask></defs>
+<path d="M170 372 Q512 120 854 316" fill="none" stroke="#111827" stroke-width="36" stroke-linecap="round"/>
+<circle cx="866" cy="324" r="28" fill="#FF914D"/>
+<g mask="url(#mL)" fill="#111827">
+<circle cx="250" cy="514" r="66"/><path d="M96 800 C96 672 164 604 250 604 C336 604 404 672 404 800 Z"/>
+<circle cx="774" cy="514" r="66"/><path d="M620 800 C620 672 688 604 774 604 C860 604 928 672 928 800 Z"/>
+</g>
+<path d="M512 548 L644 596 V716 C644 796 586 850 512 892 C444 850 380 796 380 716 V596 Z" fill="#FF914D"/>
+<path d="M452 716 L496 762 L580 662" fill="none" stroke="#0B1426" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="520" y="318" font-family="'Segoe UI', Arial, sans-serif" font-size="205" font-weight="700" fill="#111827">Safe<tspan fill="#FF914D">Data</tspan></text>
+<text x="528" y="418" font-family="Consolas, 'Courier New', monospace" font-size="52" letter-spacing="6" fill="#475569">BY 3CONSULTING</text></svg>

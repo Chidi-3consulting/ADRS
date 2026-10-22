@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import functools
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
+
+UTC = timezone.utc  # noqa: UP017 - datetime.UTC is 3.11+; this keeps Python 3.10 (cPanel) working
 
 _SAFE_KEY = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 

@@ -1,0 +1,3 @@
+# Install with cPanel "Setup Python App" -> Configuration files -> requirements-cpanel.txt -> Run Pip Install
+-r requirements.txt
+a2wsgi==1.10.10

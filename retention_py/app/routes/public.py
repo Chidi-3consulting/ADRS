@@ -22,7 +22,7 @@ from app.database import get_db
 from app.config import APP_URL, APP_HOST
 from app.models import User, Organization, DataCategory, PasswordReset
 from app.auth import (
-    hash_password, verify_password, set_session, clear_session, get_session,
+    hash_password, verify_password, DUMMY_PASSWORD_HASH, set_session, clear_session, get_session,
     build_session_data, record_login_attempt, login_throttle_seconds,
     password_policy_error, check_password_history, record_password_history,
 )
@@ -116,7 +116,11 @@ def handle_login(
         })
 
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
-    if not user or not verify_password(password, user.password_hash):
+    # SEC: always run bcrypt against a real hash, known user or not, so an
+    # unregistered email doesn't come back measurably faster than a wrong
+    # password on a real account (DUMMY_PASSWORD_HASH in app/auth.py).
+    password_ok = verify_password(password, user.password_hash if user else DUMMY_PASSWORD_HASH)
+    if not user or not password_ok:
         # Record failed attempt
         record_login_attempt(db, email, ip, success=False)
         # F2 fix: check user is not None before accessing user.organization_id

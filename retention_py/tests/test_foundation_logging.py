@@ -1,8 +1,10 @@
 import json
 import logging
-from datetime import UTC
+from datetime import timezone
 
 from app.core.logging import JsonFormatter, request_id_var
+
+UTC = timezone.utc  # noqa: UP017 - Python 3.10 compatible
 
 
 def test_json_formatter_includes_request_id_and_extras():

@@ -123,3 +123,22 @@ def run_forever(
             except Exception:
                 log.exception("worker loop error", extra={"job": job.name})
         sleep(TICK_SECONDS)
+
+
+def run_once(session_factory, holder: str, jobs: list[Job]) -> dict[str, str]:
+    """Run every due job a single time and return. For hosts without long-running
+    processes (cPanel/Passenger): schedule ``python -m app.worker --once`` from cron.
+    Intervals, leases and job history work exactly as in ``run_forever``."""
+    results: dict[str, str] = {}
+    for job in jobs:
+        try:
+            db = session_factory()
+            try:
+                due = is_due(db, job, utcnow())
+            finally:
+                db.close()
+            results[job.name] = run_job(job, session_factory, holder) if due else "not_due"
+        except Exception:
+            log.exception("worker once error", extra={"job": job.name})
+            results[job.name] = "error"
+    return results

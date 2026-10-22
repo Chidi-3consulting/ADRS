@@ -7,7 +7,9 @@ import logging
 import sys
 import uuid
 from contextvars import ContextVar
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc  # noqa: UP017 - datetime.UTC is 3.11+; keeps Python 3.10 (cPanel) working
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 _EXTRA_KEYS = ("job", "org_id", "user_id", "duration_ms", "status", "path", "method")

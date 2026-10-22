@@ -139,7 +139,22 @@ if IS_PRODUCTION:
 if IS_PRODUCTION and DATABASE_URL.startswith("sqlite"):
     print("FATAL: DATABASE_URL must be PostgreSQL in production (SQLite is not supported).", file=sys.stderr)
     sys.exit(1)
-if IS_PRODUCTION and (STORAGE_BACKEND != "s3" or not (S3_BUCKET and S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY)):
+# Hosts with a persistent disk (e.g. cPanel/Passenger) may opt in to local storage explicitly.
+# Both a flag and an absolute root outside the web root are required, so Render-style ephemeral
+# containers can never fall back to local disk by accident.
+STORAGE_LOCAL_PERSISTENT = os.getenv("STORAGE_LOCAL_PERSISTENT", "").strip() == "1"
+_local_ok = (
+    STORAGE_BACKEND == "local"
+    and STORAGE_LOCAL_PERSISTENT
+    and os.path.isabs(os.getenv("STORAGE_LOCAL_ROOT", ""))
+)
+if IS_PRODUCTION and STORAGE_BACKEND == "local" and STORAGE_LOCAL_PERSISTENT and not _local_ok:
+    print("FATAL: STORAGE_LOCAL_PERSISTENT=1 also needs STORAGE_LOCAL_ROOT set to an absolute path "
+          "outside the web root.", file=sys.stderr)
+    sys.exit(1)
+if IS_PRODUCTION and not _local_ok and (
+    STORAGE_BACKEND != "s3" or not (S3_BUCKET and S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY)
+):
     print("FATAL: in production STORAGE_BACKEND must be 's3' with S3_BUCKET, S3_ACCESS_KEY_ID and "
           "S3_SECRET_ACCESS_KEY set (local disk is ephemeral).", file=sys.stderr)
     sys.exit(1)
