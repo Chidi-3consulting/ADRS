@@ -1,0 +1,82 @@
+[
+  {
+    "key": "password_reset",
+    "route": "/reset_password?email=admin%40showcase.invalid&token=demo-reset-token",
+    "status": 200,
+    "finalPath": "/reset_password",
+    "title": "Set New Password — SafeData",
+    "heading": "Set a New Password",
+    "screenshot": "password_reset.png"
+  },
+  {
+    "key": "email_verification",
+    "route": "/verify_email",
+    "status": 200,
+    "finalPath": "/verify_email",
+    "title": "Verify Your Email — SafeData",
+    "heading": "Email Verification",
+    "screenshot": "email_verification.png"
+  },
+  {
+    "key": "invitation_accept",
+    "route": "/invite/accept?token=demo-invite-token",
+    "status": 200,
+    "finalPath": "/invite/accept",
+    "title": "Accept Workspace Invitation",
+    "heading": "Accept Invitation",
+    "screenshot": "invitation_accept.png"
+  },
+  {
+    "key": "report_print",
+    "route": "/reports/print",
+    "status": 200,
+    "finalPath": "/reports/print",
+    "title": "Compliance Audit Report — SafeData Showcase",
+    "heading": "",
+    "screenshot": "report_print.png"
+  },
+  {
+    "key": "system_edit",
+    "route": "/integrations/systems/edit/1",
+    "status": 200,
+    "finalPath": "/integrations/systems/edit/1",
+    "title": "Edit CRM Demo",
+    "heading": "Edit CRM Demo",
+    "screenshot": "system_edit.png"
+  },
+  {
+    "key": "ropa_edit",
+    "route": "/ropa/1/edit",
+    "status": 200,
+    "finalPath": "/ropa/1/edit",
+    "title": "Edit ROPA — Customer onboarding (demo)",
+    "heading": "Edit ROPA — Customer onboarding (demo)",
+    "screenshot": "ropa_edit.png"
+  },
+  {
+    "key": "platform_dashboard",
+    "route": "/platform",
+    "status": 200,
+    "finalPath": "/platform",
+    "title": "Platform Administration",
+    "heading": "Platform Administration",
+    "screenshot": "platform_dashboard.png"
+  },
+  {
+    "key": "platform_organizations",
+    "route": "/platform/organizations",
+    "status": 200,
+    "finalPath": "/platform/organizations",
+    "title": "Manage Organisations",
+    "heading": "Manage Organisations",
+    "screenshot": "platform_organizations.png"
+  },
+  {
+    "key": "two_factor_challenge",
+    "route": "/login/2fa",
+    "status": 200,
+    "finalPath": "/login/2fa",
+    "title": "Two-Factor Authentication — SafeData",
+    "screenshot": "two_factor_challenge.png"
+  }
+]

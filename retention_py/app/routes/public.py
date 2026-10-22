@@ -472,15 +472,16 @@ def handle_register(
 
     # ── Create organisation ──
     now_utc = datetime.utcnow()
+    is_3consult = domain == "3consult-ng.com" or domain.endswith(".3consult-ng.com")
     org = Organization(
         name=org_name,
         slug=re.sub(r'[^a-z0-9]+', '-', org_name.lower()).strip('-')[:50],
         primary_domain=domain,
         country=country,
-        tier="core",
-        status="trial",
-        subscription_status="trial",
-        trial_ends_at=now_utc + timedelta(days=14),
+        tier="enterprise" if is_3consult else "core",
+        status="active" if is_3consult else "trial",
+        subscription_status="active" if is_3consult else "trial",
+        trial_ends_at=None if is_3consult else (now_utc + timedelta(days=14)),
     )
     db.add(org)
     db.commit()

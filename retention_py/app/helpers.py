@@ -1293,7 +1293,10 @@ def send_system_email(db: Session, to_email: str, subject: str, html_body: str) 
         print(f"To:       {to_email}")
         print(f"Subject:  {subject}")
         print(f"Reply-To: {SMTP_REPLY_TO or '(none)'}")
-        print(f"Body:     {html_body[:300]}...")
+        try:
+            print(f"Body:     {html_body[:300]}...")
+        except UnicodeEncodeError:
+            print(f"Body:     {html_body[:300].encode('ascii', errors='backslashreplace').decode('ascii')}...")
         print("--------------------------------------------------------------")
         return True
 

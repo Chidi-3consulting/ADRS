@@ -1,0 +1,36 @@
+SafeData Visual Tour — route coverage
+======================================
+
+This deck contains 54 real HTML page screenshots from the SafeData app, captured
+from the current workspace source templates and styles, with synthetic demo data.
+The 61-slide deck is structured as: cover + workflow + module map + 54 screen
+slides + 3 API route appendix slides + scope notes.
+
+Additional HTML screens added in the supplemental pass:
+- /reset_password (valid synthetic reset token)
+- /verify_email
+- /invite/accept (valid synthetic invitation token)
+- /login/2fa
+- /setup
+- /reports/print
+- /integrations/systems/edit/{id}
+- /ropa/{id}/edit
+- /platform
+- /platform/organizations
+
+The visual UI route screenshots also include the main public, account, lifecycle,
+governance, integrations, administration, licensing and billing screens. Dynamic
+record/category/ROPA/system routes are shown with representative synthetic IDs.
+
+SafeData v1 API endpoints are listed in the PDF appendix. These are request/API
+surfaces, not browser UI screens. The generated Swagger page (/api/docs) does not
+render in the current app because its inline Swagger scripts are blocked by the
+app's Content Security Policy; the endpoint appendix therefore documents the
+registered routes instead of presenting a broken Swagger screenshot.
+
+Non-screen GET routes (file downloads, redirects, and generated samples) are not
+represented as UI screenshots. Examples include CSV/JSON exports, attachment
+downloads, import samples, /logout, and /ropa's redirect to /categories.
+
+All authenticated examples use synthetic data in a disposable isolated SQLite
+DB. No production/customer database or .env values were read or changed.
