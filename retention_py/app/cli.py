@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import sys
+from datetime import UTC
 
 from alembic.config import Config
 
@@ -64,7 +65,7 @@ def cmd_create_admin(args) -> int:
     of an existing user rather than failing.
     """
     import secrets
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     from app.auth import hash_password, password_policy_error, record_password_history
     from app.database import SessionLocal
@@ -76,6 +77,11 @@ def cmd_create_admin(args) -> int:
         log.error("Not an email address: %s", email)
         return 1
     domain = email.split("@")[-1]
+
+    # Same rule as passenger_wsgi.py: bring the schema to head first (idempotent),
+    # so this works on a fresh database and right after a deploy, before any restart.
+    if os.environ.get("SAFEDATA_AUTO_MIGRATE", "1") == "1":
+        cmd_migrate(None)
 
     password = args.password or os.getenv("SAFEDATA_ADMIN_PASSWORD") or secrets.token_urlsafe(18)
     generated = not (args.password or os.getenv("SAFEDATA_ADMIN_PASSWORD"))
@@ -125,7 +131,7 @@ def cmd_create_admin(args) -> int:
 
         pwd_hash = hash_password(password)
         user = db.query(User).filter(User.email == email).first()
-        verified_now = datetime.now(timezone.utc).replace(tzinfo=None)
+        verified_now = datetime.now(UTC).replace(tzinfo=None)
         if user is None:
             user = User(
                 organization_id=org.id,
@@ -174,6 +180,12 @@ def cmd_create_admin(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Read the same .env as the web app before anything imports app.config,
+    # or commands run on the server would silently use a local SQLite file.
+    from app.core.envfile import prepare_server_environment
+
+    if prepare_server_environment(ROOT):
+        log.debug("Loaded settings from %s", os.path.join(ROOT, ".env"))
     logging.basicConfig(level=logging.INFO)
     p = argparse.ArgumentParser(prog="python -m app.cli")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -185,8 +197,9 @@ def main(argv: list[str] | None = None) -> int:
     ca.add_argument("--name", default="Administrator", help="person's display name")
     ca.add_argument("--org", default=None, help="organisation name (default: the email domain)")
     ca.add_argument("--country", default="NG", help="ISO-3166 alpha-2, drives the seeded category library")
-    ca.add_argument("--password", default=None,
-                    help="omit to generate one, or set SAFEDATA_ADMIN_PASSWORD to avoid shell history")
+    ca.add_argument(
+        "--password", default=None, help="omit to generate one, or set SAFEDATA_ADMIN_PASSWORD to avoid shell history"
+    )
     ca.set_defaults(fn=cmd_create_admin)
 
     args = p.parse_args(argv)

@@ -11,27 +11,11 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
 
 
-def _load_env(path: str) -> None:
-    """Minimal KEY=VALUE loader: no new dependency, never overrides real env vars."""
-    if not os.path.isfile(path):
-        return
-    with open(path, encoding="utf-8") as fh:
-        for raw in fh:
-            line = raw.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            key, value = key.strip(), value.strip()
-            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-                value = value[1:-1]
-            os.environ.setdefault(key, value)
+from app.core.envfile import prepare_server_environment  # noqa: E402
 
-
-_load_env(os.path.join(ROOT, ".env"))
-# cPanel creates PostgreSQL databases as SQL_ASCII, which makes psycopg2 fall back to the
-# ascii codec and fail on any non-ASCII text (names with accents, etc.). libpq reads this
-# variable on every connect, so all connections in the process talk UTF-8.
-os.environ.setdefault("PGCLIENTENCODING", "UTF8")
+# .env next to this file, plus the UTF-8 client encoding cPanel PostgreSQL needs.
+# The CLI calls the same function, so both always talk to the same database.
+prepare_server_environment(ROOT)
 
 if os.environ.get("SAFEDATA_AUTO_MIGRATE", "1") == "1":
     # Idempotent: brings the schema to the latest Alembic revision on each (re)start.
