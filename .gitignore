@@ -31,3 +31,4 @@ audit-*.png
 # IDE
 .vscode/
 .idea/
+.env
