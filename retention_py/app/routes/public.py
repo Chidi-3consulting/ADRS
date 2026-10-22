@@ -121,13 +121,15 @@ def handle_login(
     # password on a real account (DUMMY_PASSWORD_HASH in app/auth.py).
     password_ok = verify_password(password, user.password_hash if user else DUMMY_PASSWORD_HASH)
     if not user or not password_ok:
-        # Record failed attempt
+        # Every failure, known account or not, feeds the brute-force throttle.
         record_login_attempt(db, email, ip, success=False)
-        # F2 fix: check user is not None before accessing user.organization_id
-        audit_org_id = user.organization_id if user else 0
-        audit_user_id = user.id if user else None
-        log_audit(db, audit_org_id, "login_failed", "user",
-                  audit_user_id, None, {"email": email, "ip": ip}, ip)
+        # The audit log is per organisation. An unknown email belongs to none,
+        # so it is recorded only in login_attempts above. (Writing it with
+        # organization_id=0 violated the foreign key on PostgreSQL and turned
+        # every unknown-email login into an HTTP 500.)
+        if user is not None:
+            log_audit(db, user.organization_id, "login_failed", "user",
+                      user.id, None, {"email": email, "ip": ip}, ip)
         return templates.TemplateResponse(request=request, name="login.html", context={
             "page_title": "Sign In — SafeData",
             "wl_name": "SafeData",
