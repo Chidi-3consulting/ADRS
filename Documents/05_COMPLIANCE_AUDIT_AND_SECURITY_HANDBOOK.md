@@ -86,7 +86,6 @@ Every jurisdiction also receives the **5 Dual-Framework** categories (BOTH): Cro
 | **FIRS** | Financial Recordkeeping | 6-year retention for tax and accounting records |
 | **CCPA** §1798.105 | Right to Delete | Consumer request tracking with 2-year evidence retention |
 | **CCPA** §1798.120 | Right to Opt-Out | Marketing opt-out records with consent withdrawal tracking |
-| **LGPD** Art. 17-22 | Data Subject Rights | Full DSAR lifecycle with 5-year post-closure retention |
 | **POPIA** Section 11 | Conditions for Lawful Processing | Consent management with withdrawal tracking |
 | **ISO 27001:2022** A.8.3 | Information Disposal | Multi-step disposal approval, binary file shredding, cryptographic audit logging |
 
@@ -111,7 +110,6 @@ SafeData includes **69 pre-configured category templates** across 14 regulatory 
 | Health & Medical Records (Employees) | 10 Years post-employment | Legal Obligation | date_based | Delete | **Yes** |
 | CCTV Footage | 30 Days | Legitimate Interest | date_based | Delete | No |
 | Data Breach Incident Records | 5 Years (ICO) | Legal Obligation | date_based | Archive | No |
-| DSAR Records | 3 Years post-closure | Legal Obligation | date_based | Archive | No |
 | Supplier & Vendor Contracts | 7 Years post-expiry | Contract | date_based | Archive | No |
 | DPIA Reports | 5 Years | Legal Obligation | date_based | Archive | No |
 | Training & Certification Records | 3 Years | Legal Obligation | date_based | Delete | No |

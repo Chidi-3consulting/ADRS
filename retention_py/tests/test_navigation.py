@@ -90,3 +90,16 @@ def test_create_admin_rerun_updates_the_name(client, db, monkeypatch):
     assert cli.cmd_create_admin(Namespace(email="boss@test.local", name=None, **base)) == 0
     db.expire_all()
     assert db.query(User).filter(User.email == "boss@test.local").one().name == "New Name"
+
+
+def test_dsar_module_is_gone_from_code_templates_and_models():
+    """SafeData does not handle data subject access requests. Old migrations keep their history."""
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1] / "app"
+    hits = [
+        str(p.relative_to(root))
+        for p in root.rglob("*")
+        if p.suffix in {".py", ".html", ".js"} and "dsar" in p.read_text(encoding="utf-8", errors="ignore").lower()
+    ]
+    assert hits == [], f"DSAR references remain in: {hits}"

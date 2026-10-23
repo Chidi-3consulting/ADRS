@@ -190,7 +190,6 @@ class Notification(Base):
     recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     type = Column(String(100), nullable=False)
     related_record_id = Column(Integer, ForeignKey("data_records.id", ondelete="SET NULL"), nullable=True)
-    related_dsar_id = Column(Integer, ForeignKey("dsar_requests.id", ondelete="SET NULL"), nullable=True)
     subject = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     owner_missing = Column(Boolean, default=False, nullable=False)
@@ -200,36 +199,6 @@ class Notification(Base):
     attempts = Column(Integer, default=0, nullable=False)
     follow_up_sent_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)
-
-class DsarRequest(Base):
-    __tablename__ = "dsar_requests"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), default=1, nullable=False)
-    reference = Column(String(100), unique=True, nullable=False)
-    request_type = Column(Enum("access", "rectification", "erasure", "restriction", "portability", "objection"), nullable=False)
-    compliance_framework = Column(String(50), default="GDPR", nullable=False)
-    data_subject_name = Column(String(255), nullable=False)
-    data_subject_email = Column(String(255), nullable=True)
-    data_subject_phone = Column(String(50), nullable=True)
-    data_subject_type = Column(String(100), nullable=True)
-    identity_verified = Column(Boolean, default=False, nullable=False)
-    identity_verified_at = Column(DateTime, nullable=True)
-    identity_verified_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    received_date = Column(Date, nullable=False)
-    due_date = Column(Date, nullable=False)
-    extended_due_date = Column(Date, nullable=True)
-    extension_reason = Column(Text, nullable=True)
-    status = Column(Enum("open", "identity_check", "in_progress", "completed", "rejected", "extended"), default="open", nullable=False)
-    assigned_to = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    description = Column(Text, nullable=True)
-    internal_notes = Column(Text, nullable=True)
-    response_notes = Column(Text, nullable=True)
-    completed_at = Column(DateTime, nullable=True)
-    rejection_reason = Column(Text, nullable=True)
-    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime, default=func.now(), nullable=False)
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
 class SystemSetting(Base):
     __tablename__ = "system_settings"

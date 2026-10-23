@@ -31,7 +31,7 @@ retention_py/
 │   ├── models.py             # 27+ Declarative SQLAlchemy ORM models
 │   ├── routes/               # FastAPI APIRouter blueprints
 │   │   ├── api_v1.py         # Enterprise REST API endpoints (/api/v1/*)
-│   │   ├── app_pages.py      # Core web pages (audit, DSAR, users, settings, breach, DPIA, consent)
+│   │   ├── app_pages.py      # Core web pages (audit, users, settings, breach, DPIA, consent)
 │   │   ├── categories.py     # Data Category management routes
 │   │   ├── dashboard.py      # Role-based dashboard views
 │   │   ├── import_records.py # Bulk CSV importer routes
@@ -122,7 +122,6 @@ SafeData uses **SQLAlchemy 2.0 Declarative Models**. The system contains **27+ m
 | Model | Table | Description |
 | :--- | :--- | :--- |
 | `AuditLog` | `audit_log` | Append-only, hash-chained audit trail: `action`, `entity_type`, `entity_id`, `performed_by`, `details` (JSON), `prev_hash`, `row_hash` |
-| `DsarRequest` | `dsar_requests` | Data subject access requests. Types: access, rectification, erasure, restriction, portability, objection. Statuses: open, identity_check, in_progress, completed, rejected, extended |
 | `RopaEntry` | `ropa_entries` | Record of Processing Activities (Art. 30): `role_type` (controller/processor), data subjects, recipients, transfers, security measures |
 | `RopaProcessor` | `ropa_processors` | Sub-processor records linked to RoPA entries: `processor_name`, `processing_purpose`, `contract_reference` |
 | `DpiaAssessment` | `dpia_assessments` | DPIA with risk scoring: necessity, proportionality, likelihood, severity → composite `risk_score` and `risk_level`. Status: draft/in_review/approved/rejected |

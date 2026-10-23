@@ -2,7 +2,7 @@
 
 The same FastAPI app that runs on Render, hosted by cPanel's **Setup Python App**
 (Phusion Passenger). Nothing is cut down: landing site, sign-up, dashboard, retention
-engine, DSAR, RoPA, DPIA, breach register, audit ledger, API and integrations.
+engine, RoPA, DPIA, breach register, audit ledger, API and integrations.
 
 | Piece | Render | cPanel |
 |---|---|---|

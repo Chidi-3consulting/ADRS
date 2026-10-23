@@ -52,7 +52,7 @@ SafeData is a complete, full-featured standalone SaaS platform. All capabilities
 * **Asynchronous Intake Queue:** High-throughput batch data ingestion ($\le 500$ records per call) with automated priority-ordered categorisation rules and field mappings.
 * **Outbound Disposal Dispatch Webhooks:** Automated notifications (`POST {base_url}/SafeData/disposal`) instructing source systems (CRM, Core Banking, HR) to delete external copies upon verified disposal.
 * **Real-Time Consent Signals:** Listen for external consent revocations matched by `external_ref` to trigger statutory disposal countdown clocks automatically.
-* **Data Subject Access Requests (DSAR):** Track 6 request types (*Access, Rectification, Erasure, Restriction, Portability, Objection*) with mandatory identity verification and automated 30-day statutory countdowns.
+* **Retention run & simulation:** admins can simulate a retention run or a consent withdrawal (nothing is changed) and then run it for real; the collection queue is the set of records whose retention period has been reached.
 * **Comprehensive Regulatory Registers:**
   * **Article 30 RoPA:** Record of Processing Activities register with third-party processor mappings (`RopaProcessor`).
   * **DPIA Risk Engine:** Data Protection Impact Assessments with necessity, proportionality, likelihood, and severity scoring.
@@ -104,7 +104,7 @@ retention_py/
 │   │   ├── api_v1.py          Enterprise REST API v1 endpoints
 │   │   ├── integrations_routes.py Connected systems, API keys, mapping, logs
 │   │   ├── ropa.py            Article 30 RoPA register and processor sub-entries
-│   │   ├── app_pages.py       DSAR, Audit verifier, DPIA, Breaches, Settings, Help, Billing
+│   │   ├── app_pages.py       Audit verifier, DPIA, Breaches, Settings, Help, Billing
 │   │   ├── import_records.py  Two-pass validated CSV bulk importer
 │   │   ├── recalculations.py  Retention period recalculation queue
 │   │   └── platform.py        Platform Super-Admin portal

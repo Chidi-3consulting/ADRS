@@ -40,7 +40,7 @@ SafeData is delivered as a **unified, full standalone SaaS application**. Rather
 │ • Country-Aware Retention Engine   │ • Async Data Intake Queue          │
 │ • Dual-Approval Deletion Locks     │ • Rule-Based Auto-Categorisation   │
 │ • Legal Holds & Consent Receipts   │ • Outbound Disposal Webhooks       │
-│ • DSAR 30-Day Tracking (6 Types)   │ • Real-time Consent Signals        │
+│ • Retention & consent simulation   │ • Real-time Consent Signals        │
 │ • Article 30 RoPA & Processor DPA  │ • Connected External Systems Hub   │
 │ • Breach Register (72h Countdown)  │ • Sliding-Window Rate Limiting     │
 │ • DPIA Risk Scoring Assessments    │ • Real-Time Integration Audit Logs │
@@ -61,7 +61,7 @@ Every licensed organisation workspace has direct access to the entire governance
 | **Emergency Controls** | Disposal Freeze (`is_disposal_frozen`) & Dry-Run Simulation | Instant Administrative Toggle |
 | **Processor Oversight** | Controller vs. Third-Party Processor DPA Tracking | Dedicated Category & RoPA Linkage |
 | **Legal Hold Management** | Litigation / Regulatory Audit Freezing & Lifting | Full Audit-Attributed Workflow |
-| **Subject Rights (DSAR)** | 6 Statutory Request Types with Identity Verification | 30-Day Automated Countdown |
+| **Retention simulation** | Dry-run of a retention run or consent withdrawal | Admin-only; changes nothing |
 | **Article 30 RoPA** | Processing Activities Register with Sub-Processors | Exportable Regulatory Register |
 | **Incident Management** | Security Breach Log with Statutory Notifications | 72-Hour Notification Countdown |
 | **Risk Assessments** | DPIA Matrix (Necessity, Likelihood, Severity) | Automated Risk Level Scoring |
@@ -146,27 +146,26 @@ SafeData supports three distinct disposal trigger mechanisms:
 
 2. **Records Lifecycle Engine**: Tracks data collection dates, target disposal dates, and handles transition states (`active` → `due_review` → `disposal_requested` → `disposed`). Supports `legal_hold` freeze.
 
-3. **DSAR (Data Subject Access Request) Management**: Tracks 30-day fulfilment countdowns for six request types: Access, Rectification, Erasure, Restriction, Portability, and Objection. Supports identity verification, SLA extensions, assignment, and status workflow (`open` → `identity_check` → `in_progress` → `completed` / `rejected` / `extended`).
 
-4. **RoPA (Record of Processing Activities)**: Article 30 compliance register documenting categories of processing, data transfers, security measures, controller/processor roles, and linked sub-processor records via `RopaProcessor`.
+3. **RoPA (Record of Processing Activities)**: Article 30 compliance register documenting categories of processing, data transfers, security measures, controller/processor roles, and linked sub-processor records via `RopaProcessor`.
 
-5. **Breach Incident Management**: Log and track data breaches with severity scoring (low/medium/high/critical), 72-hour notification deadlines, authority and data subject notification tracking, and full status workflow (`open` → `contained` → `notified` → `closed`).
+4. **Breach Incident Management**: Log and track data breaches with severity scoring (low/medium/high/critical), 72-hour notification deadlines, authority and data subject notification tracking, and full status workflow (`open` → `contained` → `notified` → `closed`).
 
-6. **DPIA (Data Protection Impact Assessment)**: Risk assessment module with necessity, proportionality, likelihood, and severity scoring. Generates composite risk levels (low/medium/high) with mitigation tracking and approval workflow.
+5. **DPIA (Data Protection Impact Assessment)**: Risk assessment module with necessity, proportionality, likelihood, and severity scoring. Generates composite risk levels (low/medium/high) with mitigation tracking and approval workflow.
 
-7. **Consent Receipt Tracking**: Records individual consent events with purpose, lawful basis, channel, timestamps, and cryptographic receipt hashes. Tracks withdrawals.
+6. **Consent Receipt Tracking**: Records individual consent events with purpose, lawful basis, channel, timestamps, and cryptographic receipt hashes. Tracks withdrawals.
 
-8. **Bulk Data Importer**: Two-pass validation importer for ingesting legacy data registers safely via CSV. Tracks import jobs with row-level success/failure reporting.
+7. **Bulk Data Importer**: Two-pass validation importer for ingesting legacy data registers safely via CSV. Tracks import jobs with row-level success/failure reporting.
 
-9. **Integrations Manager (Enterprise)**: API Key management (SHA-256 hashed, shown once), Connected Systems registry, Field Mapping, Auto-Categorisation rule engines, Intake Queue, and Disposal Dispatch.
+8. **Integrations Manager (Enterprise)**: API Key management (SHA-256 hashed, shown once), Connected Systems registry, Field Mapping, Auto-Categorisation rule engines, Intake Queue, and Disposal Dispatch.
 
-10. **Notifications Centre**: In-app notification system with role-based routing, DPO fallback for unowned categories, follow-up reminders for unread notifications (>3 days), and escalation alerts.
+9. **Notifications Centre**: In-app notification system with role-based routing, DPO fallback for unowned categories, follow-up reminders for unread notifications (>3 days), and escalation alerts.
 
-11. **Recalculation Queue**: When category retention rules are modified, affected records are queued for review. Administrators can approve recalculation or keep original dates.
+10. **Recalculation Queue**: When category retention rules are modified, affected records are queued for review. Administrators can approve recalculation or keep original dates.
 
-12. **Billing & Subscription**: 14-day free trial, subscription management, enterprise licence key redemption, and trial expiry enforcement.
+11. **Billing & Subscription**: 14-day free trial, subscription management, enterprise licence key redemption, and trial expiry enforcement.
 
-13. **Platform Administration**: Multi-tenant platform dashboard for super-admins to manage all organisations, generate licence keys, and monitor platform health.
+12. **Platform Administration**: Multi-tenant platform dashboard for super-admins to manage all organisations, generate licence keys, and monitor platform health.
 
 ---
 

@@ -84,7 +84,6 @@
 
 - Consent capture and withdrawal flow
 - Hosted preference centre
-- DSAR intake and deadline management
 
 ### Phase 5 — governance modules
 

@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="mb-4">
+    <h1 class="h3 mb-1 fw-bold text-dark">Consent management</h1>
+    <p class="text-muted small mb-0">Records held on a consent basis. Record a withdrawal, or simulate one first to see when the record would be disposed.</p>
+  </div>
+
+  {% if request.query_params.get('withdrawn') %}
+    <div class="alert alert-success">Consent withdrawal recorded. The record will be disposed after the grace period.</div>
+  {% endif %}
+
+  <div class="card shadow-sm border-0 rounded-4 mb-4"><div class="card-body">
+    <h2 class="h5 fw-bold">Simulate consent removal (changes nothing)</h2>
+    <form method="post" action="/admin/consent/simulate" class="d-flex gap-2 flex-wrap align-items-center">
+      {{ csrf_field | safe }}
+      <label class="small text-muted" for="record_id">Record</label>
+      <select name="record_id" id="record_id" class="form-select w-auto">
+        <option value="0">All consent-based records</option>
+        {% for r in records %}<option value="{{ r.id }}">{{ r.record_reference }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-outline-primary">Simulate withdrawal</button>
+    </form>
+  </div></div>
+
+  {% if simulation %}
+  <div class="card shadow-sm border-0 rounded-4 mb-4"><div class="card-body">
+    <h2 class="h5 fw-bold">Simulation result (nothing was changed)</h2>
+    <p class="small text-muted">Grace period before disposal: {{ simulation.grace_days }} days.
+      {{ simulation.would_dispose }} of {{ simulation['items']|length }} record(s) would be disposed.
+      {% if simulation.frozen %}<strong>The emergency freeze is on, so disposals are paused.</strong>{% endif %}</p>
+    {% if simulation['items'] %}
+    <div class="table-responsive"><table class="table table-sm align-middle small mb-0">
+      <thead class="table-light"><tr><th>Record</th><th>Category</th><th>Consent</th><th>Disposal date</th><th>Outcome</th></tr></thead>
+      <tbody>
+      {% for i in simulation['items'] %}
+        <tr><td>{{ i.reference }}</td><td>{{ i.category }}</td>
+          <td>{% if i.already_withdrawn_on %}Withdrawn {{ i.already_withdrawn_on }}{% else %}Active{% endif %}</td>
+          <td>{{ i.dispose_on or '-' }}</td><td>{{ outcome_labels.get(i.outcome, i.outcome) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<p class="text-muted mb-0">No consent-based records.</p>{% endif %}
+  </div></div>
+  {% endif %}
+
+  <div class="card shadow-sm border-0 rounded-4"><div class="card-body p-0">
+    {% if not records %}
+      <p class="text-muted p-4 mb-0">No records are held on a consent basis.</p>
+    {% else %}
+    <div class="table-responsive"><table class="table table-hover align-middle small mb-0">
+      <thead class="table-light"><tr><th>Record</th><th>Category</th><th>Consent status</th><th></th></tr></thead>
+      <tbody>
+      {% for r in records %}
+        <tr><td>{{ r.record_reference }}</td><td>{{ r.category.name }}</td>
+          <td>{% if r.consent_withdrawn_at %}<span class="badge bg-warning text-dark">Withdrawn {{ r.consent_withdrawn_at.strftime('%Y-%m-%d') }}</span>{% else %}<span class="badge bg-success">Active</span>{% endif %}</td>
+          <td class="text-end">{% if not r.consent_withdrawn_at %}
+            <form method="post" action="/admin/consent/withdraw/{{ r.id }}" class="d-inline">{{ csrf_field | safe }}
+              <button class="btn btn-sm btn-outline-danger">Record withdrawal</button></form>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% endif %}
+  </div></div>
+</div>
+{% endblock %}

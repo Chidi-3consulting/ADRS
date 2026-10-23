@@ -19,7 +19,6 @@ SafeData strictly enforces Role-Based Access Control (RBAC). Every user belongs 
 | **Manage Category Retention Rules** | ✅ | ✅ | ❌ | ✅ |
 | **Place & Lift Legal Holds** | ✅ | ✅ | ❌ | ✅ |
 | **Approve Dual-Approval Disposals** | ✅ | ✅ | ❌ | ✅ |
-| **Manage DSAR Requests** | ✅ | ✅ | ❌ | ✅ |
 | **Manage Breach Incidents** | ✅ | ✅ | ❌ | ✅ |
 | **Manage DPIA Assessments** | ✅ | ✅ | ❌ | ✅ |
 | **Manage RoPA Register** | ✅ | ✅ | ❌ | ✅ |
@@ -191,25 +190,15 @@ To prevent data disposal during active litigation, regulatory inquiries, or inte
 
 ---
 
-## 7. DSAR (Data Subject Access Request) Tracking
+## 7. Retention Run, Consent Management and Simulations (Administrators)
 
-Under GDPR Art. 12-22, NDPR, CCPA, and equivalent laws, data subjects have rights to request access, rectification, or erasure.
+The **collection queue** is the set of records whose retention period has been reached (retention end date is today or earlier). Records still inside their retention period are never collected.
 
-1. Navigate to **DSAR Module** within the application.
-2. Click **New DSAR Request**.
-3. Input:
-   - **Data Subject Name** and optional contact details (email, phone).
-   - **Data Subject Type** (e.g., Customer, Employee).
-   - **Request Type**: `access`, `rectification`, `erasure`, `restriction`, `portability`, or `objection`.
-   - **Compliance Framework**: Framework governing this request.
-   - **Date Received** and optional description.
-4. SafeData automatically sets a strict **30-Day SLA Deadline** (`due_date`).
-5. The DSAR workflow supports:
-   - **Identity Verification**: Mark as verified with timestamp and verifier.
-   - **Assignment**: Assign to a specific team member.
-   - **Extension**: Extend the deadline with a documented reason.
-   - **Status Workflow**: `open` → `identity_check` → `in_progress` → `completed` / `rejected` / `extended`.
-6. Automated reminder notifications are triggered as the deadline approaches.
+1. **Retention: run & simulate** (`/admin/retention`): shows the collection queue. *Simulate* shows exactly what a run would do (flag, dispose, wait for approval, blocked by legal hold or freeze) and changes nothing. *Run now* does it for real after you type `RUN`.
+2. **Consent management** (`/admin/consent`): lists records held on a consent basis. *Record withdrawal* starts the grace period; the record is disposed when it ends.
+3. **Simulate consent removal** shows, per record, the date it would be disposed if consent were withdrawn now, or why nothing would happen (legal hold, emergency freeze, category not consent-triggered). It changes nothing.
+
+Every simulation and every real run is written to the audit trail.
 
 ---
 
@@ -232,7 +221,6 @@ SafeData includes an in-app notification centre accessible from the navigation b
 - **Review Due Notifications**: When records transition to `due_review`, the category owner is notified. If no owner is assigned, notifications fall back to all **DPO** users.
 - **Escalation Alerts**: If `due_review` records remain unactioned beyond the escalation window (default: 14 days), **Admin** users receive escalation notifications.
 - **Follow-Up Reminders**: Unread review/escalation notifications older than 3 days trigger automatic follow-up notifications.
-- **DSAR Deadline Alerts**: Approaching and overdue DSAR deadlines generate alerts.
 
 ---
 

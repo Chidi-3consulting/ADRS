@@ -86,7 +86,7 @@ Jinja2Templates.TemplateResponse = _patched_template_response
 
 from app.routes import (
     public, dashboard, categories, records, api_v1, app_pages, platform,
-    integrations_routes, recalculations, import_records, ropa
+    integrations_routes, recalculations, import_records, ropa, retention_admin
 )
 # Gap 14: Only enable debug in local dev mode — never in production or staging
 app = FastAPI(
@@ -139,6 +139,7 @@ app.include_router(app_pages.router)
 app.include_router(platform.router)
 app.include_router(integrations_routes.router)
 app.include_router(recalculations.router)
+app.include_router(retention_admin.router)
 app.include_router(import_records.router)
 app.include_router(ropa.router)
 app.include_router(api_v1.router, prefix="/api/v1")

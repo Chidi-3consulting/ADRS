@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="mb-4">
+    <h1 class="h3 mb-1 fw-bold text-dark">Retention: run and simulate</h1>
+    <p class="text-muted small mb-0">
+      <strong>Collection queue</strong> = records whose retention period has been reached (end date is today or earlier).
+      Records still inside their retention period are never collected.
+    </p>
+  </div>
+
+  {% if request.query_params.get('error') == 'confirm' %}
+    <div class="alert alert-warning">Type RUN in the box to confirm a real run. Nothing was changed.</div>
+  {% endif %}
+  {% if frozen %}
+    <div class="alert alert-danger"><i class="bi bi-snow2 me-1"></i> The emergency disposal freeze is on. No record will be disposed until it is lifted.</div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body">
+        <div class="text-muted small">In the collection queue</div>
+        <div class="display-6 fw-bold">{{ queue_count }}</div>
+      </div></div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body">
+        <div class="text-muted small">Past retention but on legal hold</div>
+        <div class="display-6 fw-bold">{{ held_count }}</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body">
+        <h2 class="h5 fw-bold">Simulate (changes nothing)</h2>
+        <p class="small text-muted">Shows exactly what a run would do right now. No record is changed and no one is notified.</p>
+        <form method="post" action="/admin/retention/simulate">
+          {{ csrf_field | safe }}
+          <button class="btn btn-outline-primary"><i class="bi bi-play-circle me-1"></i> Simulate retention run</button>
+        </form>
+      </div></div>
+    </div>
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 rounded-4 h-100 border-danger"><div class="card-body">
+        <h2 class="h5 fw-bold text-danger">Run now (real)</h2>
+        <p class="small text-muted">Does what the nightly job does: flags records, disposes what is allowed to be disposed automatically, escalates and notifies.</p>
+        <form method="post" action="/admin/retention/run" class="d-flex gap-2 flex-wrap">
+          {{ csrf_field | safe }}
+          <input name="confirm" class="form-control w-auto" placeholder="Type RUN" aria-label="Type RUN to confirm" autocomplete="off">
+          <button class="btn btn-danger">Run retention now</button>
+        </form>
+      </div></div>
+    </div>
+  </div>
+
+  {% if result %}
+  <div class="card shadow-sm border-0 rounded-4 mb-4"><div class="card-body">
+    <h2 class="h5 fw-bold">{% if mode == 'simulation' %}Simulation result (nothing was changed){% else %}Run complete{% endif %}</h2>
+    <ul class="list-inline small mb-3">
+      <li class="list-inline-item me-3"><strong>{{ result.flagged }}</strong> flagged for review</li>
+      <li class="list-inline-item me-3"><strong>{{ result.auto_disposed }}</strong> disposed automatically</li>
+      <li class="list-inline-item me-3"><strong>{{ result.consent_disposed }}</strong> disposed after consent withdrawal</li>
+      <li class="list-inline-item me-3"><strong>{{ result.skipped_dual }}</strong> waiting for approval</li>
+      <li class="list-inline-item me-3"><strong>{{ result.skipped_frozen }}</strong> blocked by freeze</li>
+      <li class="list-inline-item"><strong>{{ result.escalated }}</strong> escalated</li>
+    </ul>
+    {% if result.plan %}
+    <div class="table-responsive"><table class="table table-sm align-middle small mb-0">
+      <thead class="table-light"><tr><th>Record</th><th>Category</th><th>Retention ended</th><th>{% if mode == 'simulation' %}Would happen{% else %}Happened{% endif %}</th></tr></thead>
+      <tbody>
+      {% for p in result.plan %}
+        <tr><td>{{ p.reference }}</td><td>{{ p.category }}</td><td>{{ p.retention_end_date }}</td><td>{{ action_labels.get(p.action, p.action) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+      <p class="text-muted mb-0">No record needs action right now.</p>
+    {% endif %}
+  </div></div>
+  {% endif %}
+</div>
+{% endblock %}
