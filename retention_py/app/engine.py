@@ -1366,14 +1366,14 @@ def org_onboarding_checklist(db: Session, org_id: int) -> list:
             "title": "Invite team members",
             "description": f"You have {user_count} user(s). Invite colleagues to collaborate.",
             "completed": user_count >= 2,
-            "link": "/settings/team",
+            "link": "/users",
         },
         {
             "step": 5,
             "title": "Assign a DPO",
             "description": "Designate a Data Protection Officer for escalations and reviews.",
             "completed": has_dpo,
-            "link": "/settings/team",
+            "link": "/users",
         },
     ]
 

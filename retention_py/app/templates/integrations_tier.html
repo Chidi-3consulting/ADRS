@@ -35,19 +35,13 @@
   <div class="col-md-6">
     <div class="card shadow-sm h-100">
       <div class="card-header bg-light py-3">
-        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-key-fill me-2"></i> Enterprise Licence Key</h5>
+        <h5 class="card-title mb-0 fw-bold"><i class="bi bi-key-fill me-2"></i> Upgrade to Enterprise</h5>
       </div>
       <div class="card-body">
-        <p class="text-muted small">Redeem an Enterprise licence key provided by 3Consulting to unlock API ingestion, automated webhooks, and unlimited connected systems.</p>
+        <p class="text-muted small">Enterprise unlocks API ingestion, automated webhooks, and unlimited connected systems.</p>
         
-        <form method="post" action="/billing/license">
-          {{ csrf_field | safe }}
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Enterprise Licence Key</label>
-            <input type="text" name="license_key" class="form-control font-monospace" placeholder="SafeData-ENT-XXXX-XXXX-XXXX" required>
-          </div>
-          <button type="submit" class="btn btn-dark w-100"><i class="bi bi-shield-check me-1"></i> Redeem Licence</button>
-        </form>
+        <p class="small mb-3">To move to Enterprise, contact 3Consulting. Your plan is changed on the account for you; there is no key to type in.</p>
+        <a href="/billing" class="btn btn-dark w-100"><i class="bi bi-credit-card me-1"></i> View billing &amp; plan</a>
       </div>
     </div>
   </div>

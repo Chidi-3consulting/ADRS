@@ -86,7 +86,7 @@ def cmd_create_admin(args) -> int:
     password = args.password or os.getenv("SAFEDATA_ADMIN_PASSWORD") or secrets.token_urlsafe(18)
     generated = not (args.password or os.getenv("SAFEDATA_ADMIN_PASSWORD"))
 
-    policy_err = password_policy_error(password, user_email=email, user_name=args.name)
+    policy_err = password_policy_error(password, user_email=email, user_name=args.name or "Administrator")
     if policy_err:
         log.error("Password rejected by policy: %s", policy_err)
         return 1
@@ -135,7 +135,7 @@ def cmd_create_admin(args) -> int:
         if user is None:
             user = User(
                 organization_id=org.id,
-                name=args.name,
+                name=args.name or "Administrator",
                 email=email,
                 password_hash=pwd_hash,
                 role="admin",
@@ -147,6 +147,8 @@ def cmd_create_admin(args) -> int:
             action = "Created"
         else:
             user.password_hash = pwd_hash
+            if args.name:
+                user.name = args.name
             user.role = "admin"
             user.is_active = True
             user.must_change_password = False
@@ -194,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
 
     ca = sub.add_parser("create-admin", help="create or repair an admin login")
     ca.add_argument("--email", required=True, help="admin email; its domain becomes the organisation domain")
-    ca.add_argument("--name", default="Administrator", help="person's display name")
+    ca.add_argument("--name", default=None, help="display name (default Administrator)")
     ca.add_argument("--org", default=None, help="organisation name (default: the email domain)")
     ca.add_argument("--country", default="NG", help="ISO-3166 alpha-2, drives the seeded category library")
     ca.add_argument(
