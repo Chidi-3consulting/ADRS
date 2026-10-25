@@ -141,23 +141,35 @@ def test_dry_run_respects_legal_hold_and_inside_retention(db):
 
 
 def test_consent_removal_simulation_reports_disposal_date_without_changing_anything(db):
-    cat = _category(db, legal_basis="consent", disposal_trigger="consent_withdrawal")
+    # Consent-withdrawal category: the clock starts at withdrawal and runs for the
+    # category's own retention period (here 45 days), the same rule a real withdrawal uses.
+    cat = _category(db, legal_basis="consent", disposal_trigger="consent_withdrawal", retention_period_days=45)
     rec = _record(db, cat, "consented", None)
     before = _snapshot(db)
-    sim = simulate_consent_removal(db, 1)
+    sim = simulate_consent_removal(db, 1, record_ids=[rec.id])
     assert _snapshot(db) == before
     (item,) = sim["items"]
     assert item["record_id"] == rec.id and item["outcome"] == "would_dispose"
-    assert item["dispose_on"] == TODAY + timedelta(days=sim["grace_days"])
+    assert item["dispose_on"] == TODAY + timedelta(days=45)
 
 
 def test_consent_removal_simulation_flags_blockers(db):
     held_cat = _category(db, name="A", legal_basis="consent", disposal_trigger="consent_withdrawal")
-    other = _category(db, name="B", legal_basis="consent", disposal_trigger="date_based")
+    long_clock = _category(db, name="B", legal_basis="consent", disposal_trigger="date_based",
+                           retention_period_days=3650)
+    contract = _category(db, name="C", legal_basis="contract", disposal_trigger="date_based")
     _record(db, held_cat, "held", None, legal_hold=True)
-    _record(db, other, "not-consent-triggered", None)
-    outcomes = {i["reference"]: i["outcome"] for i in simulate_consent_removal(db, 1)["items"]}
-    assert outcomes == {"held": "blocked_by_legal_hold", "not-consent-triggered": "no_automatic_disposal"}
+    rec_b = _record(db, long_clock, "consent-basis-date-clock", TODAY + timedelta(days=3000))
+    rec_c = _record(db, contract, "contract-basis", TODAY + timedelta(days=20))
+    items = {i["reference"]: i for i in simulate_consent_removal(db, 1, record_ids=None)["items"]}
+    assert items["held"]["outcome"] == "blocked_by_legal_hold"
+    # consent basis: withdrawal cuts a 10-year clock down to the post-withdrawal window
+    assert items["consent-basis-date-clock"]["outcome"] == "would_dispose"
+    assert items["consent-basis-date-clock"]["dispose_on"] == TODAY + timedelta(days=30)
+    # a contract record is kept for its own period whatever happens to consent
+    outcomes = {i["reference"]: i["outcome"]
+                for i in simulate_consent_removal(db, 1, record_ids=[rec_b.id, rec_c.id])["items"]}
+    assert outcomes["contract-basis"] == "no_automatic_disposal"
 
 
 # ── the admin screens ──

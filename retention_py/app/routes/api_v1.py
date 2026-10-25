@@ -572,10 +572,9 @@ def api_records_terminate(
 
     updated_records = []
     for r in records:
-        # Calculate retention period in days from category
-        days = r.category.retention_period_days
-        rend = term_date + timedelta(days=days)
-        r.retention_end_date = rend
+        r.relationship_ended_on = term_date
+        calculate_retention_end_date(db, r)
+        rend = r.retention_end_date
         db.commit()
 
         log_audit(db, org_id, "account_terminated", "data_record", r.id, None, {

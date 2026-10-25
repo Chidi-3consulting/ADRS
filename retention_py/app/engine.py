@@ -126,6 +126,7 @@ def _send_event_email(to_email: str, user_name: str, subject: str, message: str,
             "disposal_approval_needed": "#f59e0b", # amber
             "security_alert":         "#7c3aed",   # purple
             "quarterly_review":       "#3b82f6",   # blue
+            "review_due":             "#FF914D",   # brand orange
         }.get(notif_type, "#667eea")
 
         label = {
@@ -133,6 +134,7 @@ def _send_event_email(to_email: str, user_name: str, subject: str, message: str,
             "disposal_approval_needed": "⏳ Approval Required",
             "security_alert":         "🔐 Security Alert",
             "quarterly_review":       "📋 Quarterly Review",
+            "review_due":             "Deletion date approaching",
         }.get(notif_type, "📌 SafeData Notification")
 
         html = f"""
@@ -166,28 +168,124 @@ def _send_event_email(to_email: str, user_name: str, subject: str, message: str,
 
 # ── Retention End Date Calculation ──
 
-def calculate_retention_end_date(db: Session, record: DataRecord):
-    """Fetch effective values (category defaults vs rule overrides) and set retention_end_date."""
-    cat = db.query(DataCategory).filter(DataCategory.id == record.category_id).first()
-    if not cat:
-        return
+def effective_policy(db: Session, record: DataRecord):
+    """Return (category, trigger, retention_days, legal_basis) for a record.
 
+    A per-record retention rule overrides the category default field by field.
+    """
+    cat = record.category if record.category is not None else (
+        db.query(DataCategory).filter(DataCategory.id == record.category_id).first()
+    )
+    if not cat:
+        return None, None, None, None
     rule = None
     if record.retention_rule_id:
         rule = db.query(CategoryRetentionRule).filter(CategoryRetentionRule.id == record.retention_rule_id).first()
-
     trigger = rule.disposal_trigger if (rule and rule.disposal_trigger) else cat.disposal_trigger
     days = rule.retention_period_days if (rule and rule.retention_period_days is not None) else cat.retention_period_days
+    basis = rule.legal_basis if (rule and getattr(rule, "legal_basis", None)) else cat.legal_basis
+    return cat, trigger, int(days or 0), basis
 
+
+def retention_clock_start(record: DataRecord, trigger: str):
+    """The date the retention clock starts for this record, or None if it has not started.
+
+    * date_based         -> the day the data was collected
+    * consent_withdrawal -> the day consent was withdrawn
+    * account_closure    -> the day the relationship ended (account closed, contract or
+                            event over); older records stored that day in consent_withdrawn_at
+    """
     if trigger == "date_based":
-        if record.collection_date:
-            record.retention_end_date = record.collection_date + timedelta(days=days)
+        return record.collection_date
+    if trigger == "consent_withdrawal":
+        return record.consent_withdrawn_at.date() if record.consent_withdrawn_at else None
+    if trigger == "account_closure":
+        if getattr(record, "relationship_ended_on", None):
+            return record.relationship_ended_on
+        return record.consent_withdrawn_at.date() if record.consent_withdrawn_at else None
+    return None
+
+
+def projected_end_date(db: Session, record: DataRecord, consent_withdrawn_at=None):
+    """The retention end date the engine uses for this record, without changing it.
+
+    End date = clock start + the category's (or rule's) retention period.
+    When the lawful basis is consent and consent has been withdrawn, the data may not
+    be kept longer than the organisation's post-withdrawal window
+    (consent_disposal_days, default 30), even if the normal clock would run longer.
+
+    ``consent_withdrawn_at`` lets the consent preview ask "what if consent were
+    withdrawn at this moment?" without touching the record.
+    """
+    cat, trigger, days, basis = effective_policy(db, record)
+    if not cat:
+        return record.retention_end_date
+    withdrawn = consent_withdrawn_at or record.consent_withdrawn_at
+    if trigger == "date_based":
+        start = record.collection_date
+    elif trigger == "consent_withdrawal":
+        start = withdrawn.date() if withdrawn else None
     else:
-        # consent_withdrawal or account_closure
-        if record.consent_withdrawn_at:
-            record.retention_end_date = record.consent_withdrawn_at.date() + timedelta(days=days)
+        start = retention_clock_start(record, trigger)
+        if start is None and record.retention_end_date:
+            # Records closed before relationship_ended_on existed kept only the end date.
+            # Never wipe a deletion date that was already set.
+            return record.retention_end_date
+    end = start + timedelta(days=days) if start else None
+
+    if withdrawn and basis == "consent" and trigger != "consent_withdrawal":
+        org_id = record.organization_id or cat.organization_id
+        grace = int(get_org_setting(db, org_id, "consent_disposal_days", "30") or 30)
+        cap = withdrawn.date() + timedelta(days=grace)
+        end = cap if end is None else min(end, cap)
+    return end
+
+
+def calculate_retention_end_date(db: Session, record: DataRecord):
+    """Set record.retention_end_date. Every intake and change path calls this one function."""
+    record.retention_end_date = projected_end_date(db, record)
+
+
+def retention_clock(record: DataRecord, trigger: str, today: date = None, due_soon_days: int = 30) -> dict:
+    """Plain description of where a record is in its retention life, for the register."""
+    today = today or date.today()
+    labels = {
+        "date_based": "Collected",
+        "consent_withdrawal": "Consent withdrawn",
+        "account_closure": "Relationship ended",
+    }
+    waiting = {
+        "consent_withdrawal": "Starts when consent is withdrawn",
+        "account_closure": "Starts when the relationship ends",
+    }
+    start = retention_clock_start(record, trigger)
+    if record.consent_withdrawn_at and trigger == "date_based":
+        basis_label = "Collected (consent withdrawn)"
+    else:
+        basis_label = labels.get(trigger, "Collected")
+    end = record.retention_end_date
+    info = {"basis": basis_label, "start": start, "end": end, "days_left": None}
+
+    if record.status == "disposed":
+        info.update(state="disposed", label="Disposed")
+    elif record.legal_hold or record.status == "legal_hold":
+        info.update(state="hold", label="On legal hold")
+    elif end is None:
+        info.update(state="waiting", label=waiting.get(trigger, "Clock not started"))
+    else:
+        left = (end - today).days
+        info["days_left"] = left
+        if left < 0:
+            info.update(state="overdue", label=f"{-left} day{'s' if left != -1 else ''} overdue")
+        elif left == 0:
+            info.update(state="due", label="Due today")
+        elif left <= due_soon_days:
+            info.update(state="soon", label=f"{left} day{'s' if left != 1 else ''} left")
         else:
-            record.retention_end_date = None
+            info.update(state="running", label=f"{left} days left")
+    if record.status == "disposal_requested" and info["state"] not in ("disposed", "hold"):
+        info["label"] += " · awaiting approval"
+    return info
 
 
 # ── Disposal Dispatch (E3) ──
@@ -244,13 +342,13 @@ def is_disposal_frozen(db: Session, org_id: int = None) -> bool:
     return False
 
 
-# ── The collection queue ──
+# ── Records due for deletion ──
 
 COLLECTABLE_STATUSES = ("active", "due_review")
 
 
 def records_past_retention(db: Session, org_id: int, today: date = None, include_held: bool = False):
-    """Query for the *collection queue*: records whose retention period has been reached.
+    """Records due for deletion: their retention period has been reached.
 
     "Collection" in SafeData means exactly this and nothing else - a record is only
     collectable once its retention end date is today or earlier. Records still inside
@@ -272,11 +370,10 @@ def records_past_retention(db: Session, org_id: int, today: date = None, include
 
 
 def simulate_consent_removal(db: Session, org_id: int, record_ids: list = None, today: date = None) -> dict:
-    """What would happen if consent were withdrawn now. Strictly read-only.
+    """Preview: what would happen if consent were withdrawn now. Strictly read-only.
 
-    Covers records held on a consent basis. For each: the date it would be disposed
-    (withdrawal date + the organisation's ``consent_disposal_days``) or why nothing
-    would happen automatically (legal hold, freeze, category not consent-triggered).
+    Uses the same date calculation as a real withdrawal, so the preview and the
+    real outcome always agree.
     """
     today = today or date.today()
     days = int(get_org_setting(db, org_id, "consent_disposal_days", "30"))
@@ -290,25 +387,23 @@ def simulate_consent_removal(db: Session, org_id: int, record_ids: list = None, 
         q = q.filter(DataRecord.id.in_(record_ids))
     else:
         q = q.filter(DataCategory.legal_basis == "consent")
+    now = datetime.combine(today, datetime.min.time())
     items = []
     for r in q.order_by(DataRecord.id).all():
-        rule = db.query(CategoryRetentionRule).filter(
-            CategoryRetentionRule.id == r.retention_rule_id
-        ).first() if r.retention_rule_id else None
-        cat = r.category
-        trigger = rule.disposal_trigger if (rule and rule.disposal_trigger) else cat.disposal_trigger
+        cat, trigger, _days, basis = effective_policy(db, r)
         withdrawn = r.consent_withdrawn_at.date() if r.consent_withdrawn_at else None
-        base = withdrawn or today
+        dispose_on = projected_end_date(db, r, consent_withdrawn_at=r.consent_withdrawn_at or now)
+        consent_driven = trigger == "consent_withdrawal" or basis == "consent"
         if r.legal_hold:
             outcome, dispose_on = "blocked_by_legal_hold", None
-        elif trigger != "consent_withdrawal":
+        elif not consent_driven:
             outcome, dispose_on = "no_automatic_disposal", None
         elif frozen:
-            outcome, dispose_on = "paused_by_freeze", base + timedelta(days=days)
+            outcome = "paused_by_freeze"
         else:
-            outcome, dispose_on = "would_dispose", base + timedelta(days=days)
+            outcome = "would_dispose"
         items.append({
-            "record_id": r.id, "reference": r.record_reference, "category": cat.name,
+            "record_id": r.id, "reference": r.record_reference, "category": cat.name if cat else "",
             "trigger": trigger, "already_withdrawn_on": withdrawn,
             "dispose_on": dispose_on, "outcome": outcome,
         })
@@ -431,15 +526,15 @@ def run_retention_checks(db: Session, org_id: int, dry_run: bool = False) -> dic
     # Settings
     review_alert_days = int(get_org_setting(db, org_id, "review_alert_days", "30"))
     escalation_days = int(get_org_setting(db, org_id, "escalation_days", "14"))
-    consent_disposal_days = int(get_org_setting(db, org_id, "consent_disposal_days", "30"))
 
     today = date.today()
 
-    # ── Step 1: Flag date_based active records approaching retention end date ──
+    # Every record is on one clock: retention_end_date (see calculate_retention_end_date).
+    # Records whose clock has not started yet (end date empty) are left alone.
+
+    # ── Step 1: Flag records approaching their retention end date (all clock types) ──
     flag_threshold = today + timedelta(days=review_alert_days)
-    records_to_flag = db.query(DataRecord).join(
-        DataCategory, DataRecord.category_id == DataCategory.id
-    ).filter(
+    records_to_flag = db.query(DataRecord).filter(
         DataRecord.organization_id == org_id,
         DataRecord.status == "active",
         DataRecord.legal_hold == False,
@@ -448,59 +543,48 @@ def run_retention_checks(db: Session, org_id: int, dry_run: bool = False) -> dic
         DataRecord.retention_end_date <= flag_threshold,
     ).all()
 
+    newly_flagged = []
     for r in records_to_flag:
-        cat = r.category
-        rule = db.query(CategoryRetentionRule).filter(
-            CategoryRetentionRule.id == r.retention_rule_id
-        ).first() if r.retention_rule_id else None
-        trigger = rule.disposal_trigger if (rule and rule.disposal_trigger) else cat.disposal_trigger
-
-        if trigger == "date_based":
-            if not dry_run:  # a simulation must leave every record untouched
-                r.status = "due_review"
-                r.review_flagged_at = datetime.now(timezone.utc).replace(tzinfo=None)
-            flagged_ids.add(r.id)
-            results["flagged"] += 1
-            plan(r, "flag_for_review")
+        if not dry_run:  # a simulation must leave every record untouched
+            r.status = "due_review"
+            r.review_flagged_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        flagged_ids.add(r.id)
+        newly_flagged.append(r)
+        results["flagged"] += 1
+        plan(r, "flag_for_review")
 
     if results["flagged"] > 0 and not dry_run:
         db.commit()
         log_audit(db, org_id, "record_flagged_review", "data_record", None, None,
                   {"count": results["flagged"]}, None)
 
-    # ── Step 2: Consent withdrawal disposal (B1) ──
-    consent_threshold = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=consent_disposal_days)
-    consent_records = db.query(DataRecord).join(
-        DataCategory, DataRecord.category_id == DataCategory.id
-    ).filter(
+    # ── Step 2: Consent withdrawn and its deletion date reached -> dispose ──
+    # Withdrawal removes the lawful basis, so these go without a manual approval step.
+    consent_records = db.query(DataRecord).filter(
         DataRecord.organization_id == org_id,
         DataRecord.status != "disposed",
         DataRecord.legal_hold == False,
         DataRecord.deleted_at == None,
         DataRecord.consent_withdrawn_at != None,
-        DataRecord.consent_withdrawn_at <= consent_threshold,
+        DataRecord.retention_end_date != None,
+        DataRecord.retention_end_date <= today,
     ).all()
 
+    consent_handled = set()
     for r in consent_records:
-        cat = r.category
-        rule = db.query(CategoryRetentionRule).filter(
-            CategoryRetentionRule.id == r.retention_rule_id
-        ).first() if r.retention_rule_id else None
-        trigger = rule.disposal_trigger if (rule and rule.disposal_trigger) else cat.disposal_trigger
+        _cat, trigger, _days, basis = effective_policy(db, r)
+        if trigger != "consent_withdrawal" and basis != "consent":
+            continue  # e.g. a legal-obligation record: withdrawal does not shorten it
+        consent_handled.add(r.id)
+        if frozen:
+            results["skipped_frozen"] += 1
+            plan(r, "blocked_by_freeze")
+        elif execute_disposal(db, r.id, dry_run=dry_run):
+            results["consent_disposed"] += 1
+            plan(r, "dispose_consent_withdrawn")
 
-        if trigger == "consent_withdrawal":
-            if frozen:
-                results["skipped_frozen"] += 1
-                plan(r, "blocked_by_freeze")
-            else:
-                if execute_disposal(db, r.id, dry_run=dry_run):
-                    results["consent_disposed"] += 1
-                    plan(r, "dispose_consent_withdrawn")
-
-    # ── Step 3: Auto-dispose overdue date-based records (B5 dual-approval skip) ──
-    overdue_records = db.query(DataRecord).join(
-        DataCategory, DataRecord.category_id == DataCategory.id
-    ).filter(
+    # ── Step 3: Retention period over -> dispose or wait for approval (B5) ──
+    overdue_records = db.query(DataRecord).filter(
         DataRecord.organization_id == org_id,
         (DataRecord.status == "due_review") | DataRecord.id.in_(flagged_ids or [0]),
         DataRecord.legal_hold == False,
@@ -510,30 +594,27 @@ def run_retention_checks(db: Session, org_id: int, dry_run: bool = False) -> dic
     ).all()
 
     for r in overdue_records:
-        cat = r.category
+        if r.id in consent_handled:
+            continue
+        cat, trigger, _days, _basis = effective_policy(db, r)
         rule = db.query(CategoryRetentionRule).filter(
             CategoryRetentionRule.id == r.retention_rule_id
         ).first() if r.retention_rule_id else None
-
-        trigger = rule.disposal_trigger if (rule and rule.disposal_trigger) else cat.disposal_trigger
         app_type = getattr(cat, "approval_type", None)
         if not app_type:
             requires_dual = rule.requires_dual_approval if (rule and rule.requires_dual_approval is not None) else cat.requires_dual_approval
             app_type = "dual_approval" if requires_dual else "single_approval"
 
-        if trigger == "date_based":
-            if app_type == "auto_disposal":
-                if frozen:
-                    results["skipped_frozen"] += 1
-                    plan(r, "blocked_by_freeze")
-                else:
-                    if execute_disposal(db, r.id, dry_run=dry_run):
-                        results["auto_disposed"] += 1
-                        plan(r, "auto_dispose")
-            else:
-                results["skipped_dual"] += 1
-                plan(r, "needs_approval")
-                continue
+        if app_type == "auto_disposal":
+            if frozen:
+                results["skipped_frozen"] += 1
+                plan(r, "blocked_by_freeze")
+            elif execute_disposal(db, r.id, dry_run=dry_run):
+                results["auto_disposed"] += 1
+                plan(r, "auto_dispose")
+        else:
+            results["skipped_dual"] += 1
+            plan(r, "needs_approval")
 
     if dry_run:
         # Read-only from here on: no escalation stamps, notifications, e-mails or audit rows.
@@ -581,30 +662,30 @@ def run_retention_checks(db: Session, org_id: int, dry_run: bool = False) -> dic
         log_audit(db, org_id, "escalation_sent", "data_record", None, None,
                   {"count": len(esc_records)}, None)
 
-    # ── Step 5: Notify category owners (N1: DPO fallback) ──
-    unnotified_due = db.query(DataRecord).join(
-        DataCategory, DataRecord.category_id == DataCategory.id
-    ).filter(
-        DataRecord.organization_id == org_id,
-        DataRecord.status == "due_review",
-        DataRecord.deleted_at == None,
-    ).all()
-
+    # ── Step 5: Tell category owners (DPO fallback) about records that just became due ──
+    # Only records flagged in this run, so owners get one notice and one e-mail per
+    # record instead of a daily repeat; unread notices get the follow-up in step 6.
     by_owner = {}
-    for r in unnotified_due:
-        owner_id = r.category.owner_id or 0
-        by_owner.setdefault(owner_id, []).append(r)
+    for r in newly_flagged:
+        owner_id = r.category.owner_id if r.category else 0
+        by_owner.setdefault(owner_id or 0, []).append(r)
 
     dpos = db.query(User).filter(User.organization_id == org_id, User.role == "dpo").all()
     for owner_id, recs in by_owner.items():
         targets = [db.query(User).filter(User.id == owner_id).first()] if owner_id else dpos
+        soonest = min((x.retention_end_date for x in recs if x.retention_end_date), default=None)
+        refs = ", ".join(x.record_reference for x in recs[:5]) + (" and more" if len(recs) > 5 else "")
+        subject = f"{len(recs)} record(s) reach their deletion date soon"
+        message = (f"{len(recs)} record(s) reach the end of their retention period"
+                   f"{' from ' + soonest.isoformat() if soonest else ''}: {refs}. "
+                   "Review them before the deletion date.")
         for target in targets:
             if target:
-                create_notification(db, org_id, target.id, "review_due",
-                                    f"{len(recs)} record(s) due for review",
-                                    f"You have {len(recs)} records awaiting compliance verification.",
-                                    recs[0].id if recs else None,
-                                    not bool(owner_id))
+                create_notification(db, org_id, target.id, "review_due", subject, message,
+                                    recs[0].id if recs else None, not bool(owner_id))
+                if target.email and target.is_active and not target.deleted_at:
+                    _send_event_email(target.email, target.name or target.email,
+                                      subject, message, "review_due")
                 results["review_notifications"] += 1
 
     # ── Step 6: Follow-up notifications (unread > 3 days) ──
@@ -860,8 +941,8 @@ def lift_legal_hold(db: Session, org_id: int, record_id: int,
 def log_consent_withdrawal(db: Session, org_id: int, record_id: int,
                            actor_id: int, ip: str = None) -> bool:
     """
-    Record consent withdrawal on a record (B1). The engine will auto-dispose
-    after consent_disposal_days have elapsed.
+    Record consent withdrawal on a record (B1) and restart its clock from today.
+    The engine disposes it when the recalculated deletion date arrives.
     """
     record = db.query(DataRecord).filter(
         DataRecord.id == record_id,
@@ -873,6 +954,7 @@ def log_consent_withdrawal(db: Session, org_id: int, record_id: int,
 
     record.consent_withdrawn_at = datetime.now(timezone.utc).replace(tzinfo=None)
     record.consent_withdrawn_by = actor_id
+    calculate_retention_end_date(db, record)
     db.commit()
     log_audit(db, org_id, "consent_withdrawn", "data_record", record_id,
               actor_id, {}, ip)

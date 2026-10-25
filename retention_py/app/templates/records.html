@@ -7,9 +7,9 @@
     <div>
       <div class="d-flex align-items-center gap-2">
         <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-        <h1 class="h3 mb-0 fw-bold text-dark">Data Retention Register</h1>
+        <h1 class="h3 mb-0 fw-bold text-dark">Data collection</h1>
       </div>
-      <p class="text-muted small mb-0 mt-1">Live tracking and governance of individual personal data references and statutory countdowns</p>
+      <p class="text-muted small mb-0 mt-1">Every record you hold: what started its retention clock, the day it must be deleted, and how long is left.</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1" data-bs-toggle="collapse" data-bs-target="#manualIntakeCollapse" aria-expanded="false" aria-controls="manualIntakeCollapse">
@@ -24,128 +24,52 @@
     </div>
   </div>
 
-  <!-- KPI Cards -->
-  <div class="row row-cols-2 row-cols-md-6 g-2 mb-3">
-    <div class="col animate-in animate-stagger-1">
-      <div class="card h-100 stat-card-gradient success">
-        <div class="card-body py-2 px-3 text-center">
-          <div class="stat-card-label">Active</div>
-          <div class="stat-card-value text-success" style="font-size: var(--sd-text-2xl);">{{ kpi.active or 0 }}</div>
+  <!-- Clock summary: each card filters the list below -->
+  <div class="row row-cols-2 row-cols-md-5 g-2 mb-3">
+    <div class="col">
+      <a href="/records?status=running" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'running' else '' }}">
+        <div class="card-body py-2 px-3">
+          <div class="small text-muted">Clock running</div>
+          <div class="fw-bold text-success" style="font-size: var(--sd-text-2xl);">{{ kpi.running or 0 }}</div>
+          <div class="small text-muted">More than {{ due_soon_days }} days left</div>
         </div>
-      </div>
+      </a>
     </div>
-    <div class="col animate-in animate-stagger-2">
-      <div class="card h-100 stat-card-gradient yellow">
-        <div class="card-body py-2 px-3 text-center">
-          <div class="stat-card-label">Due Review</div>
-          <div class="stat-card-value text-warning" style="font-size: var(--sd-text-2xl);">{{ kpi.due_review or 0 }}</div>
+    <div class="col">
+      <a href="/records?status=soon" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'soon' else '' }}">
+        <div class="card-body py-2 px-3">
+          <div class="small text-muted">Due soon</div>
+          <div class="fw-bold text-warning" style="font-size: var(--sd-text-2xl);">{{ kpi.due_soon or 0 }}</div>
+          <div class="small text-muted">Within {{ due_soon_days }} days</div>
         </div>
-      </div>
+      </a>
     </div>
-    <div class="col animate-in animate-stagger-3">
-      <div class="card h-100 stat-card-gradient danger">
-        <div class="card-body py-2 px-3 text-center">
-          <div class="stat-card-label">Overdue</div>
-          <div class="stat-card-value text-danger" style="font-size: var(--sd-text-2xl);">{{ kpi.overdue or 0 }}</div>
+    <div class="col">
+      <a href="/records?status=due" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'due' else '' }}">
+        <div class="card-body py-2 px-3">
+          <div class="small text-muted">Due now or overdue</div>
+          <div class="fw-bold text-danger" style="font-size: var(--sd-text-2xl);">{{ kpi.overdue or 0 }}</div>
+          <div class="small text-muted">Deletion date reached</div>
         </div>
-      </div>
+      </a>
     </div>
-    <div class="col animate-in animate-stagger-4">
-      <div class="card h-100 stat-card-gradient info">
-        <div class="card-body py-2 px-3 text-center">
-          <div class="stat-card-label">On Hold</div>
-          <div class="stat-card-value" style="font-size: var(--sd-text-2xl); color: var(--sd-info);">{{ kpi.on_hold or 0 }}</div>
+    <div class="col">
+      <a href="/records?status=waiting" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'waiting' else '' }}">
+        <div class="card-body py-2 px-3">
+          <div class="small text-muted">Clock not started</div>
+          <div class="fw-bold text-secondary" style="font-size: var(--sd-text-2xl);">{{ kpi.waiting or 0 }}</div>
+          <div class="small text-muted">Waiting for withdrawal or end of relationship</div>
         </div>
-      </div>
+      </a>
     </div>
-    <div class="col animate-in animate-stagger-5">
-      <div class="card h-100 stat-card-gradient teal">
-        <div class="card-body py-2 px-3 text-center">
-          <div class="stat-card-label">Awaiting Approval</div>
-          <div class="stat-card-value" style="font-size: var(--sd-text-2xl); color: var(--sd-teal);">{{ kpi.awaiting_approval or 0 }}</div>
+    <div class="col">
+      <a href="/records?status=hold" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'hold' else '' }}">
+        <div class="card-body py-2 px-3">
+          <div class="small text-muted">On legal hold</div>
+          <div class="fw-bold text-info" style="font-size: var(--sd-text-2xl);">{{ kpi.on_hold or 0 }}</div>
+          <div class="small text-muted">Kept until the hold is lifted</div>
         </div>
-      </div>
-    </div>
-    <div class="col animate-in animate-stagger-6">
-      <div class="card h-100 stat-card-gradient secondary">
-        <div class="card-body py-2 px-3 text-center">
-          <div class="stat-card-label">Disposed (mo)</div>
-          <div class="stat-card-value" style="font-size: var(--sd-text-2xl);">{{ kpi.disposed_month or 0 }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Collapsible Manual Intake Form (Full Width) -->
-  <div class="collapse mb-3" id="manualIntakeCollapse">
-    <div class="card shadow-sm border-0 rounded-4 bg-white">
-      <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
-        <div>
-          <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-plus-circle text-primary me-2"></i>Manual Record Intake</h2>
-          <span class="small text-muted">Register an individual personal data reference into the statutory retention schedule</span>
-        </div>
-        <button type="button" class="btn-close" data-bs-toggle="collapse" data-bs-target="#manualIntakeCollapse" aria-label="Close intake"></button>
-      </div>
-      <div class="card-body p-4">
-        {% if user_role == 'data_owner' %}
-          <div class="alert alert-info py-2 small rounded-3 mb-3">
-            <i class="bi bi-info-circle me-1"></i> As a Data Owner you may register records in your assigned categories. Your DPO is notified automatically. Collection date is set to today.
-          </div>
-        {% endif %}
-        <form method="POST" action="/records/create">
-          {{ csrf_field | safe }}
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-muted">Data Category *</label>
-              <select name="category_id" id="category_id" class="form-select form-select-sm" required>
-                <option value="">Select category…</option>
-                {% for cat in categories %}
-                  <option value="{{ cat.id }}">{{ cat.name }} ({{ cat.compliance_framework }})</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-muted">Record Reference / Unique ID *</label>
-              <input type="text" name="record_reference" class="form-control form-control-sm" required placeholder="e.g. USER-40291, INV-2026-09">
-              <div class="small text-muted" style="font-size: 0.7rem; margin-top: 2px;">Reference identifier in your internal database or cloud system.</div>
-            </div>
-
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-muted">Data Subject Type</label>
-              <input type="text" name="data_subject_type" class="form-control form-control-sm" placeholder="e.g. Customer, Employee, Contractor">
-            </div>
-
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-muted">Third-Party Processor (Optional)</label>
-              <input type="text" name="processor_name" class="form-control form-control-sm" placeholder="e.g. AWS, Salesforce (or leave blank for category default)">
-            </div>
-
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-muted">Collection Date | Retention Start Date *</label>
-              {% if user_role == 'data_owner' %}
-                <input type="text" class="form-control form-control-sm text-muted bg-light" value="{{ today_str }} (today)" disabled>
-                <input type="hidden" name="collection_date" value="{{ today_str }}">
-              {% else %}
-                <input type="date" name="collection_date" class="form-control form-control-sm" required value="{{ today_str }}">
-              {% endif %}
-            </div>
-
-            <div class="col-md-4">
-              <label class="form-label small fw-bold text-muted">Context Notes</label>
-              <textarea name="notes" class="form-control form-control-sm" rows="1" placeholder="Record context notes (no personal data)..."></textarea>
-              <div class="form-text small text-warning" style="font-size: 0.7rem; margin-top: 2px;">
-                <i class="bi bi-shield-lock-fill me-1"></i><strong>Zero-Knowledge:</strong> No personal identity data.
-              </div>
-            </div>
-
-            <div class="col-12 d-flex justify-content-end gap-2 pt-2">
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#manualIntakeCollapse">Cancel</button>
-              <button type="submit" class="btn btn-primary btn-sm fw-bold px-4">Register Intake Record</button>
-            </div>
-          </div>
-        </form>
-      </div>
+      </a>
     </div>
   </div>
 
@@ -161,9 +85,9 @@
           <div class="col-md-3">
             <label class="form-label small mb-1 fw-bold text-muted">Status</label>
             <select name="status" class="form-select form-select-sm">
-              <option value="">All active</option>
-              {% for s in ['active','due_review','disposal_requested','legal_hold','disposed','overdue'] %}
-              <option value="{{ s }}" {{ 'selected' if s == filter_status else '' }}>{{ s | replace('_', ' ') | title }}</option>
+              <option value="">All records still held</option>
+              {% for value, label in [('running','Clock running'),('soon','Due soon'),('due','Due now or overdue'),('waiting','Clock not started'),('hold','On legal hold'),('disposal_requested','Awaiting disposal approval'),('disposed','Disposed')] %}
+              <option value="{{ value }}" {{ 'selected' if value == filter_status else '' }}>{{ label }}</option>
               {% endfor %}
             </select>
           </div>
@@ -185,7 +109,7 @@
 
       <div class="card shadow-sm border-0 rounded-4 bg-white">
         <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3 px-4 flex-wrap gap-2">
-          <span class="fw-bold text-dark mb-0" style="font-size:0.9rem;">Records Inventory ({{ total_count }} total)</span>
+          <span class="fw-bold text-dark mb-0" style="font-size:0.9rem;">{{ total_count }} record{{ "s" if total_count != 1 else "" }}</span>
           {% if total_pages > 1 %}
           <nav>
             <ul class="pagination pagination-sm mb-0">
@@ -233,15 +157,15 @@
                   <th class="text-nowrap" style="min-width: 140px;">Reference</th>
                   <th class="text-nowrap" style="min-width: 160px;">Category</th>
                   <th class="text-nowrap" style="min-width: 130px;">Role / Processor</th>
-                  <th class="text-nowrap" style="min-width: 110px;">Collected At</th>
-                  <th class="text-nowrap" style="min-width: 130px;">Retention End</th>
-                  <th class="text-nowrap" style="min-width: 110px;">Status</th>
+                  <th class="text-nowrap" style="min-width: 150px;">Clock started</th>
+                  <th class="text-nowrap" style="min-width: 110px;">Delete on</th>
+                  <th class="text-nowrap" style="min-width: 150px;">Time left</th>
                   <th class="text-end pe-3 text-nowrap" style="width: 80px;">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {% for rec in records %}
-                {% set is_expired = (rec.retention_end_date and rec.retention_end_date <= today_date) or rec.status in ['due_review', 'overdue'] %}
+                {% set is_expired = rec.retention_end_date and rec.retention_end_date <= today_date %}
                 <tr class="{{ 'table-light' if rec.status == 'disposed' else '' }}">
                   <td class="ps-3">
                     {% if rec.status != 'disposed' and not rec.legal_hold %}
@@ -253,7 +177,7 @@
                   <td>
                     <a href="/records/view/{{ rec.id }}" class="fw-bold text-dark text-decoration-none font-mono break-words">{{ rec.record_reference }}</a>
                     {% if rec.created_by_owner %}
-                      <span class="ms-1" title="Added by Data Owner">👤</span>
+                      <span class="ms-1 small text-muted">(added by owner)</span>
                     {% endif %}
                   </td>
                   <td>
@@ -266,30 +190,19 @@
                       <span class="badge bg-light-subtle text-muted">Internal</span>
                     {% endif %}
                   </td>
-                  <td class="font-mono">{{ rec.collection_date }}</td>
-                  <td class="font-mono">
-                    {% if rec.retention_end_date %}
-                      <span class="{{ 'text-danger fw-bold' if is_expired and rec.status != 'disposed' else '' }}">{{ rec.retention_end_date }}</span>
+                  {% set clock = clocks.get(rec.id) %}
+                  <td>
+                    {% if clock and clock.start %}
+                      <div class="font-mono">{{ clock.start }}</div>
+                      <div class="small text-muted">{{ clock.basis }}</div>
                     {% else %}
-                      <span class="text-muted">— pending event</span>
+                      <span class="text-muted small">Not started</span>
                     {% endif %}
                   </td>
+                  <td class="font-mono">{{ rec.retention_end_date or '' }}</td>
                   <td>
-                    {% if rec.status == 'active' %}
-                      {% if is_expired %}
-                        <span class="badge bg-danger badge-sm">Expired / Due</span>
-                      {% else %}
-                        <span class="badge bg-success badge-sm">Active</span>
-                      {% endif %}
-                    {% elif rec.status == 'due_review' %}
-                      <span class="badge bg-warning text-dark badge-sm">Due Review</span>
-                    {% elif rec.status == 'disposal_requested' %}
-                      <span class="badge bg-info text-dark badge-sm">Disposal Req</span>
-                    {% elif rec.status == 'legal_hold' %}
-                      <span class="badge bg-danger badge-sm">Legal Hold</span>
-                    {% else %}
-                      <span class="badge bg-secondary badge-sm">Disposed</span>
-                    {% endif %}
+                    {% set state = clock.state if clock else 'running' %}
+                    <span class="clock-state clock-{{ state }}">{{ clock.label if clock else '' }}</span>
                   </td>
                   <td class="text-end pe-3">
                     <a href="/records/view/{{ rec.id }}" class="btn btn-light btn-sm py-1 px-2 border">View</a>

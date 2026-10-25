@@ -140,6 +140,9 @@ class DataRecord(Base):
     status = Column(Enum("active", "due_review", "disposal_requested", "legal_hold", "disposed"), default="active", nullable=False)
     created_by_owner = Column(Boolean, default=False, nullable=False)
     consent_withdrawn_at = Column(DateTime, nullable=True)
+    # Day the retention clock starts for "account_closure" categories: account closed,
+    # contract ended or the event (e.g. a webinar) the data was collected for is over.
+    relationship_ended_on = Column(Date, nullable=True)
     consent_withdrawn_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     category_reassigned_at = Column(DateTime, nullable=True)
     category_reassigned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

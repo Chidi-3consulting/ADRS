@@ -18,7 +18,7 @@ from app.database import get_db
 from app.models import DataRecord, DataCategory, CategoryRetentionRule, AuditLog, Attachment, User
 from app.auth import get_session, verify_stepup_authentication
 from app.helpers import get_country_regulation_labels, get_framework_badge, log_audit
-from app.engine import calculate_retention_end_date, execute_disposal
+from app.engine import calculate_retention_end_date, effective_policy, execute_disposal, get_org_setting, retention_clock
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
 templates = Jinja2Templates(directory=templates_path)
@@ -95,14 +95,23 @@ def list_records(
 
     # P4 fix: Use case() expressions instead of func.sum(bool_expr) for cross-DB compatibility
     from sqlalchemy import case
+    try:
+        due_soon_days = int(get_org_setting(db, org_id, "review_alert_days", "30") or 30)
+    except ValueError:
+        due_soon_days = 30
+    soon_limit = today + timedelta(days=due_soon_days)
+    live = and_(DataRecord.status != 'disposed', DataRecord.legal_hold == False)  # noqa: E712
     kpi_query = db.query(
         func.count(case((DataRecord.status != 'disposed', 1))).label('active'),
+        func.count(case((and_(live, DataRecord.retention_end_date > soon_limit), 1))).label('running'),
+        func.count(case((and_(live, DataRecord.retention_end_date > today,
+                              DataRecord.retention_end_date <= soon_limit), 1))).label('due_soon'),
+        func.count(case((and_(live, DataRecord.retention_end_date <= today), 1))).label('overdue'),
+        func.count(case((and_(live, DataRecord.retention_end_date == None), 1))).label('waiting'),  # noqa: E711
         func.count(case((DataRecord.status == 'due_review', 1))).label('due_review'),
         func.count(case((
-            and_(DataRecord.retention_end_date < today, DataRecord.status != 'disposed'), 1
-        ))).label('overdue'),
-        func.count(case((
-            or_(DataRecord.legal_hold == True, DataRecord.status == 'legal_hold'), 1
+            and_(or_(DataRecord.legal_hold == True, DataRecord.status == 'legal_hold'),  # noqa: E712
+                 DataRecord.status != 'disposed'), 1
         ))).label('on_hold'),
         func.count(case((DataRecord.status == 'disposal_requested', 1))).label('awaiting_approval'),
         func.count(case((
@@ -142,13 +151,21 @@ def list_records(
     if category_id > 0:
         where_clauses.append(DataRecord.category_id == category_id)
 
-    if status == "overdue":
-        where_clauses.append(and_(
-            DataRecord.retention_end_date < today,
-            DataRecord.status != "disposed"
-        ))
-    elif status in ['active', 'due_review', 'disposal_requested', 'legal_hold', 'disposed']:
+    if status in ("overdue", "due"):
+        where_clauses += [live, DataRecord.retention_end_date <= today]
+    elif status == "running":
+        where_clauses += [live, DataRecord.retention_end_date > soon_limit]
+    elif status == "soon":
+        where_clauses += [live, DataRecord.retention_end_date > today, DataRecord.retention_end_date <= soon_limit]
+    elif status == "waiting":
+        where_clauses += [live, DataRecord.retention_end_date == None]  # noqa: E711
+    elif status in ("hold", "legal_hold"):
+        where_clauses += [DataRecord.status != "disposed",
+                          or_(DataRecord.legal_hold == True, DataRecord.status == "legal_hold")]  # noqa: E712
+    elif status in ['active', 'due_review', 'disposal_requested', 'disposed']:
         where_clauses.append(DataRecord.status == status)
+    else:
+        where_clauses.append(DataRecord.status != "disposed")
 
     records_query = db.query(DataRecord).join(
         DataCategory, DataRecord.category_id == DataCategory.id
@@ -160,13 +177,24 @@ def list_records(
     page_num = min(max(1, page), total_pages)
     offset = (page_num - 1) * per_page
 
-    records = records_query.order_by(DataRecord.created_at.desc()).offset(offset).limit(per_page).all()
+    # Soonest deletion first; records whose clock has not started go last.
+    records = records_query.order_by(
+        DataRecord.retention_end_date.is_(None),
+        DataRecord.retention_end_date.asc(),
+        DataRecord.created_at.desc(),
+    ).offset(offset).limit(per_page).all()
+    clocks = {}
+    for rec in records:
+        _cat, trigger, _days, _basis = effective_policy(db, rec)
+        clocks[rec.id] = retention_clock(rec, trigger or "date_based", today, due_soon_days)
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
     today_str = today.strftime("%Y-%m-%d")
 
     return templates.TemplateResponse(request=request, name="records.html", context={
-        "page_title": "Retention Register",
+        "page_title": "Data collection",
         "active_nav": "records",
+        "clocks": clocks,
+        "due_soon_days": due_soon_days,
         "user_name": session["user_name"],
         "user_role": session["role"],
         "org_name": session["org_name"],

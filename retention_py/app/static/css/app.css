@@ -1764,3 +1764,12 @@ footer#footer {
 .public-page .auth-card p.small {
   color: #cbd5e1 !important;
 }
+
+/* Retention clock state on the data collection page */
+.clock-state { display: inline-block; font-size: .8rem; font-weight: 600; padding: .15rem .5rem; border-radius: var(--sd-radius-sm); border: 1px solid transparent; white-space: nowrap; }
+.clock-running  { color: var(--sd-success-text, #166534); background: var(--sd-success-subtle, #ecfdf3); }
+.clock-soon     { color: var(--sd-warning-text, #92400e); background: var(--sd-warning-subtle, #fffbeb); border-color: currentColor; }
+.clock-due, .clock-overdue { color: var(--sd-danger-text, #991b1b); background: var(--sd-danger-subtle, #fef2f2); border-color: currentColor; }
+.clock-waiting  { color: var(--sd-gray-600); background: var(--sd-gray-100); }
+.clock-hold     { color: var(--sd-info-text, #075985); background: var(--sd-info-subtle, #f0f9ff); }
+.clock-disposed { color: var(--sd-gray-500); background: transparent; border-color: var(--sd-gray-300); }

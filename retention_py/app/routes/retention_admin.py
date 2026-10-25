@@ -84,7 +84,7 @@ def _retention_page(request, db, session, result=None, mode=None):
         context=_ctx(
             session,
             {
-                "page_title": "Retention: run and simulate",
+                "page_title": "Retention run",
                 "active_nav": "admin_retention",
                 "queue_count": records_past_retention(db, org_id).count(),
                 "held_count": records_past_retention(db, org_id, include_held=True).count()

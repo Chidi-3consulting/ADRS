@@ -301,6 +301,10 @@ def process_intake_item(db: Session, item) -> dict:
             status="active",
             notes=f"Captured via Enterprise API from system #{item.system_id}",
         )
+        if category:
+            from app.engine import calculate_retention_end_date
+            record.category = category
+            calculate_retention_end_date(db, record)
         db.add(record)
         db.commit()
         db.refresh(record)
@@ -395,9 +399,9 @@ def match_consent_signal(db: Session, signal_id: int) -> dict:
         db.commit()
         return {"matched": False, "record_id": None}
 
-    days = int(_get_setting(db, "consent_disposal_days", "30"))
+    from app.engine import calculate_retention_end_date
     record.consent_withdrawn_at = datetime.utcnow()
-    record.retention_end_date = date.today() + timedelta(days=days)
+    calculate_retention_end_date(db, record)
     signal.status = "processed"
     signal.record_id = record.id
     signal.processed_at = datetime.utcnow()

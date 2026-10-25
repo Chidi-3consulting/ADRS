@@ -3,10 +3,10 @@
 {% block content %}
 <div class="container-fluid px-0">
   <div class="mb-4">
-    <h1 class="h3 mb-1 fw-bold text-dark">Retention: run and simulate</h1>
+    <h1 class="h3 mb-1 fw-bold text-dark">Retention run</h1>
     <p class="text-muted small mb-0">
-      <strong>Collection queue</strong> = records whose retention period has been reached (end date is today or earlier).
-      Records still inside their retention period are never collected.
+      Records whose deletion date has arrived are disposed here, or wait for approval if their category needs one.
+      Records still inside their retention period are never touched. See every record and its countdown on <a href="/records">Data collection</a>.
     </p>
   </div>
 
@@ -20,7 +20,7 @@
   <div class="row g-3 mb-4">
     <div class="col-md-4">
       <div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body">
-        <div class="text-muted small">In the collection queue</div>
+        <div class="text-muted small">Due for deletion now</div>
         <div class="display-6 fw-bold">{{ queue_count }}</div>
       </div></div>
     </div>
@@ -35,11 +35,11 @@
   <div class="row g-3 mb-4">
     <div class="col-md-6">
       <div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body">
-        <h2 class="h5 fw-bold">Simulate (changes nothing)</h2>
+        <h2 class="h5 fw-bold">Preview the next run (changes nothing)</h2>
         <p class="small text-muted">Shows exactly what a run would do right now. No record is changed and no one is notified.</p>
         <form method="post" action="/admin/retention/simulate">
           {{ csrf_field | safe }}
-          <button class="btn btn-outline-primary"><i class="bi bi-play-circle me-1"></i> Simulate retention run</button>
+          <button class="btn btn-outline-primary"><i class="bi bi-play-circle me-1"></i> Preview run</button>
         </form>
       </div></div>
     </div>
@@ -58,7 +58,7 @@
 
   {% if result %}
   <div class="card shadow-sm border-0 rounded-4 mb-4"><div class="card-body">
-    <h2 class="h5 fw-bold">{% if mode == 'simulation' %}Simulation result (nothing was changed){% else %}Run complete{% endif %}</h2>
+    <h2 class="h5 fw-bold">{% if mode == 'simulation' %}Preview (nothing was changed){% else %}Run complete{% endif %}</h2>
     <ul class="list-inline small mb-3">
       <li class="list-inline-item me-3"><strong>{{ result.flagged }}</strong> flagged for review</li>
       <li class="list-inline-item me-3"><strong>{{ result.auto_disposed }}</strong> disposed automatically</li>
