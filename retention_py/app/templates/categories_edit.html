@@ -88,10 +88,11 @@
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Disposal Trigger *</label>
+            <label class="form-label small fw-bold text-muted">Retention clock starts *</label>
             <select name="disposal_trigger" class="form-select" required>
-              <option value="date_based" {{ 'selected' if category.disposal_trigger == 'date_based' else '' }}>Date-based — countdown from Collection Date | Retention Start Date</option>
-              <option value="consent_withdrawal" {{ 'selected' if category.disposal_trigger == 'consent_withdrawal' else '' }}>Consent withdrawal — countdown begins when subject withdraws</option>
+              <option value="date_based" {{ 'selected' if category.disposal_trigger == 'date_based' else '' }}>From the day the data is collected</option>
+              <option value="consent_withdrawal" {{ 'selected' if category.disposal_trigger == 'consent_withdrawal' else '' }}>From the day consent is withdrawn</option>
+              <option value="account_closure" {{ 'selected' if category.disposal_trigger == 'account_closure' else '' }}>From the day the relationship ends (account closed, contract or event over)</option>
             </select>
           </div>
         </div>
@@ -146,9 +147,9 @@
           <div class="col-md-6">
             <label class="form-label small fw-bold text-muted">Approval Governance Tier *</label>
             <select name="approval_type" id="approval_type" class="form-select" required>
-              <option value="auto_disposal" {{ 'selected' if category.approval_type == 'auto_disposal' else '' }}>⚡ Auto-Disposal (Fully automated hands-free sanitization upon expiry)</option>
-              <option value="single_approval" {{ 'selected' if category.approval_type == 'single_approval' else '' }}>👤 Single Approval (Requires 1 authorized DPO/Admin sign-off)</option>
-              <option value="dual_approval" {{ 'selected' if category.approval_type == 'dual_approval' else '' }}>👥 Dual Approval (Four-Eyes: Requires 2 independent sign-offs)</option>
+              <option value="auto_disposal" {{ 'selected' if category.approval_type == 'auto_disposal' else '' }}>Auto-Disposal (Fully automated hands-free sanitization upon expiry)</option>
+              <option value="single_approval" {{ 'selected' if category.approval_type == 'single_approval' else '' }}>Single Approval (Requires 1 authorized DPO/Admin sign-off)</option>
+              <option value="dual_approval" {{ 'selected' if category.approval_type == 'dual_approval' else '' }}>Dual Approval (Four-Eyes: Requires 2 independent sign-offs)</option>
             </select>
             <div class="form-text small" id="approval_hint">Controls whether destruction happens automatically or requires human review.</div>
           </div>

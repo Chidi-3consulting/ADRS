@@ -1,161 +1,106 @@
 {% extends "public_layout.html" %}
 {% block page_styles %}
-  <link rel="stylesheet" href="/static/css/landing.css?v=1">
+  <link rel="stylesheet" href="/static/css/landing.css?v=2">
 {% endblock %}
 {% block content %}
 <main class="safedata-home">
   <section class="sd-hero" aria-labelledby="hero-title">
     <div class="container sd-container">
-      <div class="row align-items-center g-5">
-        <div class="col-lg-6 sd-hero-copy">
-          <p class="sd-eyebrow"><span aria-hidden="true"></span> DATA RETENTION &amp; GOVERNANCE</p>
-          <h1 id="hero-title">Give every data record a <span>clear retention path.</span></h1>
-          <p class="sd-hero-lead">Know what you hold, why you hold it, and what should happen next. SafeData helps your team manage retention policies, review deadlines, approvals, and evidence in one place.</p>
-          <div class="sd-hero-actions">
-            <a href="/register" class="btn btn-primary btn-lg sd-button-primary">Start your 14-day free trial <span aria-hidden="true">→</span></a>
-            <a href="#how-it-works" class="btn btn-lg sd-button-secondary">See how it works</a>
-          </div>
-          <p class="sd-trial-note"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> No credit card required <span aria-hidden="true">·</span> Cancel anytime</p>
+      <h1 id="hero-title">Know the day every record you hold must be deleted.</h1>
+      <p class="sd-lead">SafeData keeps a retention clock on each record your organisation holds. The clock starts when the data is collected, when consent is withdrawn, or when a customer relationship ends. Owners are told before the date, deletions are approved and logged, and the log can be shown to a regulator.</p>
+      <div class="sd-actions">
+        <a href="/register" class="btn btn-lg sd-button-primary">Start your 14-day free trial</a>
+        <a href="#how-it-works" class="btn btn-lg sd-button-secondary">How the clock works</a>
+      </div>
+      <p class="sd-note">No credit card required. Cancel anytime.</p>
+      <figure class="sd-shot">
+        <img src="/static/img/product/data-collection.webp" width="1600" height="1098" alt="The SafeData Data collection page listing records with the day each clock started, its deletion date and the days left" fetchpriority="high">
+        <figcaption>The Data collection page, shown with sample records.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sd-section" id="how-it-works" aria-labelledby="clock-title">
+    <div class="container sd-container">
+      <div class="sd-section-intro">
+        <h2 id="clock-title">Three ways a retention clock starts</h2>
+        <p>Each category of data has a rule. You set the period; SafeData works out the deletion date for every record in it and keeps it up to date.</p>
+      </div>
+      <div class="sd-table-wrap">
+        <table class="sd-clock-table">
+          <thead><tr><th scope="col">The clock starts</th><th scope="col">Example category</th><th scope="col">Example rule</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">The day the data is collected</th><td>Invoices and payment records</td><td>Kept for 6 years from the invoice date, then deleted.</td></tr>
+            <tr><th scope="row">The day consent is withdrawn</th><td>Webinar or newsletter sign-ups</td><td>Deleted 7 days after the person asks to be removed.</td></tr>
+            <tr><th scope="row">The day the relationship ends</th><td>Customer KYC files</td><td>Kept for 5 years after the account is closed.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sd-disclaimer">If data is held on the basis of consent and that consent is withdrawn, the record is not kept past your post-withdrawal window, even if its normal period is longer. Records you must keep by law are not shortened.</p>
+    </div>
+  </section>
+
+  <section class="sd-section" aria-labelledby="example-title">
+    <div class="container sd-container">
+      <div class="sd-section-intro">
+        <h2 id="example-title">One webinar, start to finish</h2>
+        <p>A typical consent-based case, the way it runs in SafeData.</p>
+      </div>
+      <ol class="sd-timeline">
+        <li><span class="when">Day 0</span><h3>Someone registers</h3><p>Your registration form sends SafeData a reference for the sign-up through the API. A fingerprint of the email address is enough; SafeData does not need the person's details.</p></li>
+        <li><span class="when">Day 3</span><h3>They ask to be removed</h3><p>A second form, or your team, records the withdrawal. The record's deletion date is set to day 10 and shows on the Data collection page with its countdown.</p></li>
+        <li><span class="when">Day 10</span><h3>The record is disposed</h3><p>The nightly run disposes it, notifies your connected system, and writes the action to the audit ledger.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sd-section" id="features" aria-labelledby="features-title">
+    <div class="container sd-container">
+      <div class="sd-section-intro">
+        <h2 id="features-title">Nothing is deleted without a trail</h2>
+      </div>
+      <div class="sd-row">
+        <div>
+          <h3>Preview before anything changes</h3>
+          <p>See exactly which records the next run would flag, dispose or hold for approval. The preview changes nothing and notifies no one.</p>
+          <ul class="sd-plain-list">
+            <li>Owners get an in-app notice and an email when a record is within 30 days of its date.</li>
+            <li>Sensitive categories can require one or two approvers.</li>
+            <li>A legal hold or an emergency freeze stops disposal until it is lifted.</li>
+          </ul>
         </div>
-        <div class="col-lg-6">
-          <div class="sd-workflow-card" aria-label="Illustration of a data retention workflow">
-            <div class="sd-workflow-topline">
-              <div>
-                <span class="sd-card-kicker">RETENTION WORKFLOW</span>
-                <h2>From collection to evidence</h2>
-              </div>
-              <span class="sd-live-label"><span aria-hidden="true"></span> POLICY-LED</span>
-            </div>
-            <p class="sd-workflow-intro">A clear, reviewable lifecycle for the data your organisation manages.</p>
-            <ol class="sd-workflow-list">
-              <li>
-                <span class="sd-step-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
-                <span><strong>Register a record</strong><small>Track a reference, category, and owner</small></span>
-                <i class="bi bi-check2 sd-step-check" aria-hidden="true"></i>
-              </li>
-              <li>
-                <span class="sd-step-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></span>
-                <span><strong>Apply a retention rule</strong><small>Set the period and the next review date</small></span>
-                <i class="bi bi-check2 sd-step-check" aria-hidden="true"></i>
-              </li>
-              <li>
-                <span class="sd-step-icon"><i class="bi bi-bell" aria-hidden="true"></i></span>
-                <span><strong>Review what is due</strong><small>Notify owners before action is required</small></span>
-                <i class="bi bi-arrow-right sd-step-next" aria-hidden="true"></i>
-              </li>
-              <li>
-                <span class="sd-step-icon"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
-                <span><strong>Approve and record action</strong><small>Keep an audit trail of decisions and outcomes</small></span>
-                <i class="bi bi-lock sd-step-next" aria-hidden="true"></i>
-              </li>
-            </ol>
-            <div class="sd-workflow-foot"><i class="bi bi-info-circle" aria-hidden="true"></i> Your systems remain responsible for the underlying data and any disposal action.</div>
-          </div>
+        <figure class="sd-shot"><img src="/static/img/product/retention-preview.webp" width="1600" height="1149" alt="Retention run page showing a preview of records that would be flagged or disposed" loading="lazy"></figure>
+      </div>
+      <div class="sd-row">
+        <div>
+          <h3>An audit ledger you can check</h3>
+          <p>Every flag, approval, withdrawal and disposal is recorded with who did it and when. Each entry is chained to the one before it with SHA-256, so a changed or missing entry shows up when the chain is verified.</p>
         </div>
-      </div>
-      <div class="sd-value-strip" aria-label="SafeData capabilities">
-        <div><i class="bi bi-list-check" aria-hidden="true"></i><span>Policy-led retention</span></div>
-        <div><i class="bi bi-person-check" aria-hidden="true"></i><span>Human review and approval</span></div>
-        <div><i class="bi bi-journal-text" aria-hidden="true"></i><span>Traceable decisions</span></div>
+        <figure class="sd-shot"><img src="/static/img/product/audit-ledger.webp" width="1600" height="878" alt="Audit ledger listing retention actions with user, time and details" loading="lazy"></figure>
       </div>
     </div>
   </section>
 
-  <section class="sd-section sd-audience" aria-labelledby="audience-title">
+  <section class="sd-section" aria-labelledby="included-title">
     <div class="container sd-container">
-      <div class="sd-section-heading">
-        <p class="sd-eyebrow sd-eyebrow-light">BUILT FOR RESPONSIBLE DATA TEAMS</p>
-        <h2 id="audience-title">Make retention part of the way you work.</h2>
-        <p>Bring retention schedules, ownership, reviews, and evidence into a process your people can follow.</p>
-      </div>
-      <div class="sd-audience-grid">
-        <article class="sd-audience-card"><i class="bi bi-bank" aria-hidden="true"></i><h3>Banks &amp; fintech</h3><p>Keep customer and KYC retention decisions visible.</p></article>
-        <article class="sd-audience-card"><i class="bi bi-phone" aria-hidden="true"></i><h3>Telecoms &amp; ISPs</h3><p>Coordinate retention across high-volume records.</p></article>
-        <article class="sd-audience-card"><i class="bi bi-cart3" aria-hidden="true"></i><h3>Retail &amp; e-commerce</h3><p>Give teams a repeatable way to review customer data.</p></article>
-        <article class="sd-audience-card"><i class="bi bi-hospital" aria-hidden="true"></i><h3>Healthcare</h3><p>Make data ownership and review dates easier to track.</p></article>
-        <article class="sd-audience-card"><i class="bi bi-briefcase" aria-hidden="true"></i><h3>Consulting &amp; services</h3><p>Manage client-record lifecycles with clear accountability.</p></article>
-        <article class="sd-audience-card"><i class="bi bi-building" aria-hidden="true"></i><h3>Insurance &amp; FMCG</h3><p>Organise retention practices across business functions.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="sd-section sd-features" id="features" aria-labelledby="features-title">
-    <div class="container sd-container">
-      <div class="sd-section-heading">
-        <p class="sd-eyebrow sd-eyebrow-light">A PRACTICAL GOVERNANCE TOOLKIT</p>
-        <h2 id="features-title">Clarity for the full retention lifecycle.</h2>
-        <p>Give your team the controls and records it needs to make considered, accountable decisions.</p>
-      </div>
-      <div class="sd-feature-grid">
-        <article class="sd-feature-card">
-          <span class="sd-feature-icon"><i class="bi bi-journal-check" aria-hidden="true"></i></span>
-          <h3>Retention policy register</h3>
-          <p>Define periods, owners, review dates, and intended actions for each data category. Configure your own policies and use supported category templates as a starting point.</p>
-        </article>
-        <article class="sd-feature-card">
-          <span class="sd-feature-icon"><i class="bi bi-cpu" aria-hidden="true"></i></span>
-          <h3>System integration</h3>
-          <p>Connect business systems through the API and pass record references and lifecycle events into your retention workflow.</p>
-        </article>
-        <article class="sd-feature-card">
-          <span class="sd-feature-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
-          <h3>Verifiable audit history</h3>
-          <p>Keep a tamper-evident, cryptographically chained history of relevant actions, approvals, and recorded outcomes.</p>
-        </article>
-        <article class="sd-feature-card">
-          <span class="sd-feature-icon"><i class="bi bi-bell" aria-hidden="true"></i></span>
-          <h3>Review reminders</h3>
-          <p>Alert data owners and governance teams as retention deadlines approach, so reviews can happen on time.</p>
-        </article>
-        <article class="sd-feature-card">
-          <span class="sd-feature-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
-          <h3>Approval safeguards</h3>
-          <p>Use configurable approval steps for sensitive categories and record the people and decisions involved.</p>
-        </article>
-        <article class="sd-feature-card">
-          <span class="sd-feature-icon"><i class="bi bi-globe2" aria-hidden="true"></i></span>
-          <h3>Configurable rule sets</h3>
-          <p>Map retention practices to the needs of your organisation and the jurisdictions in which you operate. SafeData supports governance; it does not replace legal advice.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="sd-section sd-lifecycle" id="how-it-works" aria-labelledby="lifecycle-title">
-    <div class="container sd-container">
-      <div class="sd-section-heading">
-        <p class="sd-eyebrow">HOW IT FITS YOUR SYSTEMS</p>
-        <h2 id="lifecycle-title">Your data stays in your systems. Your process gets clearer.</h2>
-        <p>SafeData manages record references and governance workflow; your connected systems remain the source of the underlying data.</p>
-      </div>
-      <div class="sd-lifecycle-grid">
-        <article class="sd-lifecycle-card">
-          <span class="sd-lifecycle-number">01</span><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i>
-          <h3>Register</h3><p>Send a record reference and the context your retention process needs.</p>
-        </article>
-        <article class="sd-lifecycle-card">
-          <span class="sd-lifecycle-number">02</span><i class="bi bi-hourglass-split" aria-hidden="true"></i>
-          <h3>Monitor</h3><p>Track deadlines, lifecycle changes, holds, and upcoming reviews.</p>
-        </article>
-        <article class="sd-lifecycle-card">
-          <span class="sd-lifecycle-number">03</span><i class="bi bi-clipboard2-check" aria-hidden="true"></i>
-          <h3>Review &amp; act</h3><p>Route due records for review, approval, and action by your authorised team.</p>
-        </article>
-        <article class="sd-lifecycle-card">
-          <span class="sd-lifecycle-number">04</span><i class="bi bi-file-earmark-check" aria-hidden="true"></i>
-          <h3>Record evidence</h3><p>Capture the decision and outcome so your team can trace what happened.</p>
-        </article>
-      </div>
-      <p class="sd-disclaimer"><i class="bi bi-info-circle" aria-hidden="true"></i> Disposal depends on your configured integrations, policies, and authorised actions. SafeData does not make your organisation compliant by itself.</p>
+      <div class="sd-section-intro"><h2 id="included-title">Also included</h2></div>
+      <ul class="sd-included">
+        <li><strong>REST API and webhooks</strong> to send records and consent signals in, and disposal instructions out.</li>
+        <li><strong>CSV import</strong> for records you already hold.</li>
+        <li><strong>Category templates</strong> for NDPA, GDPR and other regimes, as a starting point you adjust.</li>
+        <li><strong>Record of processing activities</strong> and compliance reports.</li>
+        <li><strong>Roles</strong> for admins, DPOs and data owners, with re-authentication before a manual delete.</li>
+        <li><strong>Evidence attachments</strong> kept with each record.</li>
+      </ul>
+      <p class="sd-disclaimer">SafeData tracks references and decisions; your own systems hold the data itself and carry out the deletion it instructs. Using SafeData supports compliance but does not make an organisation compliant on its own, and it is not legal advice.</p>
     </div>
   </section>
 
   <section class="sd-section sd-pricing" id="pricing" aria-labelledby="pricing-title">
     <div class="container sd-container">
-      <div class="sd-section-heading">
-        <p class="sd-eyebrow sd-eyebrow-light">SIMPLE PRICING</p>
-        <h2 id="pricing-title">Start with the complete toolkit.</h2>
-        <p>Try SafeData for 14 days. No credit card required.</p>
+      <div class="sd-section-intro">
+        <h2 id="pricing-title">Pricing</h2>
+        <p>One plan with everything above. Try it for 14 days without a card.</p>
       </div>
       <div class="sd-pricing-controls" aria-label="Choose billing period and currency">
         <div class="sd-period-switch" role="group" aria-label="Billing period">
@@ -163,7 +108,7 @@
           <button type="button" id="btn-yearly" aria-pressed="true">Yearly <span>Save 17%</span></button>
         </div>
         <label class="sd-currency-control" for="currency-select">
-          <i class="bi bi-globe2" aria-hidden="true"></i><span>Currency</span>
+          <span>Show approximate price in</span>
           <select id="currency-select" class="form-select form-select-sm">
             <option value="USD" data-symbol="$" data-rate="1.0" {% if pricing.currency_code == 'USD' %}selected{% endif %}>USD ($)</option>
             <option value="NGN" data-symbol="₦" data-rate="1500.0" {% if pricing.currency_code == 'NGN' %}selected{% endif %}>NGN (₦)</option>
@@ -184,40 +129,38 @@
       </div>
       <article class="sd-plan-card">
         <div class="sd-plan-summary">
-          <p class="sd-plan-kicker">SAFE DATA PLATFORM</p>
-          <h3>Platform plan</h3>
+          <h3>SafeData platform</h3>
           <p class="sd-plan-description">Retention workflow, integrations, reviews, and audit history for your organisation.</p>
           <div class="sd-plan-price"><span id="price-value">$399</span><span id="price-interval"> / year</span></div>
           <div id="local-price-container" class="sd-local-price-container">
-            <span id="local-price-badge" class="sd-local-price"><i class="bi bi-tag-fill" aria-hidden="true"></i> <span id="local-price-value">Approx. {{ pricing.yearly.display_local }} / year</span></span>
+            <span id="local-price-badge" class="sd-local-price"><span id="local-price-value">Approx. {{ pricing.yearly.display_local }} / year</span></span>
           </div>
-          <a href="/register" class="btn btn-primary btn-lg sd-button-primary sd-plan-cta">Start your 14-day free trial <span aria-hidden="true">→</span></a>
+          <a href="/register" class="btn btn-lg sd-button-primary sd-plan-cta">Start your 14-day free trial</a>
           <p class="sd-plan-note">No credit card required. Cancel anytime.</p>
         </div>
         <div class="sd-plan-includes">
           <h4>Included capabilities</h4>
           <ul>
-            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> REST API for record references and lifecycle events</li>
-            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Configurable categories and retention mappings</li>
-            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Webhook dispatch for connected workflows</li>
-            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Step-up re-authentication for Safe Delete</li>
-            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Bulk review and eligible-record management</li>
-            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> SHA-256 chained audit history</li>
-            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Multi-regulation category templates</li>
-            <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> DPO alerts and disposal records</li>
+            <li>REST API for record references and lifecycle events</li>
+            <li>Configurable categories and retention mappings</li>
+            <li>Webhook dispatch for connected workflows</li>
+            <li>Step-up re-authentication for Safe Delete</li>
+            <li>Bulk review and eligible-record management</li>
+            <li>SHA-256 chained audit history</li>
+            <li>Multi-regulation category templates</li>
+            <li>DPO alerts and disposal records</li>
           </ul>
         </div>
       </article>
     </div>
   </section>
 
-  <section class="sd-final-cta" aria-labelledby="final-cta-title">
+  <section class="sd-final" aria-labelledby="final-title">
     <div class="container sd-container">
-      <p class="sd-eyebrow">MAKE THE NEXT REVIEW EASIER</p>
-      <h2 id="final-cta-title">Know what you hold. Know what happens next.</h2>
-      <p>Bring structure and accountability to your organisation’s data retention process with SafeData.</p>
-      <div class="sd-hero-actions sd-final-actions">
-        <a href="/register" class="btn btn-primary btn-lg sd-button-primary">Start your free trial <span aria-hidden="true">→</span></a>
+      <h2 id="final-title">Try it with your own retention schedule</h2>
+      <p>Add your categories, import a sample of records and see their deletion dates within the hour.</p>
+      <div class="sd-actions">
+        <a href="/register" class="btn btn-lg sd-button-primary">Start your 14-day free trial</a>
         <a href="/login" class="btn btn-lg sd-button-secondary">Sign in</a>
       </div>
     </div>

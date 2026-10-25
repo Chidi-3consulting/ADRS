@@ -76,10 +76,11 @@
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Disposal Trigger *</label>
+            <label class="form-label small fw-bold text-muted">Retention clock starts *</label>
             <select name="disposal_trigger" class="form-select" required>
-              <option value="date_based" selected>Date-based — countdown from Collection Date | Retention Start Date</option>
-              <option value="consent_withdrawal">Consent withdrawal — countdown begins when subject withdraws</option>
+              <option value="date_based" selected>From the day the data is collected</option>
+              <option value="consent_withdrawal">From the day consent is withdrawn</option>
+              <option value="account_closure">From the day the relationship ends (account closed, contract or event over)</option>
             </select>
           </div>
         </div>
@@ -134,9 +135,9 @@
           <div class="col-md-6">
             <label class="form-label small fw-bold text-muted">Approval Governance Tier *</label>
             <select name="approval_type" id="approval_type" class="form-select" required>
-              <option value="auto_disposal">⚡ Auto-Disposal (Fully automated hands-free sanitization upon expiry)</option>
-              <option value="single_approval" selected>👤 Single Approval (Requires 1 authorized DPO/Admin sign-off)</option>
-              <option value="dual_approval">👥 Dual Approval (Four-Eyes: Requires 2 independent sign-offs)</option>
+              <option value="auto_disposal">Auto-Disposal (Fully automated hands-free sanitization upon expiry)</option>
+              <option value="single_approval" selected>Single Approval (Requires 1 authorized DPO/Admin sign-off)</option>
+              <option value="dual_approval">Dual Approval (Four-Eyes: Requires 2 independent sign-offs)</option>
             </select>
             <div class="form-text small" id="approval_hint">Controls whether destruction happens automatically or requires human review.</div>
           </div>

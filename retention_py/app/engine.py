@@ -130,12 +130,12 @@ def _send_event_email(to_email: str, user_name: str, subject: str, message: str,
         }.get(notif_type, "#667eea")
 
         label = {
-            "escalation_alert":       "🚨 Escalation Alert",
-            "disposal_approval_needed": "⏳ Approval Required",
-            "security_alert":         "🔐 Security Alert",
-            "quarterly_review":       "📋 Quarterly Review",
+            "escalation_alert":       "Escalation Alert",
+            "disposal_approval_needed": "Approval Required",
+            "security_alert":         "Security Alert",
+            "quarterly_review":       "Quarterly Review",
             "review_due":             "Deletion date approaching",
-        }.get(notif_type, "📌 SafeData Notification")
+        }.get(notif_type, "SafeData Notification")
 
         html = f"""
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e;">
@@ -657,7 +657,7 @@ def run_retention_checks(db: Session, org_id: int, dry_run: bool = False) -> dic
         db.commit()
 
         notify_role(db, org_id, ["admin"], "escalation_alert",
-                    f"🚨 ESCALATION: {len(esc_records)} record(s) overdue for review",
+                    f"ESCALATION: {len(esc_records)} record(s) overdue for review",
                     f"{len(esc_records)} record(s) have been awaiting review beyond the escalation window.")
         log_audit(db, org_id, "escalation_sent", "data_record", None, None,
                   {"count": len(esc_records)}, None)
@@ -1104,6 +1104,23 @@ def compliance_metrics(db: Session, org_id: int) -> dict:
         DR.retention_end_date < today,
     ).scalar() or 0
 
+    # Same clock states as the data collection page, counted by date.
+    try:
+        window = int(get_org_setting(db, org_id, "review_alert_days", "30") or 30)
+    except ValueError:
+        window = 30
+    held_now = and_(DR.organization_id == org_id, DR.deleted_at == None,  # noqa: E711
+                    DR.status != "disposed", DR.legal_hold == False)  # noqa: E712
+    clock_due = db.query(func.count(DR.id)).filter(
+        held_now, DR.retention_end_date != None, DR.retention_end_date <= today).scalar() or 0  # noqa: E711
+    clock_soon = db.query(func.count(DR.id)).filter(
+        held_now, DR.retention_end_date > today,
+        DR.retention_end_date <= today + timedelta(days=window)).scalar() or 0
+    clock_running = db.query(func.count(DR.id)).filter(
+        held_now, DR.retention_end_date > today + timedelta(days=window)).scalar() or 0
+    clock_waiting = db.query(func.count(DR.id)).filter(
+        held_now, DR.retention_end_date == None).scalar() or 0  # noqa: E711
+
     upcoming_30 = db.query(func.count(DR.id)).filter(
         DR.organization_id == org_id,
         DR.status == "active",
@@ -1142,6 +1159,11 @@ def compliance_metrics(db: Session, org_id: int) -> dict:
         "legal_hold": on_legal_hold,
         "overdue": overdue,
         "upcoming_30": upcoming_30,
+        "clock_running": clock_running,
+        "clock_soon": clock_soon,
+        "clock_due": clock_due,
+        "clock_waiting": clock_waiting,
+        "due_soon_window": window,
         "processor_records": processor_records,
         "controller_records": controller_records,
         "health_score": base_score,
@@ -1365,11 +1387,15 @@ def compliance_scorecard_details(db: Session, org_id: int) -> dict:
 
 
 def upcoming_deadlines(db: Session, org_id: int, limit: int = 15) -> list:
-    """Next N upcoming retention deadlines.
+    """Records whose deletion date is within the due-soon window or already passed.
     P2 fix: single JOIN query instead of N+1 sub-queries per record.
     """
     from sqlalchemy.orm import aliased
     today = date.today()
+    try:
+        window = int(get_org_setting(db, org_id, "review_alert_days", "30") or 30)
+    except ValueError:
+        window = 30
 
     # Single JOIN query — eliminates the N+1 pattern
     DC = aliased(DataCategory)
@@ -1377,10 +1403,11 @@ def upcoming_deadlines(db: Session, org_id: int, limit: int = 15) -> list:
         DC, DC.id == DataRecord.category_id
     ).filter(
         DataRecord.organization_id == org_id,
-        DataRecord.status.in_(["active", "due_review"]),
+        DataRecord.status.in_(["active", "due_review", "disposal_requested"]),
+        DataRecord.legal_hold == False,  # noqa: E712
         DataRecord.deleted_at == None,
         DataRecord.retention_end_date != None,
-        DataRecord.retention_end_date >= today,
+        DataRecord.retention_end_date <= today + timedelta(days=window),
     ).order_by(DataRecord.retention_end_date.asc()).limit(limit).all()
 
     result = []

@@ -2,7 +2,7 @@ def test_public_landing_renders_responsive_product_sections(client):
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "Give every data record a" in response.text
+    assert "Know the day every record you hold must be deleted." in response.text
     assert 'id="features"' in response.text
     assert 'id="how-it-works"' in response.text
     assert 'id="pricing"' in response.text

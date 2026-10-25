@@ -114,12 +114,12 @@
 
             <dt class="col-sm-4 text-muted mb-3">Disposal Trigger</dt>
             <dd class="col-sm-8 text-dark mb-3">
-              {{ '👤 Consent withdrawal' if category.disposal_trigger == 'consent_withdrawal' else '📅 Date-based countdown' }}
+              {{ {'consent_withdrawal': 'From consent withdrawal', 'account_closure': 'From end of relationship'}.get(category.disposal_trigger, 'From collection date') }}
             </dd>
 
             <dt class="col-sm-4 text-muted mb-3">Statutory Retention</dt>
             <dd class="col-sm-8 text-dark mb-3 fw-bold">
-              {{ 'Until consent withdrawn' if category.disposal_trigger == 'consent_withdrawal' else category.retention_period_label or (category.retention_period_days ~ ' days') }}
+              {{ category.retention_period_label or (category.retention_period_days ~ ' days') }}{% if category.disposal_trigger != 'date_based' %} after that day{% endif %}
               <span class="text-muted fw-normal">({{ category.retention_period_days }} days)</span>
             </dd>
 

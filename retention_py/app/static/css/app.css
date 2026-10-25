@@ -112,8 +112,8 @@
   --sd-focus-ring:      rgba(37, 99, 235, 0.35);
 
   /* ── Typography ── */
-  --font-sans:          'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-headings:      'Outfit', var(--font-sans);
+  --font-sans:          'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-headings:      var(--font-sans);
   --font-mono:          'IBM Plex Mono', 'Consolas', 'Monaco', monospace;
 
   --sd-text-xs:    0.75rem;
@@ -412,9 +412,7 @@ body.public-page {
 }
 
 .topbar {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #fff;
   border-bottom: 1px solid var(--sd-border);
   padding: 0.75rem var(--sd-space-6);
   position: sticky;
@@ -462,7 +460,7 @@ footer#footer {
 .card:hover { box-shadow: var(--sd-shadow-sm); }
 
 .card.hover-lift:hover {
-  transform: translateY(-2px);
+  transform: none;
   box-shadow: var(--sd-shadow-md);
 }
 
@@ -1773,3 +1771,7 @@ footer#footer {
 .clock-waiting  { color: var(--sd-gray-600); background: var(--sd-gray-100); }
 .clock-hold     { color: var(--sd-info-text, #075985); background: var(--sd-info-subtle, #f0f9ff); }
 .clock-disposed { color: var(--sd-gray-500); background: transparent; border-color: var(--sd-gray-300); }
+
+/* Auth pages: labels must stay readable on the dark card (WCAG AA) */
+.public-page .auth-card .form-label,
+.public-page .auth-card label { color: #d4d9e1 !important; }
