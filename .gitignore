@@ -33,3 +33,4 @@ audit-*.png
 .idea/
 .env
 .migrate.lock
+/dist/
