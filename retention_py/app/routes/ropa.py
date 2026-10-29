@@ -3,6 +3,7 @@ SafeData ROPA (Record of Processing Activities) Routes
 Ported from legacy — provides full CRUD for ROPA entries with
 controller/processor support and processor sub-entries.
 """
+from app.core.csvsafe import safe_csv_writer
 import csv
 import io
 from datetime import datetime
@@ -337,7 +338,7 @@ def ropa_export_csv(request: Request, db: Session = Depends(get_db)):
     ).order_by(RopaEntry.id.asc()).all()
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = safe_csv_writer(output)
     writer.writerow([
         "ID", "Activity Name", "Role Type", "Controller", "Controller Contact",
         "Processor", "Processor Contact", "DPO Contact", "Purpose",

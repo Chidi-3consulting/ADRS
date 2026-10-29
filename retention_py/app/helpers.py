@@ -414,6 +414,16 @@ def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id
     import json as _json
     from datetime import datetime as _dt, timezone as _tz
 
+    # The ledger is one hash chain. Two writers (a web request and the cron worker) must not
+    # read the same "previous" row, or the chain forks and verification raises a false tamper
+    # alarm. On PostgreSQL a transaction-scoped advisory lock serialises writers until commit.
+    try:
+        if db.get_bind().dialect.name == "postgresql":
+            from sqlalchemy import text as _text
+            db.execute(_text("SELECT pg_advisory_xact_lock(7261001)"))
+    except Exception:
+        pass
+
     # Fetch previous log hash
     prev_log = db.query(AuditLog).order_by(AuditLog.id.desc()).first()
     prev_hash = prev_log.row_hash if prev_log else "0" * 64
@@ -427,7 +437,10 @@ def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id
         details_str = _json.dumps(details, sort_keys=True, ensure_ascii=False)
 
     # Canonical hash payload  format
-    created_at_str = _dt.now(_tz.utc).strftime("%Y-%m-%d %H:%M:%S")
+    # The same instant is hashed and stored (naive UTC, whole seconds), so verification never
+    # depends on the database server's clock or timezone.
+    _created = _dt.now(_tz.utc).replace(tzinfo=None, microsecond=0)
+    created_at_str = _created.strftime("%Y-%m-%d %H:%M:%S")
     payload = "|".join([
         str(org_id), action, entity_type,
         str(entity_id) if entity_id is not None else "",
@@ -445,7 +458,8 @@ def log_audit(db: Session, org_id: int, action: str, entity_type: str, entity_id
         details=details,
         ip_address=ip_address,
         prev_hash=prev_hash,
-        row_hash=row_hash
+        row_hash=row_hash,
+        created_at=_created,
     )
     db.add(log_entry)
     db.commit()
@@ -1292,6 +1306,9 @@ def send_system_email(db: Session, to_email: str, subject: str, html_body: str) 
     """
     import smtplib
     import os
+    # No line breaks in header values (stops header injection through names or references).
+    subject = " ".join(str(subject).split())
+    to_email = "".join(str(to_email).split())
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
     from app.config import (

@@ -4,7 +4,7 @@
   <div>
     <div class="d-flex align-items-center gap-2">
       <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-      <h1 class="h3 mb-0 fw-bold text-dark">System Settings</h1>
+      <h1 class="h3 mb-0 fw-bold text-dark">System settings</h1>
     </div>
     <p class="text-muted small mb-0 mt-1">Configure your organization details, retention parameters, email delivery, and account security</p>
   </div>
@@ -26,13 +26,13 @@
 <!-- Settings Sub-Navigation -->
 <ul class="nav nav-tabs settings-nav mb-4">
   <li class="nav-item">
-    <a class="nav-link {{ 'active' if active_tab == 'organization' else '' }}" href="/settings?tab=organization">Organisation Profile</a>
+    <a class="nav-link {{ 'active' if active_tab == 'organization' else '' }}" href="/settings?tab=organization">Organisation profile</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {{ 'active' if active_tab == 'general' else '' }}" href="/settings?tab=general">Retention &amp; Email</a>
+    <a class="nav-link {{ 'active' if active_tab == 'general' else '' }}" href="/settings?tab=general">Retention and email</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link {{ 'active' if active_tab == 'twofa' else '' }}" href="/settings?tab=twofa">Two-Factor Auth</a>
+    <a class="nav-link {{ 'active' if active_tab == 'twofa' else '' }}" href="/settings?tab=twofa">Two-Factor auth</a>
   </li>
 </ul>
 
@@ -41,7 +41,7 @@
 <div class="row g-4">
   <div class="col-lg-7">
     <div class="card shadow-sm border-0 bg-white">
-      <div class="card-header bg-white fw-bold">Your Organisation</div>
+      <div class="card-header bg-white fw-bold">Your organisation</div>
       <div class="card-body">
         <p class="text-muted small mb-4">
           Each company has one SafeData tenant. Your registered domain is fixed at sign-up and defines which work emails may join your team.
@@ -50,23 +50,23 @@
           {{ csrf_field | safe }}
           <input type="hidden" name="tab" value="organization">
           <div class="mb-3">
-            <label class="form-label small fw-semibold">Organisation Name *</label>
+            <label class="form-label small fw-semibold">Organisation name *</label>
             <input name="name" class="form-control" required value="{{ org.name }}">
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-semibold">Registered Domain</label>
+            <label class="form-label small fw-semibold">Registered domain</label>
             <input class="form-control bg-light" value="{{ org.primary_domain }}" disabled>
             <div class="form-text small" style="font-size:0.7rem;">Team members must use <strong>@{{ org.primary_domain }}</strong> work emails.</div>
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-semibold">Billing Contact Email *</label>
+            <label class="form-label small fw-semibold">Billing contact email *</label>
             <input type="email" name="billing_email" class="form-control" required value="{{ org.billing_email or '' }}">
           </div>
           <div class="mb-3">
             <label class="form-label small fw-semibold">Timezone</label>
             <input name="timezone" class="form-control" value="{{ timezone }}" placeholder="Africa/Lagos">
           </div>
-          <button class="btn btn-primary fw-bold">Save Profile</button>
+          <button class="btn btn-primary fw-bold">Save profile</button>
         </form>
       </div>
     </div>
@@ -79,7 +79,7 @@
         {% if org.status == 'trial' or org.subscription_status == 'trial' %}
           <p class="mb-0 small text-muted">Trial: {% if trial_days is not none and trial_days > 0 %}{{ trial_days }} days remaining{% else %}<span class="text-danger fw-bold">Expired</span>{% endif %}</p>
         {% endif %}
-        <a href="/billing" class="btn btn-outline-primary btn-sm mt-3">Manage Billing</a>
+        <a href="/billing" class="btn btn-outline-primary btn-sm mt-3">Manage billing</a>
       </div>
     </div>
     <div class="card shadow-sm border-0 bg-white">
@@ -151,7 +151,7 @@
 {% elif active_tab == 'twofa' %}
 <div class="card shadow-sm border-0 bg-white mx-auto" style="max-width: 640px;">
   <div class="card-body">
-    <h1 class="h5 mb-3 fw-bold text-dark">Two-Factor Authentication (2FA)</h1>
+    <h1 class="h5 mb-3 fw-bold text-dark">Two-Factor authentication (2FA)</h1>
 
     {% if new_recovery %}
       <div class="alert alert-success">
@@ -161,7 +161,7 @@
       <a href="/settings?tab=twofa" class="btn btn-primary w-100 fw-bold">Done</a>
 
     {% elif user.twofa_enabled %}
-      <p class="text-success fw-semibold"><i class="bi bi-check-circle-fill"></i> Two-factor authentication is active on your account.</p>
+      <p class="text-success fw-semibold">Two-factor authentication is active on your account.</p>
       <form method="post" action="/settings/save" onsubmit="return confirm('Disable 2FA? Your account will be protected by password only.');">
         {{ csrf_field | safe }}
         <input type="hidden" name="tab" value="twofa">
@@ -184,7 +184,7 @@
         <input type="hidden" name="tab" value="twofa">
         <input type="hidden" name="action" value="enable">
         <div class="mb-3 mx-auto" style="max-width: 240px;">
-          <label class="form-label small fw-semibold">Verification Code</label>
+          <label class="form-label small fw-semibold">Verification code</label>
           <input name="code" class="form-control text-center font-monospace" placeholder="123456" autocomplete="one-time-code" required>
         </div>
         <button class="btn btn-primary w-100 fw-bold btn-sm">Enable 2FA</button>

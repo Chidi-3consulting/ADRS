@@ -3,7 +3,7 @@
 <div class="container-fluid px-0" style="max-width: 760px;">
 
   <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="/records/view/{{ record.id }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Record</a>
+    <a href="/records/view/{{ record.id }}" class="btn btn-outline-secondary btn-sm">Back to record</a>
     <h1 class="h3 mb-0 fw-bold text-dark">Edit Record: {{ record.record_reference }}</h1>
   </div>
 
@@ -13,46 +13,46 @@
         {{ csrf_field | safe }}
 
         <div class="mb-3">
-          <label class="form-label small fw-bold text-muted">Record Reference / Identifier *</label>
+          <label class="form-label small fw-bold text-muted">Record reference / identifier *</label>
           <input type="text" name="record_reference" class="form-control" value="{{ record.record_reference }}" required>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Data Subject Type</label>
+            <label class="form-label small fw-bold text-muted">Data subject type</label>
             <input type="text" name="data_subject_type" class="form-control" value="{{ record.data_subject_type or '' }}" placeholder="e.g. Customer, Employee, Vendor">
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-bold text-muted">Collection Date | Retention Start Date *</label>
+            <label class="form-label small fw-bold text-muted">Collection date | retention start date *</label>
             <input type="date" name="collection_date" class="form-control" required value="{{ record.collection_date }}">
           </div>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Third-Party Processor Name</label>
+            <label class="form-label small fw-bold text-muted">Third-Party processor name</label>
             <input type="text" name="processor_name" class="form-control" value="{{ record.processor_name or '' }}" placeholder="e.g. AWS, Salesforce">
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Processor Sync Status</label>
+            <label class="form-label small fw-bold text-muted">Processor sync status</label>
             <select name="processor_sync_status" class="form-select">
               <option value="synced" {{ 'selected' if record.processor_sync_status == 'synced' else '' }}>Synced</option>
-              <option value="pending" {{ 'selected' if record.processor_sync_status == 'pending' else '' }}>Pending Sync</option>
-              <option value="failed" {{ 'selected' if record.processor_sync_status == 'failed' else '' }}>Sync Failed</option>
+              <option value="pending" {{ 'selected' if record.processor_sync_status == 'pending' else '' }}>Pending sync</option>
+              <option value="failed" {{ 'selected' if record.processor_sync_status == 'failed' else '' }}>Sync failed</option>
             </select>
           </div>
         </div>
 
         <div class="mb-4">
-          <label class="form-label small fw-bold text-muted">Context Notes</label>
+          <label class="form-label small fw-bold text-muted">Context notes</label>
           <div class="form-text small text-warning mb-1">
-            <i class="bi bi-shield-lock-fill me-1"></i><strong>Zero-Knowledge Rule:</strong> Do not enter personal identification data (names, emails, phone numbers, credit cards, or ID numbers). SafeData only retains metadata references.
+            <strong>Zero-Knowledge rule:</strong> Do not enter personal identification data (names, emails, phone numbers, credit cards, or ID numbers). SafeData only retains metadata references.
           </div>
           <textarea name="notes" class="form-control" rows="3" placeholder="Context notes (no personal data)...">{{ record.notes or '' }}</textarea>
         </div>
 
         <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+          <button type="submit" class="btn btn-primary px-4">Save changes</button>
           <a href="/records/view/{{ record.id }}" class="btn btn-outline-secondary">Cancel</a>
         </div>
       </form>

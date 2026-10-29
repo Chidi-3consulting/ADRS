@@ -43,7 +43,7 @@
           <td><span class="badge bg-info text-dark">{{ o.subscription_status | upper }}</span></td>
           <td>{{ o.user_count }}</td>
           <td>{{ o.record_count }}</td>
-          <td class="small text-muted">{{ o.created_at.strftime('%Y-%m-%d') if o.created_at else '—' }}</td>
+          <td class="small text-muted">{{ o.created_at.strftime('%Y-%m-%d') if o.created_at else 'None' }}</td>
           <td>
             <form method="post" action="/platform/organizations" class="d-inline">
               {{ csrf_field | safe }}

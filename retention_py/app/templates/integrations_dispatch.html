@@ -35,8 +35,8 @@
                 <td>#{{ d.id }}</td>
                 <td>Record #{{ d.record_id }}</td>
                 <td>System #{{ d.system_id }}</td>
-                <td><span class="badge bg-danger text-uppercase">{{ d.dispatch_type }}</span></td>
-                <td><code>{{ d.external_ref or '—' }}</code></td>
+                <td><span class="badge bg-danger">{{ d.dispatch_type }}</span></td>
+                <td><code>{{ d.external_ref or 'None' }}</code></td>
                 <td>
                   {% if d.status == 'confirmed' or d.status == 'sent' %}
                     <span class="badge bg-success">{{ d.status }}</span>
@@ -46,7 +46,7 @@
                     <span class="badge bg-danger">{{ d.status }}</span>
                   {% endif %}
                 </td>
-                <td><small>{{ d.sent_at or '—' }}</small></td>
+                <td><small>{{ d.sent_at or 'None' }}</small></td>
               </tr>
             {% endfor %}
           </tbody>

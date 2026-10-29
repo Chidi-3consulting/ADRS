@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 """
 Test records CRUD.
 Tests record creation, editing, listing, and filtering.
@@ -27,8 +28,8 @@ def test_create_record(db):
         organization_id=1, category_id=cat.id,
         record_reference="REC-001",
         data_subject_type="employee",
-        collection_date=date.today(),
-        retention_end_date=date.today() + timedelta(days=730),
+        collection_date=business_today(),
+        retention_end_date=business_today() + timedelta(days=730),
         status="active",
     )
     db.add(record)

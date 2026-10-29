@@ -29,7 +29,7 @@ from app.auth import (
 from app.helpers import (
     SafeData_SUPPORTED_COUNTRIES, detect_visitor_currency, get_country_regulation_labels,
     provision_org_categories, get_framework_badge, totp_verify, consume_recovery_code,
-    send_system_email, log_audit, get_visitor_country, get_localized_pricing, CURRENCY_DATA,
+    send_system_email, log_audit, email_password_reset, _escape_html, get_visitor_country, get_localized_pricing, CURRENCY_DATA,
     is_free_tier_domain,
 )
 
@@ -52,7 +52,7 @@ def view_landing(request: Request, db: Session = Depends(get_db)):
     geo = detect_visitor_currency(country)
 
     return templates.TemplateResponse(request=request, name="landing.html", context={
-        "page_title": "SafeData — Automated Data Retention & Governance Platform",
+        "page_title": "SafeData | Data retention and consent withdrawal",
         "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
         "country_code": country,
@@ -68,7 +68,7 @@ def view_landing(request: Request, db: Session = Depends(get_db)):
 @router.get("/safedata", response_class=HTMLResponse)
 def view_safedata_content(request: Request):
     return templates.TemplateResponse(request=request, name="safedata_content.html", context={
-        "page_title": "SafeData — Data Retention & Governance",
+        "page_title": "SafeData | Data retention",
         "page_description": "A practical, accountable approach to information retention and lifecycle governance.",
         "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
@@ -87,7 +87,7 @@ def view_login(request: Request):
     flash_msg = "Your session has expired. Please sign in again." if expired == "1" else None
 
     return templates.TemplateResponse(request=request, name="login.html", context={
-        "page_title": "Sign In — SafeData",
+        "page_title": "Sign In | SafeData",
         "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
         "flash_error": flash_msg,
@@ -109,7 +109,7 @@ def handle_login(
     wait = login_throttle_seconds(db, email, ip)
     if wait > 0:
         return templates.TemplateResponse(request=request, name="login.html", context={
-            "page_title": "Sign In — SafeData",
+            "page_title": "Sign In | SafeData",
             "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "flash_error": f"Too many failed attempts. Try again in {wait} seconds."
@@ -131,7 +131,7 @@ def handle_login(
             log_audit(db, user.organization_id, "login_failed", "user",
                       user.id, None, {"email": email, "ip": ip}, ip)
         return templates.TemplateResponse(request=request, name="login.html", context={
-            "page_title": "Sign In — SafeData",
+            "page_title": "Sign In | SafeData",
             "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "flash_error": "Invalid email credentials or inactive account."
@@ -170,7 +170,7 @@ def view_2fa(request: Request):
         return RedirectResponse(url="/login", status_code=303)
 
     return templates.TemplateResponse(request=request, name="twofa_challenge.html", context={
-        "page_title": "Two-Factor Authentication — SafeData",
+        "page_title": "Two-Factor Authentication | SafeData",
         "wl_name": "SafeData"
     })
 
@@ -194,6 +194,15 @@ def handle_2fa(
         return redir
 
     from app.auth import decrypt_totp_secret
+    ip = request.client.host if request.client else "127.0.0.1"
+    # A six-digit code can be guessed if attempts are free: share the sign-in failure throttle.
+    wait = login_throttle_seconds(db, user.email, ip)
+    if wait > 0:
+        return templates.TemplateResponse(request=request, name="twofa_challenge.html", context={
+            "page_title": "Two-Factor Authentication | SafeData",
+            "wl_name": "SafeData",
+            "error": f"Too many failed attempts. Try again in {wait} seconds."
+        })
     ok = False
     if totp_verify(decrypt_totp_secret(user.twofa_secret), code):
         ok = True
@@ -229,8 +238,9 @@ def handle_2fa(
         set_session(redir, session_data)
         return redir
 
+    record_login_attempt(db, user.email, ip, success=False)
     return templates.TemplateResponse(request=request, name="twofa_challenge.html", context={
-        "page_title": "Two-Factor Authentication — SafeData",
+        "page_title": "Two-Factor Authentication | SafeData",
         "wl_name": "SafeData",
         "error": "Invalid verification code or recovery code."
     })
@@ -239,7 +249,7 @@ def handle_2fa(
 @router.get("/forgot_password", response_class=HTMLResponse)
 def view_forgot_password(request: Request):
     return templates.TemplateResponse(request=request, name="forgot_password.html", context={
-        "page_title": "Forgot Password — SafeData",
+        "page_title": "Forgot Password | SafeData",
         "wl_name": "SafeData"
     })
 
@@ -252,7 +262,13 @@ def handle_forgot_password(
 ):
     email = email.strip().lower()
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
-    if user:
+    # At most 3 reset e-mails per address per hour, so the form cannot be used to flood a mailbox.
+    recent = db.query(PasswordReset).filter(
+        PasswordReset.email == email,
+        PasswordReset.token_hash.notlike("ev\\_%", escape="\\"),
+        PasswordReset.expires_at > datetime.utcnow() + timedelta(minutes=0),
+    ).count() if user else 0
+    if user and recent < 3:
         raw_token = secrets.token_hex(32)
         token_hash = hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
 
@@ -265,19 +281,14 @@ def handle_forgot_password(
         db.add(reset_row)
         db.commit()
 
-        reset_link = f"{request.base_url}reset_password?email={email}&token={raw_token}"
-        subject = "Reset your password — SafeData"
-        html = f"""
-        <p>Hello,</p>
-        <p>We received a request to reset the password for your SafeData account.</p>
-        <p><a href="{reset_link}">Click here to set a new password</a></p>
-        <p>This link is valid for 1 hour.</p>
-        <p>If you did not request this, please ignore this email.</p>
-        """
+        # Built from the configured address, never from the Host header the caller sent.
+        from urllib.parse import quote
+        reset_link = f"{APP_URL}/reset_password?email={quote(email)}&token={raw_token}"
+        subject, html = email_password_reset(user.name, reset_link)
         send_system_email(db, email, subject, html)
 
     return templates.TemplateResponse(request=request, name="forgot_password.html", context={
-        "page_title": "Forgot Password — SafeData",
+        "page_title": "Forgot Password | SafeData",
         "wl_name": "SafeData",
         "done": True
     })
@@ -299,7 +310,7 @@ def view_reset_password(
     ).first()
 
     return templates.TemplateResponse(request=request, name="reset_password.html", context={
-        "page_title": "Set New Password — SafeData",
+        "page_title": "Set New Password | SafeData",
         "wl_name": "SafeData",
         "valid_token": bool(reset),
         "email": email,
@@ -326,14 +337,14 @@ def handle_reset_password(
 
     if not reset:
         return templates.TemplateResponse(request=request, name="reset_password.html", context={
-            "page_title": "Set New Password — SafeData",
+            "page_title": "Set New Password | SafeData",
             "wl_name": "SafeData",
             "valid_token": False
         })
 
     if password != password_confirm:
         return templates.TemplateResponse(request=request, name="reset_password.html", context={
-            "page_title": "Set New Password — SafeData",
+            "page_title": "Set New Password | SafeData",
             "wl_name": "SafeData",
             "valid_token": True,
             "email": email,
@@ -345,7 +356,7 @@ def handle_reset_password(
     policy_err = password_policy_error(password)
     if policy_err:
         return templates.TemplateResponse(request=request, name="reset_password.html", context={
-            "page_title": "Set New Password — SafeData",
+            "page_title": "Set New Password | SafeData",
             "wl_name": "SafeData",
             "valid_token": True,
             "email": email,
@@ -358,7 +369,7 @@ def handle_reset_password(
         # Gap 3: Check password history before allowing reset
         if check_password_history(db, user.id, password):
             return templates.TemplateResponse(request=request, name="reset_password.html", context={
-                "page_title": "Set New Password — SafeData",
+                "page_title": "Set New Password | SafeData",
                 "wl_name": "SafeData",
                 "valid_token": True,
                 "email": email,
@@ -379,7 +390,7 @@ def handle_reset_password(
         log_audit(db, user.organization_id, "password_reset_completed", "user", user.id, user.id, {"email": email}, ip)
 
     return templates.TemplateResponse(request=request, name="reset_password.html", context={
-        "page_title": "Set New Password — SafeData",
+        "page_title": "Set New Password | SafeData",
         "wl_name": "SafeData",
         "ok": True
     })
@@ -392,7 +403,7 @@ def view_register(request: Request):
         return RedirectResponse(url="/dashboard", status_code=303)
 
     return templates.TemplateResponse(request=request, name="register.html", context={
-        "page_title": "Start Free Trial — SafeData",
+        "page_title": "Start Free Trial | SafeData",
         "countries": SafeData_SUPPORTED_COUNTRIES,
         "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited"
@@ -428,7 +439,7 @@ def handle_register(
     # Helper: return to form with error + retained values
     def _error(msg: str):
         return templates.TemplateResponse(request=request, name="register.html", context={
-            "page_title": "Start Free Trial — SafeData",
+            "page_title": "Start Free Trial | SafeData",
             "countries": SafeData_SUPPORTED_COUNTRIES,
             "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
@@ -521,36 +532,18 @@ def handle_register(
     # Runs in a background thread so it never delays the redirect.
     def _send_welcome(to: str, name: str, org: str, country: str):
         from app.helpers import send_system_email
-        html = f"""
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e;">
-          <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:32px 40px;border-radius:12px 12px 0 0;">
-            <h1 style="color:#fff;margin:0;font-size:24px;">Welcome to SafeData 🎉</h1>
-            <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;">Your organisation is ready for compliance governance.</p>
-          </div>
-          <div style="background:#fff;padding:32px 40px;border:1px solid #e8e8f0;border-top:none;border-radius:0 0 12px 12px;">
-            <p style="font-size:16px;">Hi <strong>{name}</strong>,</p>
-            <p>Your organisation <strong>{org}</strong> has been successfully registered on SafeData — the data retention &amp; governance platform by <strong>3Consulting</strong>.</p>
-            <p>Here's what to do next:</p>
-            <ol style="line-height:1.8;color:#444;">
-              <li>Log in and complete your <strong>compliance setup checklist</strong> on the dashboard</li>
-              <li>Review your auto-provisioned <strong>data categories</strong> for {country}</li>
-              <li>Add your team members under <strong>Settings → Users</strong></li>
-              <li>Import or create your first <strong>data records</strong></li>
-            </ol>
-            <div style="background:#f0f4ff;border-left:4px solid #667eea;padding:16px 20px;border-radius:6px;margin:24px 0;">
-              <p style="margin:0;font-size:14px;color:#444;">
-                Your 14-day free trial is now active. Our team will be in touch with guidance.<br>
-                Need help? Reply to this email — we're here for you.
-              </p>
-            </div>
-            <p style="color:#888;font-size:13px;margin-top:32px;">
-              — The SafeData Team, 3Consulting Limited<br>
-              <a href="{APP_URL}" style="color:#667eea;">{APP_HOST}</a>
-            </p>
-          </div>
-        </div>
-        """
-        send_system_email(None, to, f"Welcome to SafeData — {org} is ready!", html)
+        from app.helpers import email_layout
+        body = (
+            f"<p>Hello {_escape_html(name)},</p>"
+            f"<p>Your organisation {_escape_html(org)} is registered on SafeData.</p>"
+            "<ol><li>Sign in and review your data categories.</li>"
+            "<li>Add your team under Team and role access.</li>"
+            "<li>Connect your forms so records arrive on their own, or import a CSV.</li></ol>"
+            "<p>Your 14 day free trial has started. Reply to this email if you need help.</p>"
+            f'<p><a href="{_escape_html(APP_URL)}">{_escape_html(APP_HOST)}</a></p>'
+        )
+        html = email_layout("Welcome to SafeData", body)
+        send_system_email(None, to, f"Welcome to SafeData, {org[:80]}", html)
 
     import threading
     threading.Thread(
@@ -591,7 +584,7 @@ def view_verify_email(request: Request, token: str = "", db: Session = Depends(g
         from app.auth import verify_email_token
         success = verify_email_token(db, token)
         return templates.TemplateResponse(request=request, name="verify_email.html", context={
-            "page_title": "Email Verification — SafeData",
+            "page_title": "Email Verification | SafeData",
             "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "verified": success,
@@ -600,7 +593,7 @@ def view_verify_email(request: Request, token: str = "", db: Session = Depends(g
         })
 
     return templates.TemplateResponse(request=request, name="verify_email.html", context={
-        "page_title": "Verify Your Email — SafeData",
+        "page_title": "Verify Your Email | SafeData",
         "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
         "verified": False,
@@ -646,7 +639,7 @@ def view_setup(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/login", status_code=303)
 
     return templates.TemplateResponse(request=request, name="setup.html", context={
-        "page_title": "Initial Setup — SafeData",
+        "page_title": "Initial Setup | SafeData",
         "wl_name": "SafeData",
         "wl_footer": "3Consulting Limited",
         "error": None,
@@ -692,7 +685,7 @@ def handle_setup(
 
     if error:
         return templates.TemplateResponse(request=request, name="setup.html", context={
-            "page_title": "Initial Setup — SafeData",
+            "page_title": "Initial Setup | SafeData",
             "wl_name": "SafeData",
             "wl_footer": "3Consulting Limited",
             "error": error,

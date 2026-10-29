@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 """
 Production Readiness & Feature Completeness Test Suite for SafeData.
 Validates:
@@ -84,7 +85,7 @@ def test_processor_retention_tracking(client, db):
         "record_reference": "KYC-USER-98210",
         "data_subject_type": "Customer",
         "processor_name": "AWS EMEA Cloud",
-        "collection_date": date.today().strftime("%Y-%m-%d"),
+        "collection_date": business_today().strftime("%Y-%m-%d"),
         "notes": "Verified via passport upload"
     }, follow_redirects=True)
     assert res.status_code == 200

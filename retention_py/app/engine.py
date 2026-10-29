@@ -20,6 +20,7 @@ from app.models import (
     LoginAttempt, PasswordReset,
 )
 from app.helpers import log_audit
+from app.core.clock import business_today, business_date
 
 
 # ── Settings Helper ──
@@ -28,6 +29,15 @@ def get_setting(db: Session, key: str, default: str = "") -> str:
     """Read a system setting. For org-scoped settings, use get_org_setting()."""
     s = db.query(SystemSetting).filter(SystemSetting.setting_key == key).first()
     return s.setting_value if s else default
+
+
+def _int_setting(db: Session, org_id: int, key: str, default: int) -> int:
+    """A numeric setting; a blank or garbled value falls back to the default instead of
+    stopping the whole retention run."""
+    try:
+        return max(0, int(str(get_org_setting(db, org_id, key, str(default))).strip()))
+    except (TypeError, ValueError):
+        return default
 
 
 def get_org_setting(db: Session, org_id: int, key: str, default: str = "") -> str:
@@ -120,45 +130,23 @@ def _send_event_email(to_email: str, user_name: str, subject: str, message: str,
     def _send():
         from app.helpers import send_system_email
 
-        # Colour-code the alert bar by type
-        accent = {
-            "escalation_alert":       "#ef4444",   # red
-            "disposal_approval_needed": "#f59e0b", # amber
-            "security_alert":         "#7c3aed",   # purple
-            "quarterly_review":       "#3b82f6",   # blue
-            "review_due":             "#FF914D",   # brand orange
-        }.get(notif_type, "#667eea")
-
         label = {
-            "escalation_alert":       "Escalation Alert",
-            "disposal_approval_needed": "Approval Required",
-            "security_alert":         "Security Alert",
-            "quarterly_review":       "Quarterly Review",
+            "escalation_alert":       "Escalation",
+            "disposal_approval_needed": "Approval required",
+            "security_alert":         "Security alert",
+            "quarterly_review":       "Quarterly review",
             "review_due":             "Deletion date approaching",
-        }.get(notif_type, "SafeData Notification")
+        }.get(notif_type, "SafeData notification")
 
-        html = f"""
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e;">
-          <div style="background:{accent};padding:24px 32px;border-radius:12px 12px 0 0;">
-            <h1 style="color:#fff;margin:0;font-size:20px;">{label}</h1>
-          </div>
-          <div style="background:#fff;padding:28px 32px;border:1px solid #e8e8f0;
-                      border-top:none;border-radius:0 0 12px 12px;">
-            <p style="font-size:15px;">Hi <strong>{user_name}</strong>,</p>
-            <div style="background:#f8f9ff;border-left:4px solid {accent};
-                        padding:14px 18px;border-radius:6px;margin:16px 0;">
-              <p style="margin:0;font-size:14px;color:#333;">{message}</p>
-            </div>
-            <p style="font-size:14px;color:#555;">
-              Please log in to your SafeData dashboard to review and take action.
-            </p>
-            <p style="color:#aaa;font-size:12px;margin-top:28px;border-top:1px solid #eee;padding-top:16px;">
-              This is an automated compliance alert from SafeData by 3Consulting.<br>
-              You are receiving this because you hold an admin or DPO role in your organisation.
-            </p>
-          </div>
-        </div>
-        """
+        from app.helpers import email_layout, _escape_html
+        body = (
+            f"<p>Hello {_escape_html(user_name)},</p>"
+            f"<p>{_escape_html(message)}</p>"
+            "<p>Sign in to SafeData to review and take action.</p>"
+            '<p style="color:#666;font-size:12px">This is an automated message. You get it because '
+            "you hold an admin or DPO role.</p>"
+        )
+        html = email_layout(label, body)
         send_system_email(None, to_email, f"SafeData Alert: {subject}", html)
 
     threading.Thread(target=_send, daemon=True).start()
@@ -187,6 +175,25 @@ def effective_policy(db: Session, record: DataRecord):
     return cat, trigger, int(days or 0), basis
 
 
+def needs_dual_approval(db: Session, record: DataRecord) -> bool:
+    """True if disposing this record needs two people.
+
+    Any one of the category flag, the category approval type or the record's own rule can
+    require it. The strictest setting wins, so an "automatic disposal" category can never
+    override a rule that asks for dual approval.
+    """
+    cat = record.category if record.category is not None else (
+        db.query(DataCategory).filter(DataCategory.id == record.category_id).first()
+    )
+    rule = db.query(CategoryRetentionRule).filter(
+        CategoryRetentionRule.id == record.retention_rule_id
+    ).first() if record.retention_rule_id else None
+    return bool(
+        (cat and (cat.requires_dual_approval or getattr(cat, "approval_type", None) == "dual_approval"))
+        or (rule and rule.requires_dual_approval)
+    )
+
+
 def retention_clock_start(record: DataRecord, trigger: str):
     """The date the retention clock starts for this record, or None if it has not started.
 
@@ -198,11 +205,11 @@ def retention_clock_start(record: DataRecord, trigger: str):
     if trigger == "date_based":
         return record.collection_date
     if trigger == "consent_withdrawal":
-        return record.consent_withdrawn_at.date() if record.consent_withdrawn_at else None
+        return business_date(record.consent_withdrawn_at)
     if trigger == "account_closure":
         if getattr(record, "relationship_ended_on", None):
             return record.relationship_ended_on
-        return record.consent_withdrawn_at.date() if record.consent_withdrawn_at else None
+        return business_date(record.consent_withdrawn_at)
     return None
 
 
@@ -224,7 +231,7 @@ def projected_end_date(db: Session, record: DataRecord, consent_withdrawn_at=Non
     if trigger == "date_based":
         start = record.collection_date
     elif trigger == "consent_withdrawal":
-        start = withdrawn.date() if withdrawn else None
+        start = business_date(withdrawn)
     else:
         start = retention_clock_start(record, trigger)
         if start is None and record.retention_end_date:
@@ -235,8 +242,8 @@ def projected_end_date(db: Session, record: DataRecord, consent_withdrawn_at=Non
 
     if withdrawn and basis == "consent" and trigger != "consent_withdrawal":
         org_id = record.organization_id or cat.organization_id
-        grace = int(get_org_setting(db, org_id, "consent_disposal_days", "30") or 30)
-        cap = withdrawn.date() + timedelta(days=grace)
+        grace = _int_setting(db, org_id, "consent_disposal_days", 30)
+        cap = business_date(withdrawn) + timedelta(days=grace)
         end = cap if end is None else min(end, cap)
     return end
 
@@ -248,7 +255,7 @@ def calculate_retention_end_date(db: Session, record: DataRecord):
 
 def retention_clock(record: DataRecord, trigger: str, today: date = None, due_soon_days: int = 30) -> dict:
     """Plain description of where a record is in its retention life, for the register."""
-    today = today or date.today()
+    today = today or business_today()
     labels = {
         "date_based": "Collected",
         "consent_withdrawal": "Consent withdrawn",
@@ -356,7 +363,7 @@ def records_past_retention(db: Session, org_id: int, today: date = None, include
     Disposed, deleted and (unless ``include_held``) legal-hold records are excluded.
     Everything that counts, lists or acts on "due" records goes through this one query.
     """
-    today = today or date.today()
+    today = today or business_today()
     q = db.query(DataRecord).filter(
         DataRecord.organization_id == org_id,
         DataRecord.status.in_(COLLECTABLE_STATUSES + (("legal_hold",) if include_held else ())),
@@ -375,8 +382,8 @@ def simulate_consent_removal(db: Session, org_id: int, record_ids: list = None, 
     Uses the same date calculation as a real withdrawal, so the preview and the
     real outcome always agree.
     """
-    today = today or date.today()
-    days = int(get_org_setting(db, org_id, "consent_disposal_days", "30"))
+    today = today or business_today()
+    days = _int_setting(db, org_id, "consent_disposal_days", 30)
     frozen = is_disposal_frozen(db, org_id)
     q = db.query(DataRecord).join(DataCategory, DataRecord.category_id == DataCategory.id).filter(
         DataRecord.organization_id == org_id,
@@ -391,7 +398,7 @@ def simulate_consent_removal(db: Session, org_id: int, record_ids: list = None, 
     items = []
     for r in q.order_by(DataRecord.id).all():
         cat, trigger, _days, basis = effective_policy(db, r)
-        withdrawn = r.consent_withdrawn_at.date() if r.consent_withdrawn_at else None
+        withdrawn = business_date(r.consent_withdrawn_at)
         dispose_on = projected_end_date(db, r, consent_withdrawn_at=r.consent_withdrawn_at or now)
         consent_driven = trigger == "consent_withdrawal" or basis == "consent"
         if r.legal_hold:
@@ -483,6 +490,8 @@ def execute_disposal(
 
         return True
     except Exception:
+        import logging
+        logging.getLogger("safedata.engine").exception("disposal failed for record %s", record_id)
         try:
             db.rollback()
         except Exception:
@@ -524,10 +533,10 @@ def run_retention_checks(db: Session, org_id: int, dry_run: bool = False) -> dic
         })
 
     # Settings
-    review_alert_days = int(get_org_setting(db, org_id, "review_alert_days", "30"))
-    escalation_days = int(get_org_setting(db, org_id, "escalation_days", "14"))
+    review_alert_days = _int_setting(db, org_id, "review_alert_days", 30)
+    escalation_days = _int_setting(db, org_id, "escalation_days", 14)
 
-    today = date.today()
+    today = business_today()
 
     # Every record is on one clock: retention_end_date (see calculate_retention_end_date).
     # Records whose clock has not started yet (end date empty) are left alone.
@@ -604,6 +613,8 @@ def run_retention_checks(db: Session, org_id: int, dry_run: bool = False) -> dic
         if not app_type:
             requires_dual = rule.requires_dual_approval if (rule and rule.requires_dual_approval is not None) else cat.requires_dual_approval
             app_type = "dual_approval" if requires_dual else "single_approval"
+        if app_type == "auto_disposal" and needs_dual_approval(db, r):
+            app_type = "dual_approval"  # never delete on a schedule what needs two people
 
         if app_type == "auto_disposal":
             if frozen:
@@ -1095,7 +1106,7 @@ def compliance_metrics(db: Session, org_id: int) -> dict:
         DR.organization_id == org_id, DR.legal_hold == True, DR.deleted_at == None
     ).scalar() or 0
 
-    today = date.today()
+    today = business_today()
     overdue = db.query(func.count(DR.id)).filter(
         DR.organization_id == org_id,
         DR.status.in_(["active", "due_review"]),
@@ -1176,7 +1187,7 @@ def disposals_by_month(db: Session, org_id: int, months: int = 12) -> list:
     """
     from sqlalchemy import extract, case
 
-    today = date.today()
+    today = business_today()
 
     # Build the list of (year, month, label) for the last N calendar months
     month_slots = []
@@ -1269,7 +1280,7 @@ def compliance_scorecard_details(db: Session, org_id: int) -> dict:
         DR.deleted_at == None,
     ).scalar() or 0
 
-    today = date.today()
+    today = business_today()
     overdue_count = db.query(func.count(DR.id)).filter(
         DR.organization_id == org_id,
         DR.status.in_(["active", "due_review"]),
@@ -1391,7 +1402,7 @@ def upcoming_deadlines(db: Session, org_id: int, limit: int = 15) -> list:
     P2 fix: single JOIN query instead of N+1 sub-queries per record.
     """
     from sqlalchemy.orm import aliased
-    today = date.today()
+    today = business_today()
     try:
         window = int(get_org_setting(db, org_id, "review_alert_days", "30") or 30)
     except ValueError:
@@ -1650,7 +1661,9 @@ def verify_audit_chain(db: Session, org_id: int = None, limit: int = 5000) -> di
     import hashlib as _hashlib
 
     # Walk the continuous cryptographic chain to maintain parent-child hash continuity
-    all_logs = db.query(AuditLog).order_by(AuditLog.id.asc()).limit(limit).all()
+    # The most recent `limit` entries, oldest first. (Taking the oldest `limit` meant that once
+    # the ledger passed that size, new entries were never checked.)
+    all_logs = list(reversed(db.query(AuditLog).order_by(AuditLog.id.desc()).limit(limit).all()))
 
     chain_ok = True
     first_broken_id = None

@@ -13,13 +13,13 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <button type="button" class="btn btn-primary btn-sm d-flex align-items-center gap-1" data-bs-toggle="collapse" data-bs-target="#manualIntakeCollapse" aria-expanded="false" aria-controls="manualIntakeCollapse">
-        <i class="bi bi-plus-lg"></i> Intake Record
+        Intake record
       </button>
       <a href="/import" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
-        <i class="bi bi-upload"></i> Bulk CSV Intake
+        Bulk CSV intake
       </a>
       <a href="/records/export" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-        <i class="bi bi-download"></i> Export CSV
+        Export CSV
       </a>
     </div>
   </div>
@@ -30,7 +30,7 @@
       <a href="/records?status=running" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'running' else '' }}">
         <div class="card-body py-2 px-3">
           <div class="small text-muted">Clock running</div>
-          <div class="fw-bold text-success" style="font-size: var(--sd-text-2xl);">{{ kpi.running or 0 }}</div>
+          <div class="fw-bold" style="font-size: var(--sd-text-2xl);">{{ kpi.running or 0 }}</div>
           <div class="small text-muted">More than {{ due_soon_days }} days left</div>
         </div>
       </a>
@@ -39,7 +39,7 @@
       <a href="/records?status=soon" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'soon' else '' }}">
         <div class="card-body py-2 px-3">
           <div class="small text-muted">Due soon</div>
-          <div class="fw-bold text-warning" style="font-size: var(--sd-text-2xl);">{{ kpi.due_soon or 0 }}</div>
+          <div class="fw-bold" style="font-size: var(--sd-text-2xl);">{{ kpi.due_soon or 0 }}</div>
           <div class="small text-muted">Within {{ due_soon_days }} days</div>
         </div>
       </a>
@@ -48,7 +48,7 @@
       <a href="/records?status=due" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'due' else '' }}">
         <div class="card-body py-2 px-3">
           <div class="small text-muted">Due now or overdue</div>
-          <div class="fw-bold text-danger" style="font-size: var(--sd-text-2xl);">{{ kpi.overdue or 0 }}</div>
+          <div class="fw-bold" style="font-size: var(--sd-text-2xl);">{{ kpi.overdue or 0 }}</div>
           <div class="small text-muted">Deletion date reached</div>
         </div>
       </a>
@@ -66,7 +66,7 @@
       <a href="/records?status=hold" class="card h-100 text-decoration-none {{ 'border-dark' if filter_status == 'hold' else '' }}">
         <div class="card-body py-2 px-3">
           <div class="small text-muted">On legal hold</div>
-          <div class="fw-bold text-info" style="font-size: var(--sd-text-2xl);">{{ kpi.on_hold or 0 }}</div>
+          <div class="fw-bold" style="font-size: var(--sd-text-2xl);">{{ kpi.on_hold or 0 }}</div>
           <div class="small text-muted">Kept until the hold is lifted</div>
         </div>
       </a>
@@ -135,14 +135,14 @@
           <div id="bulkActionBar" class="d-none bg-danger bg-opacity-10 border-bottom border-danger border-opacity-25 px-4 py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-danger text-white fw-bold px-2 py-1" id="selectedCountBadge">0 selected</span>
-              <span class="small text-dark fw-semibold">Multi-Record Safe Disposal</span>
+              <span class="small text-dark fw-semibold">Multi-Record safe disposal</span>
             </div>
             <div class="d-flex gap-2">
               <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSelectAllDue">
-                <i class="bi bi-check2-all"></i> Select All Due/Expired
+                Select all Due/Expired
               </button>
               <button type="button" class="btn btn-danger btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#bulkStepUpModal">
-                <i class="bi bi-shield-lock-fill me-1"></i> Safe Dispose Selected (<span id="btnDisposeCount">0</span>)
+                Safe Dispose Selected (<span id="btnDisposeCount">0</span>)
               </button>
             </div>
           </div>
@@ -156,7 +156,7 @@
                   </th>
                   <th class="text-nowrap" style="min-width: 140px;">Reference</th>
                   <th class="text-nowrap" style="min-width: 160px;">Category</th>
-                  <th class="text-nowrap" style="min-width: 130px;">Role / Processor</th>
+                  <th class="text-nowrap" style="min-width: 130px;">Role / processor</th>
                   <th class="text-nowrap" style="min-width: 150px;">Clock started</th>
                   <th class="text-nowrap" style="min-width: 110px;">Delete on</th>
                   <th class="text-nowrap" style="min-width: 150px;">Time left</th>
@@ -213,9 +213,9 @@
                   <td colspan="8" class="p-0">
                     <div class="empty-state py-5">
                       <i class="bi bi-file-earmark-lock empty-state-icon"></i>
-                      <div class="empty-state-title">No Matching Records</div>
+                      <div class="empty-state-title">No matching records</div>
                       <p class="empty-state-description">No records match the current filter or search criteria. Try clearing filters or intake a new record.</p>
-                      <a href="/records" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+                      <a href="/records" class="btn btn-outline-secondary btn-sm">Clear filters</a>
                     </div>
                   </td>
                 </tr>
@@ -237,7 +237,7 @@
     <div class="modal-content rounded-4 border-0 shadow">
       <div class="modal-header border-0 pb-0">
         <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="bulkStepUpModalLabel">
-          <i class="bi bi-shield-lock-fill"></i> Multi-Record Safe Disposal Authentication
+          Multi-Record safe disposal authentication
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -248,13 +248,13 @@
         
         <div class="modal-body pt-3 pb-2">
           <div class="alert alert-danger py-2 small mb-3">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> You are about to permanently and irreversibly purge <strong id="modalSelectedCount">0</strong> data records.
+            You are about to permanently and irreversibly purge <strong id="modalSelectedCount">0</strong> data records.
           </div>
           <p class="small text-muted mb-3">
             This action generates individual cryptographic SHA-256 destruction certificates and dispatches real-time outbound deletion webhooks to connected cloud databases.
           </p>
           <div class="mb-3">
-            <label for="bulk_auth_credential" class="form-label small fw-bold text-dark">Confirm Account Password or 2FA Code *</label>
+            <label for="bulk_auth_credential" class="form-label small fw-bold text-dark">Confirm account password or 2FA code *</label>
             <input type="password" name="auth_credential" id="bulk_auth_credential" class="form-control" required placeholder="Enter password or 6-digit 2FA code" autocomplete="current-password">
             <div class="form-text small">Step-up verification is required to authorize multi-record destruction.</div>
           </div>
@@ -262,7 +262,7 @@
         <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-danger fw-bold" id="bulkSubmitBtn">
-            <i class="bi bi-trash-fill me-1"></i> Authorize &amp; Execute Bulk Purge
+            Authorize and execute bulk purge
           </button>
         </div>
       </form>

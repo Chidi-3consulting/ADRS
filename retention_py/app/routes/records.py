@@ -1,3 +1,5 @@
+from app.core.csvsafe import safe_csv_writer
+from app.core.clock import business_today
 import os
 import uuid
 import csv
@@ -18,7 +20,7 @@ from app.database import get_db
 from app.models import DataRecord, DataCategory, CategoryRetentionRule, AuditLog, Attachment, User
 from app.auth import get_session, verify_stepup_authentication
 from app.helpers import get_country_regulation_labels, get_framework_badge, log_audit
-from app.engine import calculate_retention_end_date, effective_policy, execute_disposal, get_org_setting, retention_clock
+from app.engine import needs_dual_approval, calculate_retention_end_date, effective_policy, execute_disposal, get_org_setting, retention_clock
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
 templates = Jinja2Templates(directory=templates_path)
@@ -52,6 +54,14 @@ def _validate_file_magic(content: bytes, extension: str) -> bool:
         return True  # txt/csv have no reliable magic bytes
     return any(content[:len(sig)] == sig for sig in signatures)
 
+def _local_path(url: Optional[str], default: str = "/records") -> str:
+    """Only same-site paths may be used as a redirect target (no open redirect)."""
+    u = (url or "").strip()
+    if not u.startswith("/") or u.startswith("//") or "\\" in u or "\n" in u or "\r" in u:
+        return default
+    return u.split("?", 1)[0]
+
+
 def _get_org_setting(db: Session, org_id: int, key: str, default: str = "") -> str:
     from app.models import OrganizationSetting, SystemSetting
     row = db.query(OrganizationSetting).filter(
@@ -79,7 +89,7 @@ def list_records(
     org_id = session["org_id"]
     user_id = session["user_id"]
     is_owner = (session.get("role") == "data_owner")
-    today = date.today()
+    today = business_today()
 
     # Base filters
     kpi_filters = [DataRecord.organization_id == org_id, DataRecord.deleted_at == None]
@@ -245,7 +255,7 @@ def handle_create_record(
     if role == "data_owner" and cat.owner_id != user_id:
         raise HTTPException(status_code=403, detail="You can only create records in your assigned categories.")
 
-    coll_date = date.today() if role == "data_owner" else datetime.strptime(collection_date, "%Y-%m-%d").date()
+    coll_date = business_today() if role == "data_owner" else datetime.strptime(collection_date, "%Y-%m-%d").date()
 
     # Check rule overrides
     default_rule = db.query(CategoryRetentionRule).filter(
@@ -536,7 +546,9 @@ def handle_approve_disposal(
         if record.disposal_requested_by == user_id:
             raise HTTPException(status_code=400, detail="Dual approval requires a different user to confirm.")
         
-        execute_disposal(db, id, actor_id=user_id, ip_address=request.client.host if request.client else "127.0.0.1")
+        done = execute_disposal(db, id, actor_id=user_id, ip_address=request.client.host if request.client else "127.0.0.1")
+        if not done:
+            return RedirectResponse(url=f"/records/view/{id}?error=disposal_blocked", status_code=303)
         log_audit(db, org_id, "disposal_request_approved", "data_record", id, user_id, {
             "dual_approval": True
         }, request.client.host if request.client else None)
@@ -559,13 +571,12 @@ def handle_request_disposal(
     user_id = session["user_id"]
     ip_addr = request.client.host if request.client else "127.0.0.1"
 
-    # Step-Up Verification (if credential provided)
-    if auth_credential is not None and str(auth_credential).strip():
-        ok, msg = verify_stepup_authentication(db, user_id, auth_credential)
-        if not ok:
-            log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": "dispose"}, ip_addr)
-            return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
-        log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": "dispose"}, ip_addr)
+    # Step-up is mandatory: the password or a 2FA code must accompany every permanent action.
+    ok, msg = verify_stepup_authentication(db, user_id, auth_credential or "", ip_addr)
+    if not ok:
+        log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": "dispose"}, ip_addr)
+        return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
+    log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": "dispose"}, ip_addr)
 
     record = db.query(DataRecord).filter(
         DataRecord.id == id,
@@ -579,14 +590,15 @@ def handle_request_disposal(
     if record.legal_hold:
         raise HTTPException(status_code=400, detail="Record is on legal hold.")
 
-    if record.category.requires_dual_approval:
+    if needs_dual_approval(db, record):
         record.status = "disposal_requested"
         record.disposal_requested_at = datetime.utcnow()
         record.disposal_requested_by = user_id
         db.commit()
         log_audit(db, org_id, "disposal_requested", "data_record", id, user_id, None, ip_addr)
     else:
-        execute_disposal(db, id, actor_id=user_id, ip_address=ip_addr)
+        if not execute_disposal(db, id, actor_id=user_id, ip_address=ip_addr):
+            return RedirectResponse(url=f"/records/view/{id}?error=disposal_blocked", status_code=303)
         log_audit(db, org_id, "disposal_request_approved", "data_record", id, user_id, {
             "single_approver": True
         }, ip_addr)
@@ -601,6 +613,7 @@ def handle_bulk_dispose(
     return_url: Optional[str] = Form("/records"),
     db: Session = Depends(get_db)
 ):
+    return_url = _local_path(return_url)
     """Bulk safe disposal for multiple records that have exceeded retention period."""
     session = get_session(request)
     if not session or "user_id" not in session or session.get("role") not in ("admin", "dpo"):
@@ -610,13 +623,12 @@ def handle_bulk_dispose(
     user_id = session["user_id"]
     ip_addr = request.client.host if request.client else "127.0.0.1"
 
-    # Step-Up Verification
-    if auth_credential is not None and str(auth_credential).strip():
-        ok, msg = verify_stepup_authentication(db, user_id, auth_credential)
-        if not ok:
-            log_audit(db, org_id, "stepup_auth_failed", "data_record", 0, user_id, {"error": msg, "action": "bulk_dispose"}, ip_addr)
-            return RedirectResponse(url=f"{return_url}?error=stepup_failed", status_code=303)
-        log_audit(db, org_id, "stepup_auth_success", "data_record", 0, user_id, {"action": "bulk_dispose"}, ip_addr)
+    # Step-up is mandatory: the password or a 2FA code must accompany every permanent action.
+    ok, msg = verify_stepup_authentication(db, user_id, auth_credential or "", ip_addr)
+    if not ok:
+        log_audit(db, org_id, "stepup_auth_failed", "data_record", 0, user_id, {"error": msg, "action": "bulk_dispose"}, ip_addr)
+        return RedirectResponse(url=f"{return_url}?error=stepup_failed", status_code=303)
+    log_audit(db, org_id, "stepup_auth_success", "data_record", 0, user_id, {"action": "bulk_dispose"}, ip_addr)
 
     raw_ids = [int(i.strip()) for i in record_ids.split(",") if i.strip().isdigit()]
     if not raw_ids:
@@ -627,7 +639,7 @@ def handle_bulk_dispose(
         log_audit(db, org_id, "disposal_aborted_freeze", "data_record", 0, user_id, {"action": "bulk_dispose"}, ip_addr)
         return RedirectResponse(url=f"{return_url}?error=disposal_frozen", status_code=303)
 
-    today = date.today()
+    today = business_today()
     disposed_count = 0
     requested_count = 0
     skipped_count = 0
@@ -653,8 +665,7 @@ def handle_bulk_dispose(
             skipped_count += 1
             continue
 
-        cat = rec.category
-        if cat and cat.requires_dual_approval:
+        if needs_dual_approval(db, rec):
             rec.status = "disposal_requested"
             rec.disposal_requested_at = datetime.utcnow()
             rec.disposal_requested_by = user_id
@@ -694,13 +705,12 @@ def handle_legal_hold(
     user_id = session["user_id"]
     ip_addr = request.client.host if request.client else "127.0.0.1"
 
-    # Step-up verification for legal hold changes
-    if auth_credential is not None and str(auth_credential).strip():
-        ok, msg = verify_stepup_authentication(db, user_id, auth_credential)
-        if not ok:
-            log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": f"legal_hold_{action}"}, ip_addr)
-            return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
-        log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": f"legal_hold_{action}"}, ip_addr)
+    # Step-up is mandatory: the password or a 2FA code must accompany every permanent action.
+    ok, msg = verify_stepup_authentication(db, user_id, auth_credential or "", ip_addr)
+    if not ok:
+        log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": f"legal_hold_{action}"}, ip_addr)
+        return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
+    log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": f"legal_hold_{action}"}, ip_addr)
 
     record = db.query(DataRecord).filter(
         DataRecord.id == id,
@@ -748,13 +758,12 @@ def handle_disposal_approve(
     user_id = session["user_id"]
     ip_addr = request.client.host if request.client else "127.0.0.1"
 
-    # Step-Up Verification
-    if auth_credential is not None and str(auth_credential).strip():
-        ok, msg = verify_stepup_authentication(db, user_id, auth_credential)
-        if not ok:
-            log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": "disposal_approve"}, ip_addr)
-            return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
-        log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": "disposal_approve"}, ip_addr)
+    # Step-up is mandatory: the password or a 2FA code must accompany every permanent action.
+    ok, msg = verify_stepup_authentication(db, user_id, auth_credential or "", ip_addr)
+    if not ok:
+        log_audit(db, org_id, "stepup_auth_failed", "data_record", id, user_id, {"error": msg, "action": "disposal_approve"}, ip_addr)
+        return RedirectResponse(url=f"/records/view/{id}?error=stepup_failed", status_code=303)
+    log_audit(db, org_id, "stepup_auth_success", "data_record", id, user_id, {"action": "disposal_approve"}, ip_addr)
 
     from app.engine import approve_disposal
     result = approve_disposal(
@@ -918,7 +927,7 @@ def export_records_csv(request: Request, db: Session = Depends(get_db)):
     ).order_by(DataRecord.created_at.desc()).all()
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = safe_csv_writer(output)
     writer.writerow(["Record ID", "Reference", "Category", "Collection Date", "Retention End Date", "Status", "Legal Hold", "Disposed At"])
 
     for r in records:

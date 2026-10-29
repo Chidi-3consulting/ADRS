@@ -52,10 +52,10 @@
 
           <dl class="row mb-0 small">
             <dt class="col-sm-4 text-muted mb-3">Organization</dt>
-            <dd class="col-sm-8 mb-3 fw-bold text-dark">{{ org.name if org else '—' }}</dd>
+            <dd class="col-sm-8 mb-3 fw-bold text-dark">{{ org.name if org else 'None' }}</dd>
 
             <dt class="col-sm-4 text-muted mb-3">Licensed Domain</dt>
-            <dd class="col-sm-8 mb-3 font-mono">@{{ org.primary_domain if org else '—' }}</dd>
+            <dd class="col-sm-8 mb-3 font-mono">@{{ org.primary_domain if org else 'None' }}</dd>
 
             <dt class="col-sm-4 text-muted mb-3">Billing Email</dt>
             <dd class="col-sm-8 mb-3">{{ org.billing_email or 'Not configured' }}</dd>
@@ -64,7 +64,7 @@
             <dd class="col-sm-8 mb-3 font-mono">{{ org.last_payment_at.strftime('%d %b %Y') if org and org.last_payment_at else 'Active Trial' }}</dd>
 
             <dt class="col-sm-4 text-muted mb-0">Tenant Provisioned</dt>
-            <dd class="col-sm-8 mb-0 font-mono text-muted">{{ org.created_at.strftime('%d %b %Y') if org and org.created_at else '—' }}</dd>
+            <dd class="col-sm-8 mb-0 font-mono text-muted">{{ org.created_at.strftime('%d %b %Y') if org and org.created_at else 'None' }}</dd>
           </dl>
         </div>
       </div>

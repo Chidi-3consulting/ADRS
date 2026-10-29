@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 """Admin retention run/simulate and consent management.
 
 A simulation must leave every record, notification and flag exactly as it was.
@@ -16,7 +17,7 @@ from app.engine import (
 from app.models import DataCategory, DataRecord, Notification, User
 
 PW = "Xyq9$mNpL2!kA"
-TODAY = date.today()
+TODAY = business_today()
 
 
 def _user(db, role, email):
@@ -28,6 +29,7 @@ def _user(db, role, email):
         role=role,
         is_active=True,
         must_change_password=False,
+        email_verified_at=datetime(2026, 1, 1),
     )
     db.add(u)
     db.commit()

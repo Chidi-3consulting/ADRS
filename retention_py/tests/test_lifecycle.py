@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 import pytest
 from datetime import datetime, date, timedelta
 from app.models import DataCategory, DataRecord, User
@@ -22,7 +23,7 @@ def test_legal_hold_blocks_disposal(db):
         category_id=cat.id,
         record_reference="CUST-001",
         data_subject_type="customer",
-        collection_date=date.today(),
+        collection_date=business_today(),
         status="due_review",
         legal_hold=True,
         legal_hold_reason="Pending Litigation"
@@ -55,7 +56,7 @@ def test_record_lifecycle_flow(client, auth_user, db):
         category_id=cat.id,
         record_reference="FIN-100",
         data_subject_type="client",
-        collection_date=date.today(),
+        collection_date=business_today(),
         status="active"
     )
     db.add(rec)

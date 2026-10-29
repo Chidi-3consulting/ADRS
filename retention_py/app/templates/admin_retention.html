@@ -14,7 +14,7 @@
     <div class="alert alert-warning">Type RUN in the box to confirm a real run. Nothing was changed.</div>
   {% endif %}
   {% if frozen %}
-    <div class="alert alert-danger"><i class="bi bi-snow2 me-1"></i> The emergency disposal freeze is on. No record will be disposed until it is lifted.</div>
+    <div class="alert alert-danger">The emergency disposal freeze is on. No record will be disposed until it is lifted.</div>
   {% endif %}
 
   <div class="row g-3 mb-4">
@@ -39,7 +39,7 @@
         <p class="small text-muted">Shows exactly what a run would do right now. No record is changed and no one is notified.</p>
         <form method="post" action="/admin/retention/simulate">
           {{ csrf_field | safe }}
-          <button class="btn btn-outline-primary"><i class="bi bi-play-circle me-1"></i> Preview run</button>
+          <button class="btn btn-outline-primary">Preview run</button>
         </form>
       </div></div>
     </div>

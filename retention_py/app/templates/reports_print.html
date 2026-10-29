@@ -64,7 +64,7 @@
   <div class="row g-3 mb-4">
     <div class="col-md-8">
       <div class="p-3 bg-light border rounded">
-        <div class="fw-bold small text-uppercase text-muted mb-2">Audit Scope & Filter Criteria</div>
+        <div class="fw-bold small text-muted mb-2">Audit Scope & Filter Criteria</div>
         <div class="row small g-2">
           <div class="col-6"><strong>Filter Range:</strong> {{ filter_range | upper }}</div>
           <div class="col-6"><strong>Timeframe:</strong> {{ filter_start_date }} to {{ filter_end_date }}</div>
@@ -75,7 +75,7 @@
     </div>
     <div class="col-md-4">
       <div class="seal-box text-center">
-        <div class="small text-muted fw-bold text-uppercase">Compliance Health</div>
+        <div class="small text-muted fw-bold">Compliance Health</div>
         <div class="display-6 fw-bold text-dark">{{ scorecard.overall_score }}%</div>
         <div class="badge bg-success">Grade {{ scorecard.grade }} · {{ scorecard.status_label }}</div>
       </div>
@@ -84,7 +84,7 @@
 
   <!-- 4 Governance Pillars -->
   <div class="mb-4">
-    <div class="fw-bold small text-uppercase text-muted mb-2">Governance Pillars Breakdown</div>
+    <div class="fw-bold small text-muted mb-2">Governance Pillars Breakdown</div>
     <div class="row g-2 text-center small">
       <div class="col">
         <div class="p-2 border rounded bg-light">
@@ -116,7 +116,7 @@
   <!-- Detailed Inventory Table -->
   <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-2">
-      <span class="fw-bold small text-uppercase text-muted">Audited Record Inventory ({{ records | length }} Total Records)</span>
+      <span class="fw-bold small text-muted">Audited Record Inventory ({{ records | length }} Total Records)</span>
     </div>
     <table class="table table-sm table-bordered small">
       <thead class="table-light">
@@ -145,7 +145,7 @@
             <td>{{ r.retention_end_date or 'Pending Trigger' }}</td>
             <td>{{ r.status | replace('_', ' ') | title }}</td>
             <td>{{ 'Yes' if r.legal_hold else 'No' }}</td>
-            <td>{{ r.disposed_at.strftime('%Y-%m-%d %H:%M') if r.disposed_at else '—' }}</td>
+            <td>{{ r.disposed_at.strftime('%Y-%m-%d %H:%M') if r.disposed_at else 'None' }}</td>
           </tr>
         {% endfor %}
       </tbody>

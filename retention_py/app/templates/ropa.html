@@ -32,7 +32,7 @@
               <div class="fw-semibold text-dark">{{ entry.activity_name }}</div>
               {% if entry.category %}
                 <div class="small text-muted" style="font-size:0.75rem;">
-                  <span class="badge {{ get_framework_badge(entry.category.compliance_framework) }} badge-sm text-uppercase">
+                  <span class="badge {{ get_framework_badge(entry.category.compliance_framework) }} badge-sm">
                     {{ entry.category.compliance_framework }}
                   </span>
                   {{ entry.category.name }}
@@ -40,14 +40,14 @@
               {% endif %}
             </td>
             <td>
-              <span class="badge {% if entry.role_type == 'controller' %}bg-primary{% else %}bg-warning text-dark{% endif %} badge-sm text-uppercase">
+              <span class="badge {% if entry.role_type == 'controller' %}bg-primary{% else %}bg-warning text-dark{% endif %} badge-sm">
                 {{ entry.role_type }}
               </span>
             </td>
-            <td><code>{{ entry.lawful_basis or '—' }}</code></td>
-            <td class="small text-muted" style="max-width: 240px;">{{ (entry.purpose or '—')[:100] }}</td>
-            <td class="small">{{ (entry.data_subjects or '—')[:60] }}</td>
-            <td class="small text-muted">{{ entry.created_at.strftime('%Y-%m-%d') if entry.created_at else '—' }}</td>
+            <td><code>{{ entry.lawful_basis or 'None' }}</code></td>
+            <td class="small text-muted" style="max-width: 240px;">{{ (entry.purpose or 'None')[:100] }}</td>
+            <td class="small">{{ (entry.data_subjects or 'None')[:60] }}</td>
+            <td class="small text-muted">{{ entry.created_at.strftime('%Y-%m-%d') if entry.created_at else 'None' }}</td>
             <td class="text-end">
               <a href="/ropa/{{ entry.id }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye"></i> View</a>
               {% if user_role in ['admin', 'dpo'] %}

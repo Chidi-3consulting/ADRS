@@ -177,6 +177,8 @@ def _is_api_request(request: Request) -> bool:
 # Gap 7: Sanitised global exception handler — prevents stack traces leaking via API
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    logging.getLogger("safedata.errors").error(
+        "unhandled error on %s %s", request.method, request.url.path, exc_info=exc)
     if _is_api_request(request):
         # In local/test mode, include error detail for debugging
         detail = str(exc) if APP_ENV in ("local", "test") else "Internal server error"
@@ -202,13 +204,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     if _is_api_request(request):
-        if APP_ENV in ("local", "test"):
-            # Full detail for development debugging
-            return JSONResponse(
-                status_code=422,
-                content={"error": "validation_error", "detail": exc.errors()},
-            )
-        else:
+        if True:
             # Sanitised: only field names and error types, no internal Python types
             safe_errors = []
             for err in exc.errors():

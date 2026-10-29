@@ -46,7 +46,7 @@
                 </td>
                 <td>{{ i.attempts }}</td>
                 <td><small>{{ i.created_at }}</small></td>
-                <td><small>{{ i.processed_at or '—' }}</small></td>
+                <td><small>{{ i.processed_at or 'None' }}</small></td>
               </tr>
             {% endfor %}
           </tbody>

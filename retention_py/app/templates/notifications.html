@@ -7,7 +7,7 @@
     <div>
       <div class="d-flex align-items-center gap-2">
         <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-        <h1 class="h3 mb-0 fw-bold text-dark">Notification Inbox</h1>
+        <h1 class="h3 mb-0 fw-bold text-dark">Notification inbox</h1>
       </div>
       <p class="text-muted mb-0 small mt-1">Real-time statutory alerts, retention warnings, and disposal confirmations</p>
     </div>
@@ -16,14 +16,14 @@
         <form method="post" action="/notifications/read-all">
           {{ csrf_field | safe }}
           <button type="submit" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
-            <i class="bi bi-check2-all"></i> Mark All Read ({{ unread_count }})
+            Mark All Read ({{ unread_count }})
           </button>
         </form>
       {% endif %}
       <form method="post" action="/notifications/clear">
         {{ csrf_field | safe }}
         <button type="submit" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" onclick="return confirm('Clear all read notifications?');">
-          <i class="bi bi-trash"></i> Clear Read
+          Clear read
         </button>
       </form>
     </div>
@@ -35,7 +35,7 @@
       <ul class="nav nav-pills nav-fill gap-1">
         <li class="nav-item">
           <a class="nav-link py-2 small {{ 'active' if current_filter == 'all' or not current_filter else '' }}" href="/notifications?filter=all">
-            All Notifications
+            All notifications
           </a>
         </li>
         <li class="nav-item">
@@ -45,7 +45,7 @@
         </li>
         <li class="nav-item">
           <a class="nav-link py-2 small {{ 'active' if current_filter == 'warning' else '' }}" href="/notifications?filter=warning">
-            Warnings & Escalations
+            Warnings and escalations
           </a>
         </li>
         <li class="nav-item">
@@ -67,7 +67,7 @@
     <div class="card border-0 bg-white">
       <div class="empty-state">
         <i class="bi bi-bell-slash empty-state-icon"></i>
-        <div class="empty-state-title">No Notifications</div>
+        <div class="empty-state-title">No notifications</div>
         <p class="empty-state-description">You're completely caught up. New notifications will appear here when retention events trigger.</p>
       </div>
     </div>
@@ -103,7 +103,7 @@
                     {% if n.type == 'retention_warning' or n.type == 'escalation' %}
                       <a href="/records" class="btn btn-link btn-sm p-0 small text-decoration-none">Open data collection &rarr;</a>
                     {% elif n.type == 'recalculation_needed' %}
-                      <a href="/recalculations" class="btn btn-link btn-sm p-0 small text-decoration-none">View Pending Recalculations &rarr;</a>
+                      <a href="/recalculations" class="btn btn-link btn-sm p-0 small text-decoration-none">View pending recalculations &rarr;</a>
                     {% endif %}
                   </div>
                 </div>
@@ -113,7 +113,7 @@
                   <form method="post" action="/notifications/{{ n.id }}/read">
                     {{ csrf_field | safe }}
                     <button type="submit" class="btn btn-light btn-sm border py-1 px-2" title="Mark as Read">
-                      <i class="bi bi-check2"></i> Mark Read
+                      Mark read
                     </button>
                   </form>
                 {% else %}

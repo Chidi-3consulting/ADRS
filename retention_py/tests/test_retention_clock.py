@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 """One retention clock for every record, whichever way it arrived.
 
 Clock start:
@@ -18,7 +19,7 @@ from app.engine import (
 )
 from app.models import ApiKey, ConnectedSystem, DataCategory, DataRecord, Notification, User
 
-TODAY = date.today()
+TODAY = business_today()
 
 
 def _category(db, **kw):
@@ -190,7 +191,8 @@ def _admin_login(client, db):
     from app.auth import hash_password
     pw = "Correct-Horse-9-Battery"
     db.add(User(organization_id=1, name="Admin", email="admin@test.local", password_hash=hash_password(pw),
-                role="admin", is_active=True, must_change_password=False))
+                role="admin", is_active=True, must_change_password=False,
+                email_verified_at=datetime(2026, 1, 1)))
     db.commit()
     assert client.post("/login", data={"email": "admin@test.local", "password": pw},
                        follow_redirects=False).status_code == 303

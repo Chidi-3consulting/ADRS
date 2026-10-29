@@ -27,7 +27,9 @@ _env_secret = os.getenv("SECRET_KEY", "")
 
 if _env_secret:
     SECRET_KEY = _env_secret
-elif IS_PRODUCTION:
+elif IS_PRODUCTION or (not IS_TEST and not _urlparse(APP_URL).hostname in ("127.0.0.1", "localhost", "::1")):
+    # Also fatal when APP_URL points at a real host but APP_ENV was left at its "local"
+    # default: the built-in dev key is public, so a server running on it accepts forged sessions.
     print(
         "\n"
         "╔══════════════════════════════════════════════════════════════╗\n"

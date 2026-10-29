@@ -11,15 +11,15 @@
           {{ record.record_reference }}
         </h1>
         {% if record.status == 'active' %}
-          <span class="badge badge-status-active"><i class="bi bi-check-circle-fill me-1"></i>Active</span>
+          <span class="badge badge-status-active">Active</span>
         {% elif record.status == 'due_review' %}
-          <span class="badge badge-status-warning"><i class="bi bi-bell-fill me-1"></i>Due Review</span>
+          <span class="badge badge-status-warning">Due review</span>
         {% elif record.status == 'disposal_requested' %}
-          <span class="badge badge-status-info"><i class="bi bi-clock-fill me-1"></i>Disposal Requested</span>
+          <span class="badge badge-status-info">Disposal requested</span>
         {% elif record.status == 'legal_hold' %}
-          <span class="badge badge-status-hold"><i class="bi bi-lock-fill me-1"></i>Legal Hold</span>
+          <span class="badge badge-status-hold">Legal hold</span>
         {% else %}
-          <span class="badge badge-status-disposed"><i class="bi bi-trash-fill me-1"></i>Disposed</span>
+          <span class="badge badge-status-disposed">Disposed</span>
         {% endif %}
       </div>
       <p class="text-muted small mb-0 mt-1">Registered on {{ record.created_at.strftime('%Y-%m-%d %H:%M UTC') if record.created_at else '' }}</p>
@@ -27,11 +27,11 @@
     <div class="d-flex gap-2">
       {% if record.status != 'disposed' and user_role in ['admin', 'dpo'] %}
         <a href="/records/edit/{{ record.id }}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
-          <i class="bi bi-pencil-square"></i> Edit Details
+          Edit details
         </a>
       {% endif %}
       <a href="/records" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-        <i class="bi bi-card-list"></i> Back to Register
+        Back to register
       </a>
     </div>
   </div>
@@ -46,7 +46,7 @@
             <i class="bi bi-shield-fill-check" style="font-size: 1.25rem; color: #34d399;"></i>
           </div>
           <div>
-            <h2 class="h6 mb-0 fw-bold text-white text-uppercase" style="letter-spacing: 0.05em;">Cryptographic Certificate of Destruction</h2>
+            <h2 class="h6 mb-0 fw-bold text-white" style="letter-spacing: 0.05em;">Cryptographic certificate of destruction</h2>
             <div class="small text-white-50">Permanent statutory erasure finalized under {{ record.category.compliance_framework if record.category else 'NDPA/GDPR' }} Article 17</div>
           </div>
         </div>
@@ -57,20 +57,20 @@
 
       <div class="row g-3 small">
         <div class="col-sm-6 col-md-3">
-          <div class="text-white-50">Disposal Timestamp</div>
-          <div class="font-mono fw-semibold text-white mt-1">{{ record.disposed_at.strftime('%Y-%m-%d %H:%M:%S UTC') if record.disposed_at else '—' }}</div>
+          <div class="text-white-50">Disposal timestamp</div>
+          <div class="font-mono fw-semibold text-white mt-1">{{ record.disposed_at.strftime('%Y-%m-%d %H:%M:%S UTC') if record.disposed_at else 'None' }}</div>
         </div>
         <div class="col-sm-6 col-md-3">
-          <div class="text-white-50">Disposal Protocol</div>
+          <div class="text-white-50">Disposal protocol</div>
           <div class="font-mono fw-semibold text-white mt-1">{{ (record.category.disposal_method | upper) if record.category else 'CRYPTOGRAPHIC_PURGE' }}</div>
         </div>
         <div class="col-sm-6 col-md-3">
-          <div class="text-white-50">Verification Algorithm</div>
+          <div class="text-white-50">Verification algorithm</div>
           <div class="font-mono fw-semibold text-white mt-1">SHA-256 HMAC-SIGNED</div>
         </div>
         <div class="col-sm-6 col-md-3">
-          <div class="text-white-50">Chain Integrity</div>
-          <div class="font-mono text-success fw-semibold mt-1"><i class="bi bi-link-45deg"></i> LEDGER_LINKED</div>
+          <div class="text-white-50">Chain integrity</div>
+          <div class="font-mono text-success fw-semibold mt-1">LEDGER_LINKED</div>
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@
   <div class="card shadow-sm border-0 rounded-4 bg-white mb-4 animate-in">
     <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
       <div class="d-flex justify-content-between align-items-center">
-        <h2 class="h6 fw-bold text-dark mb-0 text-uppercase" style="letter-spacing: 0.04em; font-size: var(--sd-text-xs); color: var(--sd-gray-500) !important;">Retention Lifecycle Tracker</h2>
+        <h2 class="h6 fw-bold text-dark mb-0" style="letter-spacing: 0.04em; font-size: var(--sd-text-xs); color: var(--sd-gray-500) !important;">Retention lifecycle tracker</h2>
         <span class="badge bg-light text-muted border font-mono" style="font-size: var(--sd-text-xs);">ID #{{ record.id }}</span>
       </div>
     </div>
@@ -143,7 +143,7 @@
     <div class="col-lg-7">
       <div class="card shadow-sm border-0 rounded-4 bg-white mb-4 animate-in">
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
-          <h2 class="h5 fw-bold text-dark mb-0">Record Information</h2>
+          <h2 class="h5 fw-bold text-dark mb-0">Record information</h2>
           <span class="badge bg-light text-muted border font-mono" style="font-size: 0.7rem;">REF: {{ record.record_reference }}</span>
         </div>
         <div class="card-body p-4">
@@ -169,7 +169,7 @@
             </dd>
 
             <dt class="col-sm-4 text-muted mb-3">Data Subject Type</dt>
-            <dd class="col-sm-8 mb-3 break-words">{{ record.data_subject_type or '—' }}</dd>
+            <dd class="col-sm-8 mb-3 break-words">{{ record.data_subject_type or 'None' }}</dd>
 
             <dt class="col-sm-4 text-muted mb-3">Collection Date</dt>
             <dd class="col-sm-8 mb-3 font-mono">{{ record.collection_date }}</dd>
@@ -179,33 +179,33 @@
               {% if record.retention_end_date %}
                 {{ record.retention_end_date }}
               {% else %}
-                <span class="text-muted">— pending event trigger</span>
+                <span class="text-muted">(waiting for the end date)</span>
               {% endif %}
             </dd>
 
             <dt class="col-sm-4 text-muted mb-3">Consent Status</dt>
             <dd class="col-sm-8 mb-3 break-words">
               {% if record.consent_withdrawn_at %}
-                <span class="text-danger fw-bold"><i class="bi bi-exclamation-octagon-fill me-1"></i>Consent Withdrawn ({{ record.consent_withdrawn_at.strftime('%Y-%m-%d') }})</span>
+                <span class="text-danger fw-bold">Consent Withdrawn ({{ record.consent_withdrawn_at.strftime('%Y-%m-%d') }})</span>
               {% else %}
-                <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Active / Valid</span>
+                <span class="text-success">Active / valid</span>
               {% endif %}
             </dd>
 
             <dt class="col-sm-4 text-muted mb-3">Legal Hold Status</dt>
             <dd class="col-sm-8 mb-3 break-words">
               {% if record.legal_hold %}
-                <span class="badge bg-danger"><i class="bi bi-lock-fill me-1"></i>ON LEGAL HOLD</span>
+                <span class="badge bg-danger">ON LEGAL HOLD</span>
                 {% if record.legal_hold_reason %}
                   <div class="text-muted small mt-1 break-words">Reason: {{ record.legal_hold_reason }}</div>
                 {% endif %}
               {% else %}
-                <span class="text-muted">No Active Hold</span>
+                <span class="text-muted">No active hold</span>
               {% endif %}
             </dd>
 
             <dt class="col-sm-4 text-muted mb-0">Notes</dt>
-            <dd class="col-sm-8 mb-0 break-anywhere" style="white-space: pre-wrap; line-height: 1.4;">{{ record.notes or '—' }}</dd>
+            <dd class="col-sm-8 mb-0 break-anywhere" style="white-space: pre-wrap; line-height: 1.4;">{{ record.notes or 'None' }}</dd>
           </dl>
         </div>
       </div>
@@ -214,14 +214,14 @@
       {% if record.status != 'disposed' and user_role in ['admin', 'dpo'] %}
       <div class="card shadow-sm border-0 rounded-4 bg-white mb-4 animate-in">
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-          <h2 class="h6 fw-bold text-dark mb-0">Reassign Data Category</h2>
+          <h2 class="h6 fw-bold text-dark mb-0">Reassign data category</h2>
         </div>
         <div class="card-body p-4">
           <form method="post" action="/records/reassign/{{ record.id }}">
             {{ csrf_field | safe }}
             <div class="row g-2 align-items-end">
               <div class="col-md-7">
-                <label class="form-label small fw-bold text-muted">Select Target Category</label>
+                <label class="form-label small fw-bold text-muted">Select target category</label>
                 <select name="new_category_id" class="form-select form-select-sm" required>
                   {% for c in all_categories %}
                     <option value="{{ c.id }}" {{ 'selected' if c.id == record.category_id else '' }}>{{ c.name }} ({{ c.compliance_framework }})</option>
@@ -249,16 +249,16 @@
       {% if record.status != 'disposed' and user_role in ['admin', 'dpo'] %}
       <div class="card shadow-sm border-0 rounded-4 bg-white mb-4 animate-in">
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-          <h2 class="h5 fw-bold text-dark mb-0">Lifecycle Governance Actions</h2>
+          <h2 class="h5 fw-bold text-dark mb-0">Lifecycle governance actions</h2>
         </div>
         <div class="card-body p-4 d-flex flex-column gap-3">
           {% if record.status == 'disposal_requested' %}
             <div class="alert alert-warning py-2 small mb-1 rounded-3">
-              <i class="bi bi-hourglass-split me-1"></i> Awaiting secondary approval. A <strong>different</strong> authorized compliance team member must confirm with step-up verification.
+              Awaiting secondary approval. A <strong>different</strong> authorized compliance team member must confirm with step-up verification.
             </div>
             <div class="d-flex gap-2">
               <button type="button" class="btn btn-danger btn-sm flex-grow-1 fw-bold" data-bs-toggle="modal" data-bs-target="#stepUpModal" data-action="/records/disposal_approve/{{ record.id }}" data-title="Approve Permanent Disposal">
-                <i class="bi bi-shield-check me-1"></i> Approve Disposal
+                Approve disposal
               </button>
               <form method="post" action="/records/disposal_reject/{{ record.id }}" class="flex-grow-1">
                 {{ csrf_field | safe }}
@@ -276,10 +276,10 @@
             <form method="post" action="/records/legal_hold/{{ record.id }}">
               {{ csrf_field | safe }}
               <input type="hidden" name="action" value="apply">
-              <label class="form-label small fw-bold text-muted mb-1">Place on Legal Hold</label>
+              <label class="form-label small fw-bold text-muted mb-1">Place on legal hold</label>
               <div class="input-group input-group-sm">
                 <input type="text" name="reason" class="form-control" placeholder="Reason for legal hold..." required>
-                <button class="btn btn-outline-danger" type="submit">Apply Hold</button>
+                <button class="btn btn-outline-danger" type="submit">Apply hold</button>
               </div>
             </form>
           {% else %}
@@ -287,7 +287,7 @@
               {{ csrf_field | safe }}
               <input type="hidden" name="action" value="lift">
               <button class="btn btn-outline-success btn-sm w-100" onclick="return confirm('Release legal hold on this record?')">
-                <i class="bi bi-unlock me-1"></i> Release Legal Hold
+                Release legal hold
               </button>
             </form>
           {% endif %}
@@ -297,11 +297,11 @@
             <div class="p-3 bg-light rounded-3 border small">
               <div class="d-flex align-items-center gap-2 mb-1">
                 {% if record.consent_withdrawn_at %}
-                  <span class="badge bg-warning text-dark"><i class="bi bi-broadcast me-1"></i>Signal Received</span>
-                  <span class="fw-bold text-dark">Consent Withdrawn</span>
+                  <span class="badge bg-warning text-dark">Signal received</span>
+                  <span class="fw-bold text-dark">Consent withdrawn</span>
                 {% else %}
-                  <span class="badge bg-secondary"><i class="bi bi-hourglass-split me-1"></i>Awaiting Signal</span>
-                  <span class="fw-bold text-dark">Consent Active</span>
+                  <span class="badge bg-secondary">Awaiting signal</span>
+                  <span class="fw-bold text-dark">Consent active</span>
                 {% endif %}
               </div>
               <p class="text-muted mb-0" style="font-size: 0.8rem; line-height: 1.35;">
@@ -320,12 +320,12 @@
       <!-- Audit Proof Reference -->
       <div class="card shadow-sm border-0 rounded-4 bg-white animate-in">
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-          <h2 class="h6 fw-bold text-dark mb-0">Cryptographic Governance Chain</h2>
+          <h2 class="h6 fw-bold text-dark mb-0">Cryptographic governance chain</h2>
         </div>
         <div class="card-body p-4">
           <p class="small text-muted mb-3">All lifecycle operations are immutably signed with SHA-256 and chained into the audit ledger.</p>
           <a href="/audit?entity_type=data_record&entity_id={{ record.id }}" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-2">
-            <i class="bi bi-journal-text"></i> View Cryptographic Audit Trail
+            View cryptographic audit trail
           </a>
         </div>
       </div>
@@ -339,7 +339,7 @@
     <div class="modal-content rounded-4 border-0 shadow">
       <div class="modal-header border-0 pb-0">
         <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="stepUpModalLabel">
-          <i class="bi bi-shield-lock-fill"></i> Safe Delete Step-Up Verification
+          Safe delete Step-Up verification
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -347,20 +347,20 @@
         {{ csrf_field | safe }}
         <div class="modal-body pt-3 pb-2">
           <div class="alert alert-danger py-2 small mb-3">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> You are performing an <strong>irreversible statutory disposal</strong> on record <strong class="font-mono">#{{ record.id }} ({{ record.record_reference }})</strong>.
+            You are performing an <strong>irreversible statutory disposal</strong> on record <strong class="font-mono">#{{ record.id }} ({{ record.record_reference }})</strong>.
           </div>
           <p class="small text-muted mb-3">
             Please authenticate to authorize this destructive operation. Once confirmed, a cryptographic destruction certificate will be generated.
           </p>
           <div class="mb-3">
-            <label for="auth_credential" class="form-label small fw-bold text-dark">Account Password or 2FA Code *</label>
+            <label for="auth_credential" class="form-label small fw-bold text-dark">Account password or 2FA code *</label>
             <input type="password" name="auth_credential" id="auth_credential" class="form-control" required placeholder="Enter password or 6-digit 2FA code" autocomplete="current-password">
             <div class="form-text small">Enter your login password, or your 6-digit Authenticator TOTP code.</div>
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-danger fw-bold" id="stepUpSubmitBtn">Authenticate &amp; Execute Safe Disposal</button>
+          <button type="submit" class="btn btn-danger fw-bold" id="stepUpSubmitBtn">Authenticate and execute safe disposal</button>
         </div>
       </form>
     </div>
@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const action = button.getAttribute('data-action');
       const title = button.getAttribute('data-title');
       if (action) form.setAttribute('action', action);
-      if (title) modalTitle.innerHTML = '<i class="bi bi-shield-lock-fill"></i> ' + title;
+      if (title) modalTitle.innerHTML = '' + title;
     });
   }
 });

@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 """
 Test recalculations.
 Tests pending recalculation workflow.
@@ -21,8 +22,8 @@ def _seed_records(db):
     record = DataRecord(
         organization_id=1, category_id=cat.id,
         record_reference="RECALC-001", status="active",
-        collection_date=date.today() - timedelta(days=100),
-        retention_end_date=date.today() + timedelta(days=265),
+        collection_date=business_today() - timedelta(days=100),
+        retention_end_date=business_today() + timedelta(days=265),
     )
     db.add(record)
     db.commit()
@@ -38,7 +39,7 @@ def test_create_pending_recalculation(db, auth_user):
         record_id=record.id,
         category_id=cat.id,
         old_retention_end_date=record.retention_end_date,
-        new_retention_end_date=date.today() + timedelta(days=730),
+        new_retention_end_date=business_today() + timedelta(days=730),
         status="pending",
         triggered_by=auth_user.id,
     )
@@ -74,7 +75,7 @@ def test_pending_recalculation_completion(db, auth_user):
     recalc = PendingRecalculation(
         organization_id=1, record_id=record.id, category_id=cat.id,
         old_retention_end_date=record.retention_end_date,
-        new_retention_end_date=date.today() + timedelta(days=730),
+        new_retention_end_date=business_today() + timedelta(days=730),
         status="pending", triggered_by=auth_user.id,
     )
     db.add(recalc)

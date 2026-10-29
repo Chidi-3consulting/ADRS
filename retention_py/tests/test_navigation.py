@@ -1,3 +1,4 @@
+from datetime import datetime
 """Every link a signed-in user can click must land on a page, not a 404.
 
 Live users hit 404s from the sidebar (/docs), the login page
@@ -22,6 +23,7 @@ def _admin(db, name, email):
             password_hash=hash_password(PW),
             role="admin",
             is_active=True,
+            email_verified_at=datetime(2026, 1, 1),
             must_change_password=False,
         )
     )

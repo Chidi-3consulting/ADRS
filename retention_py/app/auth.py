@@ -181,6 +181,11 @@ def record_password_history(db: Session, user_id: int, password_hash: str) -> No
 # ── Session Management (signed cookie) ──
 
 def get_session(request: Request) -> dict:
+    # The session middleware re-reads role/status from the database; handlers must see that
+    # fresh copy on this very request, not the possibly stale cookie.
+    fresh = getattr(getattr(request, "state", None), "session_fresh", None)
+    if fresh is not None:
+        return fresh
     cookie = request.cookies.get("SafeData_session")
     if not cookie:
         return {}
@@ -203,6 +208,12 @@ def set_session(response: Response, data: dict):
 
 def clear_session(response: Response):
     response.delete_cookie("SafeData_session")
+
+
+def password_fingerprint(password_hash: str) -> str:
+    """Short, non-reversible tag of the current password hash. Kept in the session cookie so
+    a password change or reset ends every other signed-in session."""
+    return hashlib.sha256((password_hash or "").encode("utf-8")).hexdigest()[:16]
 
 
 def build_session_data(user, org, extra: dict = None) -> dict:
@@ -228,6 +239,7 @@ def build_session_data(user, org, extra: dict = None) -> dict:
         "email_verified": user.email_verified_at is not None,
         "subscription_status": org.subscription_status or "trial",
         "trial_ends_at": org.trial_ends_at.isoformat() if org.trial_ends_at else None,
+        "pw_fp": password_fingerprint(user.password_hash),
         "login_time": now,
         "last_activity": now,
     }
@@ -380,16 +392,21 @@ def verify_email_token(db: Session, token: str) -> bool:
 
 def setup_is_complete(db: Session) -> bool:
     """Check if initial setup has been completed (system_settings key)."""
-    from app.models import SystemSetting
+    from app.models import SystemSetting, User
     row = db.query(SystemSetting).filter(
         SystemSetting.setting_key == "setup_complete"
     ).first()
-    return row is not None and row.setting_value == "1"
+    if row is not None and row.setting_value == "1":
+        return True
+    # Installs created with `create-admin` or the sign-up form never wrote the flag. Any
+    # existing user means the system is already set up; otherwise the public /setup page
+    # would let a stranger create an administrator on a live site.
+    return db.query(User.id).first() is not None
 
 
 # ── Step-Up Authentication (Safe Delete & High-Risk Actions) ──
 
-def verify_stepup_authentication(db: Session, user_id: int, auth_credential: str) -> tuple[bool, str]:
+def verify_stepup_authentication(db: Session, user_id: int, auth_credential: str, ip: str = "") -> tuple[bool, str]:
     """
     Verify step-up credentials (password or 2FA TOTP code) for sensitive operations
     (e.g., permanent disposal, bulk safe delete, legal hold changes).
@@ -406,6 +423,17 @@ def verify_stepup_authentication(db: Session, user_id: int, auth_credential: str
     if not user:
         return False, "User not found."
 
+    # Guessing the password here is as good as guessing it at sign-in, so it shares that throttle.
+    if login_throttle_seconds(db, user.email, ip or "stepup") > 0:
+        return False, "Too many failed attempts. Try again later."
+    ok, msg = _check_stepup(db, user, cred)
+    if not ok:
+        record_login_attempt(db, user.email, ip or "stepup", success=False)
+    return ok, msg
+
+
+def _check_stepup(db: Session, user, cred: str) -> tuple[bool, str]:
+    from app.helpers import totp_verify, consume_recovery_code
     # 1. If user has 2FA enabled, check TOTP code or recovery code first
     if user.twofa_enabled and user.twofa_secret:
         if totp_verify(decrypt_totp_secret(user.twofa_secret), cred):

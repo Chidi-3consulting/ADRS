@@ -7,6 +7,7 @@ outbound disposal dispatch queueing + sending (E3), and enterprise daily engine 
 
 Tier gating: callers must verify get_setting(db,'SafeData_tier')==='enterprise' first.
 """
+from app.core.clock import business_today
 import json
 import hashlib
 import secrets
@@ -138,6 +139,8 @@ def api_key_can(api_key, permission: str) -> bool:
         perms = json.loads(api_key.permissions) if isinstance(api_key.permissions, str) else (api_key.permissions or [])
     except (json.JSONDecodeError, TypeError):
         perms = []
+    if permission == "dispose":
+        return permission in perms  # destructive: never implied by an empty permission list
     return perms == [] or permission in perms
 
 
@@ -242,9 +245,9 @@ def _compute_retention_end(category, collection_date_str: str):
         try:
             cd = _date.fromisoformat(collection_date_str)
         except ValueError:
-            cd = _date.today()
+            cd = business_today()
     else:
-        cd = collection_date_str or _date.today()
+        cd = collection_date_str or business_today()
 
     days = category.retention_period_days or 0
     if days > 0:
@@ -287,7 +290,7 @@ def process_intake_item(db: Session, item) -> dict:
             return {"status": "duplicate", "record_id": None, "error": None}
 
         category = db.query(DataCategory).filter(DataCategory.id == int(category_id)).first()
-        collection_date = payload.get("collection_date") or date.today().isoformat()
+        collection_date = payload.get("collection_date") or business_today().isoformat()
         retention_end = _compute_retention_end(category, collection_date)
 
         org_id = category.organization_id if category else (item.organization_id or 1)
@@ -499,7 +502,14 @@ def process_disposal_dispatches(db: Session, limit: int = 50) -> dict:
                 ).hexdigest()
                 headers["X-SafeData-Signature"] = sig
 
-            resp = httpx.post(d.endpoint_url, json=payload, headers=headers, timeout=20.0, follow_redirects=True)
+            from app.core.urlguard import url_problem
+            problem = url_problem(d.endpoint_url, resolve=True)
+            if problem:
+                raise ValueError(f"blocked webhook address: {problem}")
+            # Send exactly the bytes that were signed, so the receiver can verify the signature
+            # over the raw body. No redirects: a public host must not bounce us to an internal one.
+            raw = (d.payload if isinstance(d.payload, str) else json.dumps(payload)).encode("utf-8")
+            resp = httpx.post(d.endpoint_url, content=raw, headers=headers, timeout=20.0, follow_redirects=False)
             code = resp.status_code
 
             if 200 <= code < 300:

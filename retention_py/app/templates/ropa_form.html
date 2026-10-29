@@ -6,6 +6,7 @@
 </div>
 
 <form method="POST" action="{% if mode == 'edit' %}/ropa/{{ entry.id }}/edit{% else %}/ropa/create{% endif %}">
+{{ csrf_field | safe }}
   <div class="row g-4">
     <!-- Left Column: Core Fields -->
     <div class="col-lg-8">

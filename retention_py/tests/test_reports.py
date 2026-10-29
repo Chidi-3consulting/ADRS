@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 """
 Test reports.
 Tests compliance report queries.
@@ -22,8 +23,8 @@ def _seed_data(db):
         record = DataRecord(
             organization_id=1, category_id=cat.id,
             record_reference=f"RPT-{i:03d}", status="active",
-            collection_date=date.today() - timedelta(days=30 * i),
-            retention_end_date=date.today() + timedelta(days=365 - 30 * i),
+            collection_date=business_today() - timedelta(days=30 * i),
+            retention_end_date=business_today() + timedelta(days=365 - 30 * i),
         )
         db.add(record)
 
@@ -63,7 +64,7 @@ def test_overdue_records(db):
     overdue = DataRecord(
         organization_id=1, category_id=cat.id,
         record_reference="OVERDUE-001", status="active",
-        retention_end_date=date.today() - timedelta(days=30),
+        retention_end_date=business_today() - timedelta(days=30),
     )
     db.add(overdue)
     db.commit()
@@ -71,6 +72,6 @@ def test_overdue_records(db):
     overdue_count = db.query(DataRecord).filter(
         DataRecord.organization_id == 1,
         DataRecord.status != "disposed",
-        DataRecord.retention_end_date < date.today(),
+        DataRecord.retention_end_date < business_today(),
     ).count()
     assert overdue_count >= 1

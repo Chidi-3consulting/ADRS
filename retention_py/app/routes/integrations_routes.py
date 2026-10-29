@@ -87,6 +87,10 @@ def handle_create_system(
         return RedirectResponse(url="/login", status_code=303)
 
     org_id = session["org_id"]
+    from app.core.urlguard import url_problem
+    problem = url_problem(base_url or "")
+    if problem:
+        raise HTTPException(status_code=422, detail=problem)
     signing_secret = secrets.token_hex(32)
 
     sys_obj = ConnectedSystem(
@@ -142,6 +146,10 @@ def handle_edit_system(
     if not sys_obj:
         raise HTTPException(status_code=404, detail="System not found")
 
+    from app.core.urlguard import url_problem
+    problem = url_problem(base_url or "")
+    if problem:
+        raise HTTPException(status_code=422, detail=problem)
     sys_obj.name = name.strip()
     sys_obj.system_type = system_type
     sys_obj.base_url = base_url.strip() if base_url else None
@@ -202,9 +210,20 @@ def handle_create_key(
         return RedirectResponse(url="/login", status_code=303)
 
     org_id = session["org_id"]
+    system = db.query(ConnectedSystem).filter(ConnectedSystem.id == system_id,
+                                              ConnectedSystem.organization_id == org_id).first()
+    if not system:
+        raise HTTPException(status_code=404, detail="Connected system not found.")
+    allowed = ("ingest", "consent", "terminate", "read", "dispose")
+    permissions = [p for p in dict.fromkeys(permissions) if p in allowed]
+    if not permissions:
+        raise HTTPException(status_code=422, detail="Choose at least one permission.")
+    if not 1 <= rate_limit_per_min <= 6000:
+        raise HTTPException(status_code=422, detail="Rate limit must be between 1 and 6000 requests a minute.")
+    key_name = key_name.strip()[:100] or "API key"
     raw_key = f"SafeData_k1_{secrets.token_hex(24)}"
     key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
-    key_prefix = raw_key[:12]
+    key_prefix = raw_key[12:24]  # first characters of the random part, so keys can be told apart
 
     new_key = ApiKey(
         organization_id=org_id,

@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 import pytest
 from datetime import date, timedelta
 from app.models import DataCategory, DataRecord, Organization
@@ -49,7 +50,7 @@ def test_approval_governance_tiers(db):
     db.commit()
 
     # Create overdue records for each
-    yesterday = date.today() - timedelta(days=5)
+    yesterday = business_today() - timedelta(days=5)
     r_auto = DataRecord(
         organization_id=org.id, category_id=cat_auto.id, record_reference="REF-AUTO-01",
         collection_date=yesterday, retention_end_date=yesterday, status="due_review"

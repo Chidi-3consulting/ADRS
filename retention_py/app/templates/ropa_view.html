@@ -24,20 +24,20 @@
           </div>
           <div class="col-md-3">
             <div class="small text-muted">Role Type</div>
-            <span class="badge {% if entry.role_type == 'controller' %}bg-primary{% else %}bg-warning text-dark{% endif %} text-uppercase">
+            <span class="badge {% if entry.role_type == 'controller' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
               {{ entry.role_type }}
             </span>
           </div>
           <div class="col-md-3">
             <div class="small text-muted">Lawful Basis</div>
-            <code>{{ entry.lawful_basis or '—' }}</code>
+            <code>{{ entry.lawful_basis or 'None' }}</code>
           </div>
         </div>
 
         {% if entry.category %}
         <div class="mb-3">
           <div class="small text-muted">Linked Data Category</div>
-          <span class="badge {{ get_framework_badge(entry.category.compliance_framework) }} badge-sm text-uppercase">
+          <span class="badge {{ get_framework_badge(entry.category.compliance_framework) }} badge-sm">
             {{ entry.category.compliance_framework }}
           </span>
           <span class="fw-semibold ms-1">{{ entry.category.name }}</span>
@@ -46,39 +46,39 @@
 
         <div class="mb-3">
           <div class="small text-muted">Purpose of Processing</div>
-          <div>{{ entry.purpose or '—' }}</div>
+          <div>{{ entry.purpose or 'None' }}</div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-6">
             <div class="small text-muted">Categories of Data Subjects</div>
-            <div>{{ entry.data_subjects or '—' }}</div>
+            <div>{{ entry.data_subjects or 'None' }}</div>
           </div>
           <div class="col-md-6">
             <div class="small text-muted">Categories of Personal Data</div>
-            <div>{{ entry.data_categories or '—' }}</div>
+            <div>{{ entry.data_categories or 'None' }}</div>
           </div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-6">
             <div class="small text-muted">Recipients</div>
-            <div>{{ entry.recipients or '—' }}</div>
+            <div>{{ entry.recipients or 'None' }}</div>
           </div>
           <div class="col-md-6">
             <div class="small text-muted">Retention Summary</div>
-            <div>{{ entry.retention_summary or '—' }}</div>
+            <div>{{ entry.retention_summary or 'None' }}</div>
           </div>
         </div>
 
         <div class="row mb-3">
           <div class="col-md-6">
             <div class="small text-muted">Third Country Transfers</div>
-            <div>{{ entry.third_country_transfers or '—' }}</div>
+            <div>{{ entry.third_country_transfers or 'None' }}</div>
           </div>
           <div class="col-md-6">
             <div class="small text-muted">Security Measures</div>
-            <div>{{ entry.security_measures or '—' }}</div>
+            <div>{{ entry.security_measures or 'None' }}</div>
           </div>
         </div>
       </div>
@@ -109,13 +109,14 @@
                 {% for proc in processors %}
                 <tr>
                   <td class="fw-semibold">{{ proc.processor_name }}</td>
-                  <td class="small text-muted">{{ proc.processor_contact or '—' }}</td>
-                  <td class="small" style="max-width:200px;">{{ (proc.processing_purpose or '—')[:80] }}</td>
-                  <td class="small"><code>{{ proc.contract_reference or '—' }}</code></td>
+                  <td class="small text-muted">{{ proc.processor_contact or 'None' }}</td>
+                  <td class="small" style="max-width:200px;">{{ (proc.processing_purpose or 'None')[:80] }}</td>
+                  <td class="small"><code>{{ proc.contract_reference or 'None' }}</code></td>
                   {% if user_role in ['admin', 'dpo'] %}
                     <td class="text-end">
                       <form method="POST" action="/ropa/{{ entry.id }}/processors/{{ proc.id }}/delete"
                             onsubmit="return confirm('Remove this processor?')" style="display:inline;">
+{{ csrf_field | safe }}
                         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
                       </form>
                     </td>
@@ -137,6 +138,7 @@
         <hr>
         <h6 class="fw-bold mb-3">Add Processor</h6>
         <form method="POST" action="/ropa/{{ entry.id }}/processors/add">
+{{ csrf_field | safe }}
           <div class="row g-2">
             <div class="col-md-4">
               <input type="text" name="processor_name" class="form-control form-control-sm"
@@ -182,15 +184,15 @@
         <h5 class="card-title fw-bold mb-3"><i class="bi bi-person-badge"></i> Controller</h5>
         <div class="mb-2">
           <div class="small text-muted">Name</div>
-          <div>{{ entry.controller_name or '—' }}</div>
+          <div>{{ entry.controller_name or 'None' }}</div>
         </div>
         <div class="mb-2">
           <div class="small text-muted">Contact</div>
-          <div>{{ entry.controller_contact or '—' }}</div>
+          <div>{{ entry.controller_contact or 'None' }}</div>
         </div>
         <div>
           <div class="small text-muted">DPO Contact</div>
-          <div>{{ entry.dpo_contact or '—' }}</div>
+          <div>{{ entry.dpo_contact or 'None' }}</div>
         </div>
       </div>
     </div>
@@ -201,11 +203,11 @@
         <h5 class="card-title fw-bold mb-3"><i class="bi bi-building"></i> Processor (This Org)</h5>
         <div class="mb-2">
           <div class="small text-muted">Name</div>
-          <div>{{ entry.processor_name or '—' }}</div>
+          <div>{{ entry.processor_name or 'None' }}</div>
         </div>
         <div>
           <div class="small text-muted">Contact</div>
-          <div>{{ entry.processor_contact or '—' }}</div>
+          <div>{{ entry.processor_contact or 'None' }}</div>
         </div>
       </div>
     </div>
@@ -216,11 +218,11 @@
         <h5 class="card-title fw-bold mb-3"><i class="bi bi-clock-history"></i> Metadata</h5>
         <div class="mb-2">
           <div class="small text-muted">Created</div>
-          <div>{{ entry.created_at.strftime('%Y-%m-%d %H:%M') if entry.created_at else '—' }}</div>
+          <div>{{ entry.created_at.strftime('%Y-%m-%d %H:%M') if entry.created_at else 'None' }}</div>
         </div>
         <div>
           <div class="small text-muted">Last Updated</div>
-          <div>{{ entry.updated_at.strftime('%Y-%m-%d %H:%M') if entry.updated_at else '—' }}</div>
+          <div>{{ entry.updated_at.strftime('%Y-%m-%d %H:%M') if entry.updated_at else 'None' }}</div>
         </div>
       </div>
     </div>

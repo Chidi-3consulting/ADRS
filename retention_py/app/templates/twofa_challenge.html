@@ -6,7 +6,7 @@
       <div class="auth-logo mb-3">
         <img src="/static/brand/safedata-mark-dark.svg" alt="" width="52" height="52">
       </div>
-      <h1 class="h3 fw-bold mb-1">Two-Factor Authentication</h1>
+      <h1 class="h3 fw-bold mb-1">Two-Factor authentication</h1>
       <p class="small" style="color: var(--sd-gray-400);">Enter the 6-digit verification code from your authenticator app, or an emergency recovery code.</p>
     </div>
 
@@ -19,10 +19,10 @@
     <form method="POST" action="/login/2fa">
       {{ csrf_field | safe }}
       <div class="mb-4">
-        <label class="form-label small fw-semibold text-center d-block">Verification Code</label>
+        <label class="form-label small fw-semibold text-center d-block">Verification code</label>
         <input type="text" name="code" class="form-control auth-input text-center font-mono py-2 fs-4" placeholder="000000" required autocomplete="one-time-code" autofocus style="letter-spacing: 0.25em;">
       </div>
-      <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold">Verify &amp; Sign In</button>
+      <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold">Verify and sign in</button>
     </form>
     
     <div class="text-center mt-4 pt-3" style="border-top: 1px solid var(--sd-dark-border);">

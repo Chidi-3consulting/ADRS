@@ -38,7 +38,7 @@
                     {% if a.record %}
                       <a href="/records/view/{{ a.record.id }}" class="fw-bold text-dark text-decoration-none">{{ a.record.record_reference }}</a>
                     {% else %}
-                      <span class="text-muted">—</span>
+                      <span class="text-muted">None</span>
                     {% endif %}
                   </td>
                   <td>{{ a.uploader.name if a.uploader else 'System' }}</td>
@@ -46,7 +46,7 @@
                   <td>{{ a.created_at.strftime('%Y-%m-%d %H:%M') if a.created_at else '' }}</td>
                   <td class="text-end">
                     <a href="/attachments/download/{{ a.id }}" class="btn btn-sm btn-outline-primary py-1 px-3">
-                      <i class="bi bi-download me-1"></i> Download
+                      Download
                     </a>
                   </td>
                 </tr>

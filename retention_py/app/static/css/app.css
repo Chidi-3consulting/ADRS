@@ -1775,3 +1775,61 @@ footer#footer {
 /* Auth pages: labels must stay readable on the dark card (WCAG AA) */
 .public-page .auth-card .form-label,
 .public-page .auth-card label { color: #d4d9e1 !important; }
+
+
+/* ──────────────────────────────────────────────────────────────────
+   27. PLAIN FINISH (v5.0)
+   Sentence case, numbers in the text colour, colour only for status,
+   no decorative icons, no lift or entrance animation.
+   ────────────────────────────────────────────────────────────────── */
+
+.nav-group-label,
+.table th,
+.org-context-meta .badge-sm,
+.badge,
+.sidebar-user .badge,
+th {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.nav-group-label { font-size: 0.75rem; font-weight: 600; color: var(--sd-gray-400); }
+.table th { font-size: 0.8125rem; }
+
+/* numbers are text, not decoration */
+.stat-card-value,
+.stat-card-value.text-warning,
+.stat-card-value.text-danger,
+.stat-card-value.text-success,
+.stat-card-value.text-info,
+.stat-card-value.text-primary { color: var(--sd-text-primary, var(--sd-gray-900)); }
+.stat-card-gradient::after { display: none; }
+
+/* no icon in front of a heading */
+h1 .bi, h2 .bi, h3 .bi, h4 .bi, h5 .bi, h6 .bi,
+.card-header .bi, .page-header .bi, .empty-state-icon { display: none; }
+
+/* no movement */
+.card.hover-lift:hover, .btn:hover, .btn:active, .card:hover { transform: none; }
+.animate-in, .animate-slide, .animate-scale { animation: none; opacity: 1; }
+
+/* one colour for progress, status colours stay on badges */
+.progress-bar { background-color: var(--sd-teal); }
+
+/* a visible focus ring on every control, on light and dark surfaces */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--sd-teal);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.sidebar a:focus-visible, .sidebar button:focus-visible { outline-color: #fff; }
+
+/* narrow screens: nothing pushes the page sideways */
+html, body { max-width: 100%; overflow-x: hidden; }
+.content-area { min-width: 0; }
+.table-responsive { -webkit-overflow-scrolling: touch; }
+@media (max-width: 575.98px) {
+  .content-area { padding-left: 16px; padding-right: 16px; }
+  .topbar-subtitle { display: none; }
+  .btn { white-space: normal; }
+}

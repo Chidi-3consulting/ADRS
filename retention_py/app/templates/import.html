@@ -6,27 +6,27 @@
     <div>
       <div class="d-flex align-items-center gap-2">
         <a href="/records" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-        <h1 class="h3 mb-0 fw-bold text-dark">Bulk CSV Import</h1>
+        <h1 class="h3 mb-0 fw-bold text-dark">Bulk CSV import</h1>
       </div>
       <p class="text-muted small mb-0 mt-1">Ingest data records in bulk by uploading a structured UTF-8 CSV file</p>
     </div>
     <a href="/import/sample" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
-      <i class="bi bi-download"></i> Download Sample CSV
+      Download sample CSV
     </a>
   </div>
 
   {% if result %}
     <div class="alert alert-info border-0 shadow-sm p-4 mb-4 rounded-4 animate-in">
-      <h5 class="fw-bold mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Import Completed</h5>
+      <h5 class="fw-bold mb-2">Import completed</h5>
       <div class="row g-3 mt-1 small">
-        <div class="col-6 col-md-3"><strong>Total Rows:</strong> <span class="font-mono">{{ result.total }}</span></div>
+        <div class="col-6 col-md-3"><strong>Total rows:</strong> <span class="font-mono">{{ result.total }}</span></div>
         <div class="col-6 col-md-3 text-success"><strong>Imported:</strong> <span class="font-mono fw-bold">{{ result.imported }}</span></div>
-        <div class="col-6 col-md-3 text-warning"><strong>Duplicates Skipped:</strong> <span class="font-mono">{{ result.skipped }}</span></div>
+        <div class="col-6 col-md-3 text-warning"><strong>Duplicates skipped:</strong> <span class="font-mono">{{ result.skipped }}</span></div>
         <div class="col-6 col-md-3 text-danger"><strong>Errors:</strong> <span class="font-mono">{{ result.errors }}</span></div>
       </div>
       {% if result.report %}
         <div class="mt-3">
-          <h6 class="fw-bold text-danger mb-2 small">Error Breakdown</h6>
+          <h6 class="fw-bold text-danger mb-2 small">Error breakdown</h6>
           <ul class="list-group list-group-flush small bg-white rounded-3 border font-mono" style="max-height: 200px; overflow-y: auto;">
             {% for err in result.report %}
               <li class="list-group-item py-1">Line {{ err.line }}: {{ err.error }} {% if err.ref %}(Ref: {{ err.ref }}){% endif %}</li>
@@ -41,7 +41,7 @@
     <div class="col-lg-6">
       <div class="card shadow-sm border-0 rounded-4 bg-white h-100 animate-in">
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-          <h2 class="h5 fw-bold text-dark mb-0">Upload CSV File</h2>
+          <h2 class="h5 fw-bold text-dark mb-0">Upload CSV file</h2>
         </div>
         <div class="card-body p-4">
           <form method="post" action="/import" enctype="multipart/form-data">
@@ -52,7 +52,7 @@
               <div class="form-text small" style="color: var(--sd-gray-500); font-size: 0.72rem;">Required columns: <code>record_reference</code>, <code>category_name</code>, <code>collection_date</code>.</div>
             </div>
             <button type="submit" class="btn btn-primary w-100 fw-bold">
-              <i class="bi bi-upload me-1"></i> Start Batch Intake
+              Start batch intake
             </button>
           </form>
         </div>
@@ -62,7 +62,7 @@
     <div class="col-lg-6">
       <div class="card shadow-sm border-0 rounded-4 bg-white h-100 animate-in">
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-          <h2 class="h6 fw-bold text-dark mb-0">CSV Format Specification</h2>
+          <h2 class="h6 fw-bold text-dark mb-0">CSV format specification</h2>
         </div>
         <div class="card-body p-4 small">
           <p class="text-muted mb-3">Ensure your CSV file adheres strictly to the following header specification:</p>
@@ -81,13 +81,13 @@
 
   <div class="card shadow-sm border-0 rounded-4 bg-white animate-in">
     <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
-      <h2 class="h5 fw-bold text-dark mb-0">Recent Import History</h2>
+      <h2 class="h5 fw-bold text-dark mb-0">Recent import history</h2>
     </div>
     <div class="card-body p-0">
       {% if not recent_jobs %}
         <div class="empty-state py-5">
           <i class="bi bi-clock-history empty-state-icon"></i>
-          <div class="empty-state-title">No Prior Import Jobs</div>
+          <div class="empty-state-title">No prior import jobs</div>
           <p class="empty-state-description">Past CSV batch uploads and intake logs will appear here.</p>
         </div>
       {% else %}

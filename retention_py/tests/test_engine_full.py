@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 import pytest
 from datetime import datetime, date, timedelta, timezone
 from app.models import (
@@ -30,7 +31,7 @@ def test_b5_dual_approval_safeguard(db):
     db.commit()
 
     # Create an overdue record flagged due_review
-    past_date = date.today() - timedelta(days=40)
+    past_date = business_today() - timedelta(days=40)
     rec = DataRecord(
         organization_id=1,
         category_id=cat.id,
@@ -69,7 +70,7 @@ def test_auto_disposal_standard_category(db):
     db.add(cat)
     db.commit()
 
-    past_date = date.today() - timedelta(days=40)
+    past_date = business_today() - timedelta(days=40)
     rec = DataRecord(
         organization_id=1,
         category_id=cat.id,

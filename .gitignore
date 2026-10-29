@@ -32,3 +32,4 @@ audit-*.png
 .vscode/
 .idea/
 .env
+.migrate.lock

@@ -6,43 +6,52 @@
     <div>
       <div class="d-flex align-items-center gap-2">
         <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-        <h1 class="h3 mb-0 fw-bold text-dark">My Profile</h1>
+        <h1 class="h3 mb-0 fw-bold text-dark">My profile</h1>
       </div>
       <p class="text-muted small mb-0 mt-1">Manage your identity credentials, password, and security preferences</p>
     </div>
   </div>
 
   {% if request.query_params.get('saved') %}
-  <div class="alert alert-success alert-dismissible fade show animate-in" role="alert">
-    <i class="bi bi-check-circle-fill me-2"></i>Profile updated successfully.
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    Profile saved.
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
+  {% endif %}
+
+  {% if request.query_params.get('error') %}
+  <div class="alert alert-danger" role="alert">{{ request.query_params.get('error') }}</div>
   {% endif %}
 
   <div class="row g-4">
     <div class="col-md-7">
       <div class="card shadow-sm border-0 rounded-4 bg-white animate-in">
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-          <h2 class="h5 fw-bold text-dark mb-0">Account Details</h2>
+          <h2 class="h5 fw-bold text-dark mb-0">Account details</h2>
         </div>
         <div class="card-body p-4">
           <form method="post" action="/profile">
             {{ csrf_field | safe }}
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Full Name</label>
+              <label class="form-label small fw-semibold">Full name</label>
               <input type="text" name="name" class="form-control" value="{{ user.name }}" required autocomplete="name">
             </div>
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Work Email Address</label>
+              <label class="form-label small fw-semibold">Work email address</label>
               <input type="email" name="email" class="form-control" value="{{ user.email }}" required autocomplete="email">
             </div>
-            <div class="mb-4">
-              <label class="form-label small fw-semibold">New Password</label>
-              <input type="password" name="password" class="form-control" minlength="8"
-                     placeholder="Leave blank to keep current" autocomplete="new-password">
-              <div class="form-text small" style="color: var(--sd-gray-500); font-size: 0.72rem;">Minimum 8 characters. Leave blank if you don't want to change it.</div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold" for="current_password">Current password</label>
+              <input type="password" id="current_password" name="current_password" class="form-control" autocomplete="current-password">
+              <div class="form-text small">Needed to change your password or sign-in email.</div>
             </div>
-            <button class="btn btn-primary fw-bold">Save Changes</button>
+            <div class="mb-4">
+              <label class="form-label small fw-semibold">New password</label>
+              <input type="password" name="password" class="form-control" minlength="10"
+                     placeholder="Leave blank to keep current" autocomplete="new-password">
+              <div class="form-text small" style="color: var(--sd-gray-500); font-size: 0.72rem;">At least 10 characters with upper and lower case, a number and a symbol. Leave blank to keep your password.</div>
+            </div>
+            <button class="btn btn-primary fw-bold">Save changes</button>
           </form>
         </div>
       </div>
@@ -60,7 +69,7 @@
       </div>
       <div class="card shadow-sm border-0 rounded-4 bg-white mb-4 animate-in">
         <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-          <h2 class="h6 fw-bold text-dark mb-0">Security & Organization</h2>
+          <h2 class="h6 fw-bold text-dark mb-0">Security and organization</h2>
         </div>
         <div class="card-body p-4">
           <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
@@ -78,7 +87,7 @@
             <dd class="fw-semibold text-dark mb-3">{{ org_name }}</dd>
 
             <dt class="text-muted mb-1">Account Created</dt>
-            <dd class="font-mono mb-3">{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</dd>
+            <dd class="font-mono mb-3">{{ user.created_at.strftime('%d %b %Y') if user.created_at else 'None' }}</dd>
 
             <dt class="text-muted mb-1">Last Login</dt>
             <dd class="font-mono mb-3">{{ user.last_login_at.strftime('%d %b %Y %H:%M UTC') if user.last_login_at else 'Never' }}</dd>
@@ -86,9 +95,9 @@
             <dt class="text-muted mb-1">Email Verification</dt>
             <dd class="mb-0">
               {% if user.email_verified_at %}
-                <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> Verified</span>
+                <span class="text-success">Verified</span>
               {% else %}
-                <span class="text-warning"><i class="bi bi-exclamation-circle-fill me-1"></i> Pending Verification</span>
+                <span class="text-warning">Pending verification</span>
               {% endif %}
             </dd>
           </dl>

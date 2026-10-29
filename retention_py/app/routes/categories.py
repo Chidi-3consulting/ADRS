@@ -1,3 +1,4 @@
+from app.core.csvsafe import safe_csv_writer
 import os
 import csv
 import io
@@ -21,6 +22,37 @@ templates.env.globals['get_framework_badge'] = get_framework_badge
 templates.env.globals['unread_notifications_count'] = 0
 
 router = APIRouter()
+
+MANAGERS = ("admin", "dpo")
+LEGAL_BASES = ("legal_obligation", "contract", "consent", "legitimate_interest", "vital_interest", "public_task")
+METHODS = ("delete", "anonymise", "archive")
+TRIGGERS = ("date_based", "consent_withdrawal", "account_closure")
+REVIEW_FREQ = ("monthly", "quarterly", "annually")
+ROLES = ("controller", "processor", "joint_controller")
+CLASSES = ("standard", "confidential", "financial_aml", "special_category", "children")
+APPROVALS = ("auto_disposal", "single_approval", "dual_approval")
+
+
+def _manager(session) -> bool:
+    """Categories set when records are deleted, so only admins and DPOs may change them."""
+    return bool(session) and "user_id" in session and session.get("role") in MANAGERS
+
+
+def _category_input_error(name, legal_basis, disposal_trigger, retention_period_days, disposal_method,
+                          review_frequency, processing_role, data_classification, approval_type):
+    if not (name or "").strip() or len(name) > 255:
+        return "Enter a category name of up to 255 characters."
+    if not 0 <= retention_period_days <= 36500:
+        return "Retention period must be between 0 and 36,500 days."
+    for value, allowed, label in (
+        (legal_basis, LEGAL_BASES, "legal basis"), (disposal_trigger, TRIGGERS, "disposal trigger"),
+        (disposal_method, METHODS, "disposal method"), (review_frequency, REVIEW_FREQ, "review frequency"),
+        (processing_role, ROLES, "processing role"), (data_classification, CLASSES, "classification"),
+        (approval_type, APPROVALS, "approval type"),
+    ):
+        if value not in allowed:
+            return f"Choose a valid {label}."
+    return None
 
 @router.get("/categories", response_class=HTMLResponse)
 def list_categories(request: Request, db: Session = Depends(get_db)):
@@ -121,6 +153,8 @@ def view_create_category(request: Request, db: Session = Depends(get_db)):
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
+    if not _manager(session):
+        raise HTTPException(status_code=403, detail="Only administrators and DPOs can change categories.")
 
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
 
@@ -161,9 +195,15 @@ def handle_create_category(
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
+    if not _manager(session):
+        raise HTTPException(status_code=403, detail="Only administrators and DPOs can change categories.")
 
     org_id = session["org_id"]
     country = session.get("country", "OTHER")
+    _err = _category_input_error(name, legal_basis, disposal_trigger, retention_period_days, disposal_method,
+                                 review_frequency, processing_role, data_classification, approval_type)
+    if _err:
+        raise HTTPException(status_code=422, detail=_err)
 
     frameworks = get_country_regulations(country)
     framework_string = ",".join(frameworks)
@@ -212,6 +252,8 @@ def view_edit_category(id: int, request: Request, db: Session = Depends(get_db))
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
+    if not _manager(session):
+        raise HTTPException(status_code=403, detail="Only administrators and DPOs can change categories.")
 
     org_id = session["org_id"]
     category = db.query(DataCategory).filter(
@@ -264,6 +306,8 @@ def handle_edit_category(
     session = get_session(request)
     if not session or "user_id" not in session:
         return RedirectResponse(url="/login", status_code=303)
+    if not _manager(session):
+        raise HTTPException(status_code=403, detail="Only administrators and DPOs can change categories.")
 
     org_id = session["org_id"]
     category = db.query(DataCategory).filter(
@@ -275,6 +319,11 @@ def handle_edit_category(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
+    _err = _category_input_error(name, legal_basis, disposal_trigger, retention_period_days, disposal_method,
+                                 review_frequency, processing_role, data_classification, approval_type)
+    if _err:
+        raise HTTPException(status_code=422, detail=_err)
+
     # Enforce classification rules:
     if data_classification in ("special_category", "children"):
         approval_type = "dual_approval"
@@ -285,6 +334,9 @@ def handle_edit_category(
     if dual_bool:
         approval_type = "dual_approval"
 
+    before = {"retention_period_days": category.retention_period_days, "disposal_trigger": category.disposal_trigger,
+              "disposal_method": category.disposal_method, "approval_type": category.approval_type,
+              "legal_basis": category.legal_basis}
     category.name = name
     category.description = description
     category.retention_reason = retention_reason
@@ -305,7 +357,7 @@ def handle_edit_category(
 
     db.commit()
 
-    log_audit(db, org_id, "category_updated", "data_category", id, session["user_id"], {"name": name, "role": processing_role, "processor": processor_name}, request.client.host if request.client else None)
+    log_audit(db, org_id, "category_updated", "data_category", id, session["user_id"], {"name": name, "role": processing_role, "processor": processor_name, "before": before, "after": {"retention_period_days": retention_period_days, "disposal_trigger": disposal_trigger, "disposal_method": disposal_method, "approval_type": approval_type, "legal_basis": legal_basis}}, request.client.host if request.client else None)
     return RedirectResponse(url=f"/categories/view/{id}", status_code=303)
 
 @router.post("/categories/delete/{id}")
@@ -354,7 +406,7 @@ def export_categories_csv(request: Request, db: Session = Depends(get_db)):
     ).all()
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = safe_csv_writer(output)
     writer.writerow(["ID", "Name", "Compliance Framework", "Legal Basis", "Retention Days", "Label", "Disposal Method", "Disposal Trigger", "Role", "Processor", "DPA Reference", "Dual Approval Required"])
 
     for c in categories:

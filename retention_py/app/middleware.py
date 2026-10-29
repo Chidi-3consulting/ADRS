@@ -222,6 +222,26 @@ PUBLIC_PATHS = (
 )
 
 
+def _is_public_path(path: str) -> bool:
+    """True for paths that skip session enforcement.
+
+    "/" matches only the home page. (It used to be tested with startswith, which made every
+    path public and silently disabled the timeouts, the live role/status re-check, email
+    verification, 2FA policy and suspension.) Entries ending in "/" are prefixes; the rest
+    match exactly or as a parent path.
+    """
+    for p in PUBLIC_PATHS:
+        if p == "/":
+            if path == "/":
+                return True
+        elif p.endswith("/"):
+            if path.startswith(p):
+                return True
+        elif path == p or path.startswith(p + "/"):
+            return True
+    return False
+
+
 class SessionEnforcementMiddleware(BaseHTTPMiddleware):
     """
     For authenticated users:
@@ -238,7 +258,7 @@ class SessionEnforcementMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         # Skip enforcement for public routes and static files
-        if any(path == p or path.startswith(p) for p in PUBLIC_PATHS):
+        if _is_public_path(path):
             return await call_next(request)
 
         # ── Setup-complete guard (Gap 3) ──
@@ -299,6 +319,14 @@ class SessionEnforcementMiddleware(BaseHTTPMiddleware):
                     response = RedirectResponse(url="/login?expired=1", status_code=303)
                     _clear_session(response)
                     return response
+                from app.auth import password_fingerprint
+                fp = password_fingerprint(u.password_hash)
+                if session.get("pw_fp") and session.get("pw_fp") != fp:
+                    # Password changed or reset since this session started: sign in again.
+                    response = RedirectResponse(url="/login?expired=1", status_code=303)
+                    _clear_session(response)
+                    return response
+                session["pw_fp"] = fp
                 session["role"] = u.role
                 session["is_platform_admin"] = bool(u.is_platform_admin)
                 session["must_change_password"] = bool(u.must_change_password)
@@ -311,6 +339,8 @@ class SessionEnforcementMiddleware(BaseHTTPMiddleware):
                 _db.close()
         except Exception:
             pass  # Never break the request because the freshness check failed
+
+        request.state.session_fresh = session
 
         # ── Enforce must_change_password ──
         if session.get("must_change_password") and not _path_is(path, "/profile", "/logout"):

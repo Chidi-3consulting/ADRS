@@ -3,8 +3,8 @@
 <div class="container-fluid px-0" style="max-width: 860px;">
 
   <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="/categories" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Categories</a>
-    <h1 class="h3 mb-0 fw-bold text-dark">Create Data Category & Schedule</h1>
+    <a href="/categories" class="btn btn-outline-secondary btn-sm">Back to categories</a>
+    <h1 class="h3 mb-0 fw-bold text-dark">Create data category and schedule</h1>
   </div>
 
   <div class="card shadow-sm border-0 rounded-4 bg-white">
@@ -13,9 +13,9 @@
         {{ csrf_field | safe }}
 
         <!-- Basic Information -->
-        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-folder2 text-primary me-2"></i> 1. Category Classification</h2>
+        <h2 class="h5 fw-bold text-dark mb-3">1. Category classification</h2>
         <div class="mb-3">
-          <label class="form-label small fw-bold text-muted">Category Name *</label>
+          <label class="form-label small fw-bold text-muted">Category name *</label>
           <input type="text" name="name" class="form-control" required placeholder="e.g. Employee Contracts & Payroll Logs">
         </div>
 
@@ -25,36 +25,36 @@
         </div>
 
         <div class="mb-4">
-          <label class="form-label small fw-bold text-muted">Retention Reason / Lawful Purpose *</label>
+          <label class="form-label small fw-bold text-muted">Retention reason / lawful purpose *</label>
           <textarea name="retention_reason" class="form-control" rows="2" required placeholder="e.g. Statutory requirement under Tax Administration Act; defense against post-employment claims."></textarea>
         </div>
 
         <hr class="my-4 text-muted opacity-25">
 
         <!-- Controller vs Third-Party Processor Governance -->
-        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-people text-primary me-2"></i> 2. Third-Party Processor & Governance</h2>
+        <h2 class="h5 fw-bold text-dark mb-3">2. Third-Party processor and governance</h2>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Processing Role *</label>
+            <label class="form-label small fw-bold text-muted">Processing role *</label>
             <select name="processing_role" class="form-select">
-              <option value="controller" selected>Controller (Data Processed In-House)</option>
-              <option value="processor">Processor (Outsourced to Third-Party Vendor)</option>
-              <option value="joint_controller">Joint Controller (Shared Co-Governance)</option>
+              <option value="controller" selected>Controller (data processed In-House)</option>
+              <option value="processor">Processor (outsourced to Third-Party vendor)</option>
+              <option value="joint_controller">Joint controller (shared Co-Governance)</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Third-Party Processor Name (if applicable)</label>
+            <label class="form-label small fw-bold text-muted">Third-Party processor name (if applicable)</label>
             <input type="text" name="processor_name" class="form-control" placeholder="e.g. Amazon Web Services, Salesforce, Workday">
           </div>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Data Processing Agreement (DPA) Ref</label>
+            <label class="form-label small fw-bold text-muted">Data processing agreement (DPA) ref</label>
             <input type="text" name="dpa_reference" class="form-control" placeholder="e.g. DPA-2026-AWS-EU-09">
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Processor DPO / Compliance Contact</label>
+            <label class="form-label small fw-bold text-muted">Processor DPO / compliance contact</label>
             <input type="text" name="processor_contact" class="form-control" placeholder="e.g. dpo@vendor.com">
           </div>
         </div>
@@ -62,17 +62,17 @@
         <hr class="my-4 text-muted opacity-25">
 
         <!-- Legal Basis & Retention Formula -->
-        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-hourglass-split text-primary me-2"></i> 3. Statutory Retention Schedule</h2>
+        <h2 class="h5 fw-bold text-dark mb-3">3. Statutory retention schedule</h2>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Legal Basis *</label>
+            <label class="form-label small fw-bold text-muted">Legal basis *</label>
             <select name="legal_basis" class="form-select" required>
-              <option value="legal_obligation">Legal Obligation (Statutory Requirement)</option>
-              <option value="contract">Performance of Contract</option>
-              <option value="consent">Consent of Data Subject</option>
-              <option value="legitimate_interest" selected>Legitimate Interest</option>
-              <option value="vital_interest">Vital Interest</option>
-              <option value="public_task">Public Task</option>
+              <option value="legal_obligation">Legal obligation (statutory requirement)</option>
+              <option value="contract">Performance of contract</option>
+              <option value="consent">Consent of data subject</option>
+              <option value="legitimate_interest" selected>Legitimate interest</option>
+              <option value="vital_interest">Vital interest</option>
+              <option value="public_task">Public task</option>
             </select>
           </div>
           <div class="col-md-6">
@@ -87,30 +87,30 @@
 
         <div class="row g-3 mb-3">
           <div class="col-md-4">
-            <label class="form-label small fw-bold text-muted">Retention Period (Days) *</label>
+            <label class="form-label small fw-bold text-muted">Retention period (days) *</label>
             <input type="number" name="retention_period_days" class="form-control" value="365" required>
           </div>
           <div class="col-md-8">
-            <label class="form-label small fw-bold text-muted">Retention Period Label</label>
+            <label class="form-label small fw-bold text-muted">Retention period label</label>
             <input type="text" name="retention_period_label" class="form-control" placeholder="e.g. 1 Year, 7 Years from Tax Year End" value="1 year">
           </div>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Disposal Method *</label>
+            <label class="form-label small fw-bold text-muted">Disposal method *</label>
             <select name="disposal_method" class="form-select" required>
-              <option value="delete" selected>Secure Delete (Complete Purge from DB & Backups)</option>
-              <option value="anonymise">Anonymise (Strip Identifiers & Retain Aggregate)</option>
-              <option value="archive">Secure Archive (Move to Offline Vault)</option>
+              <option value="delete" selected>Secure delete (complete purge from DB and backups)</option>
+              <option value="anonymise">Anonymise (strip identifiers and retain aggregate)</option>
+              <option value="archive">Secure archive (move to offline vault)</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Periodic Review Frequency *</label>
+            <label class="form-label small fw-bold text-muted">Periodic review frequency *</label>
             <select name="review_frequency" class="form-select" required>
-              <option value="monthly">Monthly Review</option>
-              <option value="quarterly" selected>Quarterly Review</option>
-              <option value="annually">Annual Review</option>
+              <option value="monthly">Monthly review</option>
+              <option value="quarterly" selected>Quarterly review</option>
+              <option value="annually">Annual review</option>
             </select>
           </div>
         </div>
@@ -118,26 +118,26 @@
         <hr class="my-4 text-muted opacity-25">
 
         <!-- 4. Data Classification & Approval Governance -->
-        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-shield-check text-primary me-2"></i> 4. Data Classification & Approval Governance</h2>
+        <h2 class="h5 fw-bold text-dark mb-3">4. Data classification and approval governance</h2>
         
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Data Classification / Sensitivity *</label>
+            <label class="form-label small fw-bold text-muted">Data classification / sensitivity *</label>
             <select name="data_classification" id="data_classification" class="form-select" required>
-              <option value="standard" selected>Standard Operational Data (Marketing, Webinars, Enquiries, General)</option>
-              <option value="confidential">Confidential / Commercial / HR Data (Contracts, Employee Files)</option>
-              <option value="financial_aml">Financial, Tax & Banking Data (Invoices, KYC, AML Statutory)</option>
-              <option value="special_category">Special Category / Sensitive Personal Data (Health, Biometrics, Religious)</option>
-              <option value="children">Children's / Minors' Data (Under 13/18 Years)</option>
+              <option value="standard" selected>Standard operational data (marketing, webinars, enquiries, general)</option>
+              <option value="confidential">Confidential / commercial / HR data (contracts, employee files)</option>
+              <option value="financial_aml">Financial, tax and banking data (invoices, KYC, AML statutory)</option>
+              <option value="special_category">Special category / sensitive personal data (health, biometrics, religious)</option>
+              <option value="children">Children's / minors' data (under 13/18 years)</option>
             </select>
             <div class="form-text small" id="classification_hint">Standard data supports automated disposal, single approval, or dual approval.</div>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Approval Governance Tier *</label>
+            <label class="form-label small fw-bold text-muted">Approval governance tier *</label>
             <select name="approval_type" id="approval_type" class="form-select" required>
-              <option value="auto_disposal">Auto-Disposal (Fully automated hands-free sanitization upon expiry)</option>
-              <option value="single_approval" selected>Single Approval (Requires 1 authorized DPO/Admin sign-off)</option>
-              <option value="dual_approval">Dual Approval (Four-Eyes: Requires 2 independent sign-offs)</option>
+              <option value="auto_disposal">Auto-Disposal (fully automated hands-free sanitization upon expiry)</option>
+              <option value="single_approval" selected>Single approval (requires 1 authorized DPO/Admin sign-off)</option>
+              <option value="dual_approval">Dual approval (Four-Eyes: requires 2 independent sign-offs)</option>
             </select>
             <div class="form-text small" id="approval_hint">Controls whether destruction happens automatically or requires human review.</div>
           </div>
@@ -146,7 +146,7 @@
         <input type="hidden" name="requires_dual_approval" id="requires_dual_approval" value="0">
 
         <div class="d-flex gap-2 mt-4">
-          <button type="submit" class="btn btn-primary px-4">Create Policy Category</button>
+          <button type="submit" class="btn btn-primary px-4">Create policy category</button>
           <a href="/categories" class="btn btn-outline-secondary">Cancel</a>
         </div>
       </form>
@@ -174,21 +174,21 @@ document.addEventListener('DOMContentLoaded', function() {
       singleOpt.disabled = true;
       dualOpt.disabled = false;
       appSelect.value = 'dual_approval';
-      classHint.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-lock-fill"></i> High-risk / Special Category data strictly enforces Four-Eyes (Dual Approval).</span>';
+      classHint.innerHTML = '<span class="text-danger fw-bold">High-risk / special category data strictly enforces Four-Eyes (dual approval).</span>';
       appHint.textContent = 'Locked to Dual Approval under GDPR Art. 9 / NDPA safeguards.';
     } else if (val === 'confidential' || val === 'financial_aml') {
       autoOpt.disabled = true;
       singleOpt.disabled = false;
       dualOpt.disabled = false;
       if (appSelect.value === 'auto_disposal') appSelect.value = 'single_approval';
-      classHint.innerHTML = '<span class="text-warning text-dark fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> Statutory & financial records require human review before disposal.</span>';
+      classHint.innerHTML = '<span class="text-warning text-dark fw-bold">Statutory and financial records require human review before disposal.</span>';
       appHint.textContent = 'Auto-Disposal disabled. Single or Dual approval allowed.';
     } else {
       // standard operational
       autoOpt.disabled = false;
       singleOpt.disabled = false;
       dualOpt.disabled = false;
-      classHint.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Standard operational data supports Auto-Disposal, Single Approval, or Dual Approval.</span>';
+      classHint.innerHTML = '<span class="text-success">Standard operational data supports Auto-Disposal, single approval, or dual approval.</span>';
       appHint.textContent = 'Select your desired governance policy for this category.';
     }
     dualHidden.value = (appSelect.value === 'dual_approval') ? '1' : '0';

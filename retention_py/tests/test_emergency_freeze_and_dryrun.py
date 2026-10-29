@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 """
 Tests for Emergency Disposal Freeze, Dry-Run Simulation, and Anti-Self-Approval Safeguards.
 """
@@ -48,8 +49,8 @@ def freeze_test_setup(db):
         organization_id=org.id,
         category_id=cat.id,
         record_reference="FREEZE-REC-001",
-        collection_date=date.today() - timedelta(days=10),
-        retention_end_date=date.today() - timedelta(days=5),
+        collection_date=business_today() - timedelta(days=10),
+        retention_end_date=business_today() - timedelta(days=5),
         status="due_review"
     )
     db.add(rec)

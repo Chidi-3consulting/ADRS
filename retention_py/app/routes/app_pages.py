@@ -2,6 +2,8 @@
 Additional in-app routes: Audit Log, Notifications, Users, Settings, Profile, Billing,
 Integrations, and Reports. These complete the sidebar navigation for the Python port.
 """
+from app.core.csvsafe import safe_csv_writer
+from app.core.clock import business_today
 import os
 import json
 import hashlib
@@ -9,6 +11,7 @@ import secrets
 import csv
 import io
 from datetime import datetime, timezone, timedelta
+from urllib.parse import quote
 
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
@@ -23,7 +26,8 @@ from app.models import (
     IntakeQueue, DisposalDispatch, IntegrationLog, WebhookEndpoint,
     AutoCategorizationRule, FieldMapping, OrganizationInvitation
 )
-from app.auth import get_session, hash_password, set_session, encrypt_totp_secret, decrypt_totp_secret
+from app.auth import get_session, hash_password, verify_password, set_session, encrypt_totp_secret, decrypt_totp_secret
+from app.config import APP_URL
 from app.helpers import get_country_regulation_labels, get_framework_badge, send_system_email, log_audit
 
 templates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "templates")
@@ -32,6 +36,15 @@ templates.env.globals['get_framework_badge'] = get_framework_badge
 templates.env.globals['unread_notifications_count'] = 0
 
 router = APIRouter()
+
+VALID_ROLES = ("admin", "dpo", "data_owner")
+NUMERIC_SETTINGS = {
+    "default_retention_days": (0, 36500),
+    "escalation_days": (0, 365),
+    "consent_disposal_days": (0, 3650),
+    "notify_days_before_expiry": (0, 365),
+}
+
 
 # ---------------------------------------------------------------------------
 #   Helper: get a setting for an org (returns value or default)
@@ -172,7 +185,7 @@ def export_audit_csv(request: Request, db: Session = Depends(get_db)):
     users = {u.id: u.name for u in db.query(User).filter(User.organization_id == org_id).all()}
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = safe_csv_writer(output)
     writer.writerow(["Log ID", "Timestamp", "Action", "Entity Type", "Entity ID", "Performed By", "IP Address", "Row Hash"])
 
     for l in logs:
@@ -327,6 +340,13 @@ def create_user(
         return RedirectResponse(url="/login", status_code=303)
 
     org_id = session["org_id"]
+    email = email.strip().lower()
+    name = name.strip()
+    if role not in VALID_ROLES or not name or "@" not in email:
+        return RedirectResponse(url="/users?error=invalid_input", status_code=303)
+    from app.auth import password_policy_error
+    if password_policy_error(password, email, name):
+        return RedirectResponse(url="/users?error=weak_password", status_code=303)
     existing = db.query(User).filter(User.email == email).first()
     if existing:
         return RedirectResponse(url="/users?error=email_exists", status_code=303)
@@ -338,10 +358,13 @@ def create_user(
         password_hash=hash_password(password),
         role=role,
         is_active=True,
-        email_verified_at=datetime.now(timezone.utc)
+        must_change_password=True,
+        email_verified_at=datetime.now(timezone.utc).replace(tzinfo=None)
     )
     db.add(new_user)
     db.commit()
+    log_audit(db, org_id, "user_created", "user", new_user.id, session["user_id"],
+              {"email": email, "role": role}, request.client.host if request.client else None)
     return RedirectResponse(url="/users", status_code=303)
 
 @router.post("/users/invite")
@@ -358,6 +381,8 @@ def invite_user(
 
     org_id = session["org_id"]
     email = email.strip().lower()
+    if role not in VALID_ROLES or not name.strip() or "@" not in email:
+        return RedirectResponse(url="/users?error=invalid_input", status_code=303)
     existing = db.query(User).filter(User.email == email).first()
     if existing:
         return RedirectResponse(url="/users?error=email_exists", status_code=303)
@@ -377,14 +402,10 @@ def invite_user(
     db.add(invite)
     db.commit()
 
-    invite_url = f"{request.base_url}invite/accept?token={raw_token}"
-    subject = "You have been invited to SafeData"
-    html = f"""
-    <p>Hello {name},</p>
-    <p>You have been invited to join the SafeData workspace for {session['org_name']} as a <strong>{role.upper()}</strong>.</p>
-    <p><a href="{invite_url}">Click here to accept invitation and set your password</a></p>
-    <p>This invitation link is valid for 7 days.</p>
-    """
+    # Built from the configured address, never from the Host header the caller sent.
+    from app.helpers import email_team_invite
+    invite_url = f"{APP_URL}/invite/accept?token={raw_token}"
+    subject, html = email_team_invite(name.strip(), session["org_name"], role, invite_url)
     send_system_email(db, email, subject, html)
 
     log_audit(db, org_id, "user_invited", "user", None, session["user_id"], {"email": email, "role": role}, request.client.host if request.client else None)
@@ -424,7 +445,12 @@ def handle_accept_invite(
     ).first()
 
     if not invite or password != password_confirm:
-        return RedirectResponse(url=f"/invite/accept?token={token}&error=invalid", status_code=303)
+        return RedirectResponse(url=f"/invite/accept?token={quote(token)}&error=invalid", status_code=303)
+    from app.auth import password_policy_error
+    if password_policy_error(password, invite.email, invite.name):
+        return RedirectResponse(url=f"/invite/accept?token={quote(token)}&error=weak_password", status_code=303)
+    if db.query(User).filter(User.email == invite.email).first():
+        return RedirectResponse(url=f"/invite/accept?token={quote(token)}&error=invalid", status_code=303)
 
     pwd = hash_password(password)
     user = User(
@@ -434,11 +460,13 @@ def handle_accept_invite(
         password_hash=pwd,
         role=invite.role,
         is_active=True,
-        email_verified_at=datetime.now(timezone.utc)
+        email_verified_at=datetime.now(timezone.utc).replace(tzinfo=None)
     )
     db.add(user)
     invite.accepted_at = datetime.now(timezone.utc)
     db.commit()
+    log_audit(db, invite.organization_id, "invitation_accepted", "user", user.id, user.id,
+              {"email": invite.email, "role": invite.role}, request.client.host if request.client else None)
 
     return RedirectResponse(url="/login?accepted=1", status_code=303)
 
@@ -464,6 +492,9 @@ def toggle_user(uid: int, request: Request, db: Session = Depends(get_db)):
     if user and user.id != session["user_id"]:
         user.is_active = not user.is_active
         db.commit()
+        log_audit(db, session["org_id"], "user_activated" if user.is_active else "user_deactivated",
+                  "user", user.id, session["user_id"], {"email": user.email},
+                  request.client.host if request.client else None)
     return RedirectResponse(url="/users", status_code=303)
 
 
@@ -600,6 +631,11 @@ async def save_settings_post(request: Request, db: Session = Depends(get_db)):
         name = str(form.get("name", "")).strip()
         billing_email = str(form.get("billing_email", "")).strip().lower()
         timezone = str(form.get("timezone", "Africa/Lagos")).strip()
+        try:
+            from zoneinfo import ZoneInfo
+            ZoneInfo(timezone)
+        except Exception:
+            timezone = "Africa/Lagos"
 
         if not name:
             session["settings_error"] = "Organisation name is required."
@@ -631,12 +667,32 @@ async def save_settings_post(request: Request, db: Session = Depends(get_db)):
             return RedirectResponse(url="/settings?tab=general", status_code=303)
 
         section = SETTINGS_SECTIONS[sub_tab]
+        bad = []
+        clean = {}
         for key in section["keys"]:
             if key in form:
                 val = str(form[key]).strip()
                 if key.endswith("_pass") and val == "":
                     continue  # Don't overwrite passwords with blanks
-                _set_org_setting(db, org_id, key, val)
+                if key in NUMERIC_SETTINGS:
+                    lo, hi = NUMERIC_SETTINGS[key]
+                    if not val.isdigit() or not (lo <= int(val) <= hi):
+                        bad.append(section["keys"][key]["label"])
+                        continue
+                elif key == "default_disposal_method" and val not in ("delete", "anonymise", "archive"):
+                    bad.append(section["keys"][key]["label"])
+                    continue
+                elif key == "enable_email_notifications" and val not in ("0", "1"):
+                    bad.append(section["keys"][key]["label"])
+                    continue
+                clean[key] = val
+        if bad:
+            session["settings_error"] = "Check these settings: " + ", ".join(bad) + "."
+            redir = RedirectResponse(url=f"/settings?tab=general&sub_tab={sub_tab}", status_code=303)
+            set_session(redir, session)
+            return redir
+        for key, val in clean.items():
+            _set_org_setting(db, org_id, key, val)
 
         log_audit(db, org_id, "settings_updated", "system", None, user_id, {
             "action": "settings_updated",
@@ -732,6 +788,7 @@ def update_profile(
     name: str = Form(...),
     email: str = Form(...),
     password: str = Form(""),
+    current_password: str = Form(""),
     db: Session = Depends(get_db)
 ):
     session = get_session(request)
@@ -742,22 +799,44 @@ def update_profile(
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    user.name = name
-    if email and email != user.email:
-        existing = db.query(User).filter(User.email == email, User.id != user.id).first()
-        if not existing:
-            user.email = email
+    from app.auth import password_policy_error, check_password_history, record_password_history, password_fingerprint
+    email = (email or "").strip().lower()
+    name = (name or "").strip() or user.name
+    email_changed = bool(email) and email != user.email
+    # Changing the password or the sign-in e-mail needs the current password, so a stolen
+    # session alone cannot take over the account. (A forced first change is exempt: the
+    # person has just signed in with the temporary password.)
+    if (password or email_changed) and not user.must_change_password:
+        if not verify_password(current_password, user.password_hash):
+            return RedirectResponse(url="/profile?error=" + quote("Enter your current password to change your password or e-mail."), status_code=303)
 
+    user.name = name
+    if email_changed:
+        existing = db.query(User).filter(User.email == email, User.id != user.id).first()
+        if existing or "@" not in email:
+            return RedirectResponse(url="/profile?error=" + quote("That e-mail address cannot be used."), status_code=303)
+        user.email = email
+        session["email"] = email
+
+    new_hash = None
     if password:
-        from app.auth import password_policy_error
-        policy_err = password_policy_error(password)
+        policy_err = password_policy_error(password, user.email, user.name)
         if policy_err:
-            return RedirectResponse(url=f"/profile?error={policy_err}", status_code=303)
-        user.password_hash = hash_password(password)
+            return RedirectResponse(url="/profile?error=" + quote(policy_err), status_code=303)
+        if check_password_history(db, user.id, password) or verify_password(password, user.password_hash):
+            return RedirectResponse(url="/profile?error=" + quote("Choose a password you have not used recently."), status_code=303)
+        new_hash = hash_password(password)
+        user.password_hash = new_hash
         user.must_change_password = False
         session["must_change_password"] = False
+        session["pw_fp"] = password_fingerprint(new_hash)
 
     db.commit()
+    if new_hash:
+        record_password_history(db, user.id, new_hash)
+    log_audit(db, user.organization_id, "profile_updated", "user", user.id, user.id,
+              {"password_changed": bool(new_hash), "email_changed": email_changed},
+              request.client.host if request.client else None)
     res = RedirectResponse(url="/profile?saved=1", status_code=303)
     # F1 fix: always persist the updated session (e.g. must_change_password flag)
     set_session(res, session)
@@ -859,7 +938,7 @@ def view_reports(
         build_compliance_report, disposals_by_month,
     )
 
-    today = _date.today()
+    today = business_today()
     start_d = None
     end_d = today
 
@@ -998,7 +1077,7 @@ def export_reports_csv(
 
     org_id = session["org_id"]
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
-    today = _date.today()
+    today = business_today()
     start_d = None
     end_d = today
 
@@ -1043,7 +1122,7 @@ def export_reports_csv(
     records = q.order_by(DataRecord.collection_date.desc()).all()
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = safe_csv_writer(output)
     writer.writerow([f"{labels['law']} — Data Retention & Compliance Audit Report"])
     writer.writerow(["Generated At", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")])
     writer.writerow(["Filter Range", range, "Start Date", start_d.isoformat() if start_d else "All", "End Date", end_d.isoformat() if end_d else "All"])
@@ -1104,7 +1183,7 @@ def export_reports_json(
 
     org_id = session["org_id"]
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
-    today = _date.today()
+    today = business_today()
     start_d = None
     end_d = today
 
@@ -1217,7 +1296,7 @@ def print_reports(
 
     org_id = session["org_id"]
     labels = get_country_regulation_labels(session.get("country", "OTHER"))
-    today = _date.today()
+    today = business_today()
     start_d = None
     end_d = today
 

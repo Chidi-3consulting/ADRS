@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 """
 Tests for Bulk Safe Disposal of Due/Expired Records.
 """
@@ -50,8 +51,8 @@ def setup_org_records(db):
         organization_id=org.id,
         category_id=cat_single.id,
         record_reference="LEAD-001",
-        collection_date=date.today() - timedelta(days=5),
-        retention_end_date=date.today() - timedelta(days=3),
+        collection_date=business_today() - timedelta(days=5),
+        retention_end_date=business_today() - timedelta(days=3),
         status="active"
     )
     # 2. Expired record in single-approval category
@@ -59,8 +60,8 @@ def setup_org_records(db):
         organization_id=org.id,
         category_id=cat_single.id,
         record_reference="LEAD-002",
-        collection_date=date.today() - timedelta(days=4),
-        retention_end_date=date.today() - timedelta(days=2),
+        collection_date=business_today() - timedelta(days=4),
+        retention_end_date=business_today() - timedelta(days=2),
         status="active"
     )
     # 3. Record on LEGAL HOLD (must be skipped / protected)
@@ -68,8 +69,8 @@ def setup_org_records(db):
         organization_id=org.id,
         category_id=cat_single.id,
         record_reference="LEAD-003-HOLD",
-        collection_date=date.today() - timedelta(days=10),
-        retention_end_date=date.today() - timedelta(days=8),
+        collection_date=business_today() - timedelta(days=10),
+        retention_end_date=business_today() - timedelta(days=8),
         status="legal_hold",
         legal_hold=True
     )
@@ -78,8 +79,8 @@ def setup_org_records(db):
         organization_id=org.id,
         category_id=cat_dual.id,
         record_reference="TAX-004",
-        collection_date=date.today() - timedelta(days=2000),
-        retention_end_date=date.today() - timedelta(days=175),
+        collection_date=business_today() - timedelta(days=2000),
+        retention_end_date=business_today() - timedelta(days=175),
         status="active"
     )
 

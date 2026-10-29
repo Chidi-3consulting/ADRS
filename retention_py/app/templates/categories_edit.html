@@ -3,7 +3,7 @@
 <div class="container-fluid px-0" style="max-width: 860px;">
 
   <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="/categories/view/{{ category.id }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Category</a>
+    <a href="/categories/view/{{ category.id }}" class="btn btn-outline-secondary btn-sm">Back to category</a>
     <h1 class="h3 mb-0 fw-bold text-dark">Edit Data Category: {{ category.name }}</h1>
   </div>
 
@@ -13,9 +13,9 @@
         {{ csrf_field | safe }}
 
         <!-- Basic Information -->
-        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-folder2 text-primary me-2"></i> 1. Category Classification</h2>
+        <h2 class="h5 fw-bold text-dark mb-3">1. Category classification</h2>
         <div class="mb-3">
-          <label class="form-label small fw-bold text-muted">Category Name *</label>
+          <label class="form-label small fw-bold text-muted">Category name *</label>
           <input type="text" name="name" class="form-control" required value="{{ category.name }}">
         </div>
 
@@ -25,48 +25,48 @@
         </div>
 
         <div class="mb-4">
-          <label class="form-label small fw-bold text-muted">Retention Reason / Lawful Purpose *</label>
+          <label class="form-label small fw-bold text-muted">Retention reason / lawful purpose *</label>
           <textarea name="retention_reason" class="form-control" rows="2" required>{{ category.retention_reason }}</textarea>
         </div>
 
         <hr class="my-4 text-muted opacity-25">
 
         <!-- Controller vs Third-Party Processor Governance -->
-        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-people text-primary me-2"></i> 2. Third-Party Processor & Governance</h2>
+        <h2 class="h5 fw-bold text-dark mb-3">2. Third-Party processor and governance</h2>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Processing Role *</label>
+            <label class="form-label small fw-bold text-muted">Processing role *</label>
             <select name="processing_role" class="form-select">
-              <option value="controller" {{ 'selected' if category.processing_role == 'controller' else '' }}>Controller (Data Processed In-House)</option>
-              <option value="processor" {{ 'selected' if category.processing_role == 'processor' else '' }}>Processor (Outsourced to Third-Party Vendor)</option>
-              <option value="joint_controller" {{ 'selected' if category.processing_role == 'joint_controller' else '' }}>Joint Controller (Shared Co-Governance)</option>
+              <option value="controller" {{ 'selected' if category.processing_role == 'controller' else '' }}>Controller (data processed In-House)</option>
+              <option value="processor" {{ 'selected' if category.processing_role == 'processor' else '' }}>Processor (outsourced to Third-Party vendor)</option>
+              <option value="joint_controller" {{ 'selected' if category.processing_role == 'joint_controller' else '' }}>Joint controller (shared Co-Governance)</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Third-Party Processor Name (if applicable)</label>
+            <label class="form-label small fw-bold text-muted">Third-Party processor name (if applicable)</label>
             <input type="text" name="processor_name" class="form-control" placeholder="e.g. Amazon Web Services, Salesforce, Workday" value="{{ category.processor_name or '' }}">
           </div>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Data Processing Agreement (DPA) Ref</label>
+            <label class="form-label small fw-bold text-muted">Data processing agreement (DPA) ref</label>
             <input type="text" name="dpa_reference" class="form-control" placeholder="e.g. DPA-2026-AWS-EU-09" value="{{ category.dpa_reference or '' }}">
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Processor DPO / Compliance Contact</label>
+            <label class="form-label small fw-bold text-muted">Processor DPO / compliance contact</label>
             <input type="text" name="processor_contact" class="form-control" placeholder="e.g. dpo@vendor.com" value="{{ category.processor_contact or '' }}">
           </div>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Processor Retention Sync Status</label>
+            <label class="form-label small fw-bold text-muted">Processor retention sync status</label>
             <select name="processor_retention_status" class="form-select">
-              <option value="compliant" {{ 'selected' if category.processor_retention_status == 'compliant' else '' }}>Compliant (SLA & Erasure Confirmed)</option>
-              <option value="under_review" {{ 'selected' if category.processor_retention_status == 'under_review' else '' }}>Under Review / Verification</option>
-              <option value="pending_sync" {{ 'selected' if category.processor_retention_status == 'pending_sync' else '' }}>Pending Sync</option>
-              <option value="non_compliant" {{ 'selected' if category.processor_retention_status == 'non_compliant' else '' }}>Non-Compliant / Escalated</option>
+              <option value="compliant" {{ 'selected' if category.processor_retention_status == 'compliant' else '' }}>Compliant (SLA and erasure confirmed)</option>
+              <option value="under_review" {{ 'selected' if category.processor_retention_status == 'under_review' else '' }}>Under review / verification</option>
+              <option value="pending_sync" {{ 'selected' if category.processor_retention_status == 'pending_sync' else '' }}>Pending sync</option>
+              <option value="non_compliant" {{ 'selected' if category.processor_retention_status == 'non_compliant' else '' }}>Non-Compliant / escalated</option>
             </select>
           </div>
         </div>
@@ -74,17 +74,17 @@
         <hr class="my-4 text-muted opacity-25">
 
         <!-- Legal Basis & Retention Formula -->
-        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-hourglass-split text-primary me-2"></i> 3. Statutory Retention Schedule</h2>
+        <h2 class="h5 fw-bold text-dark mb-3">3. Statutory retention schedule</h2>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Legal Basis *</label>
+            <label class="form-label small fw-bold text-muted">Legal basis *</label>
             <select name="legal_basis" class="form-select" required>
-              <option value="legal_obligation" {{ 'selected' if category.legal_basis == 'legal_obligation' else '' }}>Legal Obligation (Statutory Requirement)</option>
-              <option value="contract" {{ 'selected' if category.legal_basis == 'contract' else '' }}>Performance of Contract</option>
-              <option value="consent" {{ 'selected' if category.legal_basis == 'consent' else '' }}>Consent of Data Subject</option>
-              <option value="legitimate_interest" {{ 'selected' if category.legal_basis == 'legitimate_interest' else '' }}>Legitimate Interest</option>
-              <option value="vital_interest" {{ 'selected' if category.legal_basis == 'vital_interest' else '' }}>Vital Interest</option>
-              <option value="public_task" {{ 'selected' if category.legal_basis == 'public_task' else '' }}>Public Task</option>
+              <option value="legal_obligation" {{ 'selected' if category.legal_basis == 'legal_obligation' else '' }}>Legal obligation (statutory requirement)</option>
+              <option value="contract" {{ 'selected' if category.legal_basis == 'contract' else '' }}>Performance of contract</option>
+              <option value="consent" {{ 'selected' if category.legal_basis == 'consent' else '' }}>Consent of data subject</option>
+              <option value="legitimate_interest" {{ 'selected' if category.legal_basis == 'legitimate_interest' else '' }}>Legitimate interest</option>
+              <option value="vital_interest" {{ 'selected' if category.legal_basis == 'vital_interest' else '' }}>Vital interest</option>
+              <option value="public_task" {{ 'selected' if category.legal_basis == 'public_task' else '' }}>Public task</option>
             </select>
           </div>
           <div class="col-md-6">
@@ -99,30 +99,30 @@
 
         <div class="row g-3 mb-3">
           <div class="col-md-4">
-            <label class="form-label small fw-bold text-muted">Retention Period (Days) *</label>
+            <label class="form-label small fw-bold text-muted">Retention period (days) *</label>
             <input type="number" name="retention_period_days" class="form-control" value="{{ category.retention_period_days }}" required>
           </div>
           <div class="col-md-8">
-            <label class="form-label small fw-bold text-muted">Retention Period Label</label>
+            <label class="form-label small fw-bold text-muted">Retention period label</label>
             <input type="text" name="retention_period_label" class="form-control" value="{{ category.retention_period_label or '' }}">
           </div>
         </div>
 
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Disposal Method *</label>
+            <label class="form-label small fw-bold text-muted">Disposal method *</label>
             <select name="disposal_method" class="form-select" required>
-              <option value="delete" {{ 'selected' if category.disposal_method == 'delete' else '' }}>Secure Delete (Complete Purge from DB & Backups)</option>
-              <option value="anonymise" {{ 'selected' if category.disposal_method == 'anonymise' else '' }}>Anonymise (Strip Identifiers & Retain Aggregate)</option>
-              <option value="archive" {{ 'selected' if category.disposal_method == 'archive' else '' }}>Secure Archive (Move to Offline Vault)</option>
+              <option value="delete" {{ 'selected' if category.disposal_method == 'delete' else '' }}>Secure delete (complete purge from DB and backups)</option>
+              <option value="anonymise" {{ 'selected' if category.disposal_method == 'anonymise' else '' }}>Anonymise (strip identifiers and retain aggregate)</option>
+              <option value="archive" {{ 'selected' if category.disposal_method == 'archive' else '' }}>Secure archive (move to offline vault)</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Periodic Review Frequency *</label>
+            <label class="form-label small fw-bold text-muted">Periodic review frequency *</label>
             <select name="review_frequency" class="form-select" required>
-              <option value="monthly" {{ 'selected' if category.review_frequency == 'monthly' else '' }}>Monthly Review</option>
-              <option value="quarterly" {{ 'selected' if category.review_frequency == 'quarterly' else '' }}>Quarterly Review</option>
-              <option value="annually" {{ 'selected' if category.review_frequency == 'annually' else '' }}>Annual Review</option>
+              <option value="monthly" {{ 'selected' if category.review_frequency == 'monthly' else '' }}>Monthly review</option>
+              <option value="quarterly" {{ 'selected' if category.review_frequency == 'quarterly' else '' }}>Quarterly review</option>
+              <option value="annually" {{ 'selected' if category.review_frequency == 'annually' else '' }}>Annual review</option>
             </select>
           </div>
         </div>
@@ -130,26 +130,26 @@
         <hr class="my-4 text-muted opacity-25">
 
         <!-- 4. Data Classification & Approval Governance -->
-        <h2 class="h5 fw-bold text-dark mb-3"><i class="bi bi-shield-check text-primary me-2"></i> 4. Data Classification & Approval Governance</h2>
+        <h2 class="h5 fw-bold text-dark mb-3">4. Data classification and approval governance</h2>
         
         <div class="row g-3 mb-3">
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Data Classification / Sensitivity *</label>
+            <label class="form-label small fw-bold text-muted">Data classification / sensitivity *</label>
             <select name="data_classification" id="data_classification" class="form-select" required>
-              <option value="standard" {{ 'selected' if category.data_classification == 'standard' else '' }}>Standard Operational Data (Marketing, Webinars, Enquiries, General)</option>
-              <option value="confidential" {{ 'selected' if category.data_classification == 'confidential' else '' }}>Confidential / Commercial / HR Data (Contracts, Employee Files)</option>
-              <option value="financial_aml" {{ 'selected' if category.data_classification == 'financial_aml' else '' }}>Financial, Tax & Banking Data (Invoices, KYC, AML Statutory)</option>
-              <option value="special_category" {{ 'selected' if category.data_classification == 'special_category' else '' }}>Special Category / Sensitive Personal Data (Health, Biometrics, Religious)</option>
-              <option value="children" {{ 'selected' if category.data_classification == 'children' else '' }}>Children's / Minors' Data (Under 13/18 Years)</option>
+              <option value="standard" {{ 'selected' if category.data_classification == 'standard' else '' }}>Standard operational data (marketing, webinars, enquiries, general)</option>
+              <option value="confidential" {{ 'selected' if category.data_classification == 'confidential' else '' }}>Confidential / commercial / HR data (contracts, employee files)</option>
+              <option value="financial_aml" {{ 'selected' if category.data_classification == 'financial_aml' else '' }}>Financial, tax and banking data (invoices, KYC, AML statutory)</option>
+              <option value="special_category" {{ 'selected' if category.data_classification == 'special_category' else '' }}>Special category / sensitive personal data (health, biometrics, religious)</option>
+              <option value="children" {{ 'selected' if category.data_classification == 'children' else '' }}>Children's / minors' data (under 13/18 years)</option>
             </select>
             <div class="form-text small" id="classification_hint">Standard data supports automated disposal, single approval, or dual approval.</div>
           </div>
           <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Approval Governance Tier *</label>
+            <label class="form-label small fw-bold text-muted">Approval governance tier *</label>
             <select name="approval_type" id="approval_type" class="form-select" required>
-              <option value="auto_disposal" {{ 'selected' if category.approval_type == 'auto_disposal' else '' }}>Auto-Disposal (Fully automated hands-free sanitization upon expiry)</option>
-              <option value="single_approval" {{ 'selected' if category.approval_type == 'single_approval' else '' }}>Single Approval (Requires 1 authorized DPO/Admin sign-off)</option>
-              <option value="dual_approval" {{ 'selected' if category.approval_type == 'dual_approval' else '' }}>Dual Approval (Four-Eyes: Requires 2 independent sign-offs)</option>
+              <option value="auto_disposal" {{ 'selected' if category.approval_type == 'auto_disposal' else '' }}>Auto-Disposal (fully automated hands-free sanitization upon expiry)</option>
+              <option value="single_approval" {{ 'selected' if category.approval_type == 'single_approval' else '' }}>Single approval (requires 1 authorized DPO/Admin sign-off)</option>
+              <option value="dual_approval" {{ 'selected' if category.approval_type == 'dual_approval' else '' }}>Dual approval (Four-Eyes: requires 2 independent sign-offs)</option>
             </select>
             <div class="form-text small" id="approval_hint">Controls whether destruction happens automatically or requires human review.</div>
           </div>
@@ -158,7 +158,7 @@
         <input type="hidden" name="requires_dual_approval" id="requires_dual_approval" value="{{ '1' if category.requires_dual_approval else '0' }}">
 
         <div class="d-flex gap-2 mt-4">
-          <button type="submit" class="btn btn-primary px-4">Save Policy Changes</button>
+          <button type="submit" class="btn btn-primary px-4">Save policy changes</button>
           <a href="/categories/view/{{ category.id }}" class="btn btn-outline-secondary">Cancel</a>
         </div>
       </form>
@@ -186,21 +186,21 @@ document.addEventListener('DOMContentLoaded', function() {
       singleOpt.disabled = true;
       dualOpt.disabled = false;
       appSelect.value = 'dual_approval';
-      classHint.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-lock-fill"></i> High-risk / Special Category data strictly enforces Four-Eyes (Dual Approval).</span>';
+      classHint.innerHTML = '<span class="text-danger fw-bold">High-risk / special category data strictly enforces Four-Eyes (dual approval).</span>';
       appHint.textContent = 'Locked to Dual Approval under GDPR Art. 9 / NDPA safeguards.';
     } else if (val === 'confidential' || val === 'financial_aml') {
       autoOpt.disabled = true;
       singleOpt.disabled = false;
       dualOpt.disabled = false;
       if (appSelect.value === 'auto_disposal') appSelect.value = 'single_approval';
-      classHint.innerHTML = '<span class="text-warning text-dark fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> Statutory & financial records require human review before disposal.</span>';
+      classHint.innerHTML = '<span class="text-warning text-dark fw-bold">Statutory and financial records require human review before disposal.</span>';
       appHint.textContent = 'Auto-Disposal disabled. Single or Dual approval allowed.';
     } else {
       // standard operational
       autoOpt.disabled = false;
       singleOpt.disabled = false;
       dualOpt.disabled = false;
-      classHint.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Standard operational data supports Auto-Disposal, Single Approval, or Dual Approval.</span>';
+      classHint.innerHTML = '<span class="text-success">Standard operational data supports Auto-Disposal, single approval, or dual approval.</span>';
       appHint.textContent = 'Select your desired governance policy for this category.';
     }
     dualHidden.value = (appSelect.value === 'dual_approval') ? '1' : '0';

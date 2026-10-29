@@ -21,7 +21,19 @@ if os.environ.get("SAFEDATA_AUTO_MIGRATE", "1") == "1":
     # Idempotent: brings the schema to the latest Alembic revision on each (re)start.
     from app.cli import cmd_migrate
 
-    cmd_migrate(None)
+    # Passenger may start several workers at once; only one may run migrations at a time.
+    try:
+        import fcntl
+
+        _lock = open(os.path.join(ROOT, ".migrate.lock"), "w")
+        fcntl.flock(_lock, fcntl.LOCK_EX)
+    except (ImportError, OSError):
+        _lock = None
+    try:
+        cmd_migrate(None)
+    finally:
+        if _lock is not None:
+            _lock.close()
 
 from a2wsgi import ASGIMiddleware  # noqa: E402
 

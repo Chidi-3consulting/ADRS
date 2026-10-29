@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111421">
-  <meta name="description" content="SafeData — Enterprise data retention & compliance governance platform">
+  <meta name="description" content="SafeData: data retention and consent withdrawal">
   <script nonce="{{ csp_nonce }}">(function(){try{var m=localStorage.getItem('tc-theme')||'system',d=m==='system'?matchMedia('(prefers-color-scheme: dark)').matches:m==='dark',t=d?'dark':'light',r=document.documentElement;r.setAttribute('data-theme',t);r.setAttribute('data-bs-theme',t);r.setAttribute('data-theme-mode',m)}catch(e){}})()</script>
-  <title>{{ page_title or 'SafeData Solution' }}</title>
+  <title>{{ page_title or 'SafeData' }}</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="/static/css/fonts.css?v=1">
-  <link rel="stylesheet" href="/static/css/app.css?v=4.4">
+  <link rel="stylesheet" href="/static/css/app.css?v=5.0">
   <link rel="stylesheet" href="/static/css/theme.css?v=1">
 </head>
 <body>
@@ -28,18 +28,18 @@
     <div class="org-context">
       <div class="org-context-name">{{ org_name }}</div>
       <div class="org-context-meta">
-        <span class="badge bg-{{ 'success' if org_status == 'active' else 'warning text-dark' }} badge-sm">{{ org_status | upper }}</span>
+        <span class="badge bg-{{ 'success' if org_status == 'active' else 'warning text-dark' }} badge-sm">{{ org_status | capitalize }}</span>
         {% if trial_days is not none %}
           {% if trial_days > 0 %}
             <span class="badge bg-warning text-dark badge-sm">{{ trial_days }}d trial</span>
           {% else %}
-            <span class="badge bg-danger text-white badge-sm">Trial Expired</span>
+            <span class="badge bg-danger text-white badge-sm">Trial ended</span>
           {% endif %}
         {% endif %}
       </div>
       <div class="org-context-domain">@{{ org_domain }}</div>
       <div class="org-context-domain" style="margin-top: 0.5rem;">
-        <i class="bi bi-shield-check text-warning me-1"></i>{{ law_label }}
+        {{ law_label }}
       </div>
     </div>
     {% endif %}
@@ -47,38 +47,38 @@
     <!-- Navigation Groups -->
     <div class="nav-group-label">Overview</div>
     <a href="/dashboard" class="{{ 'active' if active_nav == 'dashboard' else '' }}">
-      <i class="bi bi-speedometer2"></i> Dashboard
+      Dashboard
     </a>
 
-    <div class="nav-group-label">Data Life Cycle</div>
+    <div class="nav-group-label">Data</div>
     <a href="/categories" class="{{ 'active' if active_nav == 'categories' else '' }}">
-      <i class="bi bi-collection"></i> Categories & Schedules
+      Categories and schedules
     </a>
     <a href="/records" class="{{ 'active' if active_nav == 'records' else '' }}">
-      <i class="bi bi-card-list"></i> Data Collection
+      Data collection
     </a>
     <a href="/import" class="{{ 'active' if active_nav == 'import' else '' }}">
-      <i class="bi bi-upload"></i> Bulk CSV Import
+      CSV import
     </a>
     {% if user_role in ['admin', 'dpo'] %}
     <a href="/attachments" class="{{ 'active' if active_nav == 'attachments' else '' }}">
-      <i class="bi bi-paperclip"></i> Evidence Attachments
+      Evidence files
     </a>
     {% endif %}
 
     {% if user_role in ['admin', 'dpo'] %}
-      <div class="nav-group-label">Compliance & Governance</div>
+      <div class="nav-group-label">Compliance</div>
       <a href="/reports" class="{{ 'active' if active_nav == 'reports' else '' }}">
-        <i class="bi bi-graph-up"></i> Compliance & Reports
+        Reports
       </a>
       <a href="/recalculations" class="{{ 'active' if active_nav == 'recalculations' else '' }}">
-        <i class="bi bi-calculator"></i> Pending Recalculations
+        Recalculations
       </a>
       <a href="/audit" class="{{ 'active' if active_nav == 'audit' else '' }}">
-        <i class="bi bi-shield-check"></i> Audit Ledger
+        Audit ledger
       </a>
       <a href="/notifications" class="{{ 'active' if active_nav == 'notifications' else '' }}">
-        <i class="bi bi-bell"></i> Notifications
+        Notifications
         {% if unread_notifications_count is defined and unread_notifications_count > 0 %}
           <span class="badge bg-danger rounded-pill float-end">{{ unread_notifications_count }}</span>
         {% endif %}
@@ -86,7 +86,7 @@
     {% else %}
       <div class="nav-group-label">Notifications</div>
       <a href="/notifications" class="{{ 'active' if active_nav == 'notifications' else '' }}">
-        <i class="bi bi-bell"></i> Notifications
+        Notifications
         {% if unread_notifications_count is defined and unread_notifications_count > 0 %}
           <span class="badge bg-danger rounded-pill float-end">{{ unread_notifications_count }}</span>
         {% endif %}
@@ -94,44 +94,44 @@
     {% endif %}
 
     {% if user_role == 'admin' %}
-      <div class="nav-group-label">API & Integrations</div>
+      <div class="nav-group-label">Integrations</div>
       <a href="/integrations" class="{{ 'active' if active_nav == 'integrations' else '' }}">
-        <i class="bi bi-hdd-network"></i> Integration Hub
+        Integrations
       </a>
       <a href="/help#ch8" class="{{ 'active' if active_nav == 'help' else '' }}">
-        <i class="bi bi-file-earmark-code"></i> API Documentation
+        API guide
       </a>
 
       <div class="nav-group-label">Administration</div>
       <a href="/users" class="{{ 'active' if active_nav == 'users' else '' }}">
-        <i class="bi bi-people"></i> Team & Role Access
+        Team
       </a>
       <a href="/admin/retention" class="{{ 'active' if active_nav == 'admin_retention' else '' }}">
-        <i class="bi bi-hourglass-split"></i> Retention run
+        Retention run
       </a>
       <a href="/admin/consent" class="{{ 'active' if active_nav == 'admin_consent' else '' }}">
-        <i class="bi bi-patch-check"></i> Consent management
+        Consent management
       </a>
       <a href="/settings" class="{{ 'active' if active_nav == 'settings' else '' }}">
-        <i class="bi bi-gear"></i> System Settings
+        Settings
       </a>
       <a href="/billing" class="{{ 'active' if active_nav == 'billing' else '' }}">
-        <i class="bi bi-credit-card"></i> Billing & Subscription
+        Billing
       </a>
       <a href="/help" class="{{ 'active' if active_nav == 'help' else '' }}">
-        <i class="bi bi-journal-bookmark-fill"></i> Solution Manual
+        Help
       </a>
     {% else %}
-      <div class="nav-group-label">Help & Documentation</div>
+      <div class="nav-group-label">Help</div>
       <a href="/help" class="{{ 'active' if active_nav == 'help' else '' }}">
-        <i class="bi bi-journal-bookmark-fill"></i> Solution Manual
+        Help
       </a>
     {% endif %}
 
     {% if is_platform_admin %}
-      <div class="nav-group-label" style="color: var(--sd-warning);">Super Admin</div>
+      <div class="nav-group-label" style="color: var(--sd-warning);">Platform</div>
       <a href="/platform" class="{{ 'active' if active_nav == 'platform' else '' }}" style="color: var(--sd-warning) !important;">
-        <i class="bi bi-shield-lock"></i> Platform Admin
+        Platform admin
       </a>
     {% endif %}
 
@@ -140,12 +140,12 @@
         <div class="sidebar-user-avatar">{{ user_name[0] | upper if user_name else 'U' }}</div>
         <div>
           <div class="text-white" style="font-size: var(--sd-text-sm); font-weight: 600;">{{ user_name }}</div>
-          <span class="badge bg-secondary badge-sm" style="font-size:0.6rem;">{{ user_role | upper }}</span>
+          <span class="badge bg-secondary badge-sm" style="font-size:0.6rem;">{{ user_role | replace('_',' ') | capitalize }}</span>
         </div>
       </div>
       <div class="d-flex gap-3 mt-3" style="font-size: var(--sd-text-xs);">
         <a href="/profile" class="text-decoration-none" style="color: var(--sd-gray-400);">Profile</a>
-        <a href="/logout" class="text-decoration-none" style="color: var(--sd-warning);">Sign Out</a>
+        <a href="/logout" class="text-decoration-none" style="color: var(--sd-warning);">Sign out</a>
       </div>
     </div>
   </nav>
@@ -160,7 +160,7 @@
         <div>
           <div class="topbar-title">{{ page_title }}</div>
           {% if org_name %}
-            <div class="topbar-subtitle">{{ org_name }} · {{ user_name }} · {{ user_role | upper }}</div>
+            <div class="topbar-subtitle">{{ org_name }} · {{ user_name }} · {{ user_role | replace('_',' ') | capitalize }}</div>
           {% endif %}
         </div>
       </div>
@@ -178,13 +178,13 @@
       <!-- Flash Messages -->
       {% if flash_success %}
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-          <i class="bi bi-check-circle-fill me-2"></i>{{ flash_success }}
+          {{ flash_success }}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
       {% endif %}
       {% if flash_error %}
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ flash_error }}
+          {{ flash_error }}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
       {% endif %}
@@ -195,7 +195,7 @@
 </div>
 
 <footer id="footer">
-  &copy; 2026 {{ wl_footer or '3Consulting Limited' }} · {{ wl_name or 'SafeData' }} v4.0
+  &copy; 2026 {{ wl_footer or '3Consulting Limited' }}, {{ wl_name or 'SafeData' }}
 </footer>
 
 <script src="/static/js/theme.js?v=1" nonce="{{ csp_nonce }}"></script>

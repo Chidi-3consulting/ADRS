@@ -112,7 +112,7 @@
       <div class="col-6 col-md-4 col-xl-2 animate-in animate-stagger-{{ loop.index + 1 }}">
         <div class="card h-100 stat-card-gradient {{ status_colors.get(status, 'secondary') }}">
           <div class="card-body p-3 text-center">
-            <div class="stat-card-value text-{{ 'success' if status == 'active' else ('warning' if status == 'due_review' else ('info' if status == 'disposal_requested' else ('danger' if status == 'legal_hold' else 'muted'))) }}">
+            <div class="stat-card-value">
               {{ count }}
             </div>
             <div class="stat-card-label mt-1">{{ status | replace('_', ' ') | title }}</div>
@@ -182,7 +182,7 @@
                         <span class="badge {{ get_framework_badge(f.strip()) }} me-1">{{ f.strip() }}</span>
                       {% endfor %}
                     {% else %}
-                      <span class="text-muted">—</span>
+                      <span class="text-muted">None</span>
                     {% endif %}
                   </td>
                   <td>
@@ -207,7 +207,7 @@
                         <span class="small text-muted">{{ (c.count / total_records * 100) | round(1) }}%</span>
                       </div>
                     {% else %}
-                      <span class="text-muted small">—</span>
+                      <span class="text-muted small">None</span>
                     {% endif %}
                   </td>
                 </tr>

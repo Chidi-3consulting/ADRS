@@ -7,22 +7,22 @@
     <div>
       <div class="d-flex align-items-center gap-2">
         <a href="/dashboard" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-        <h1 class="h3 mb-0 fw-bold text-dark">Cryptographic Audit Ledger</h1>
+        <h1 class="h3 mb-0 fw-bold text-dark">Audit ledger</h1>
       </div>
-      <p class="text-muted mb-0 small mt-1">Immutable, append-only SHA-256 Merkle hash chain proving statutory data compliance</p>
+      <p class="text-muted mb-0 small mt-1">Every action is recorded. Each entry carries a hash of the entry before it, so a changed or removed entry breaks the chain.</p>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
       {% if chain_valid %}
         <span class="audit-integrity-banner audit-integrity-valid">
-          <i class="bi bi-shield-check me-1"></i> Hash Chain Verified — 100% Immutable
+          Chain verified
         </span>
       {% else %}
         <span class="audit-integrity-banner audit-integrity-invalid">
-          <i class="bi bi-exclamation-triangle-fill me-1"></i> Integrity Warning: Tamper Detected
+          Chain broken: an entry was changed or removed
         </span>
       {% endif %}
       <a href="/audit/export" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
-        <i class="bi bi-download"></i> Export Audit Log (CSV)
+        Export audit log (CSV)
       </a>
     </div>
   </div>
@@ -34,7 +34,7 @@
         <div class="col-md-3">
           <label class="form-label small fw-bold text-muted">Action</label>
           <select name="action" class="form-select form-select-sm">
-            <option value="">All Actions</option>
+            <option value="">All actions</option>
             {% for a in actions %}
               <option value="{{ a }}" {{ 'selected' if a == filter_action else '' }}>{{ a }}</option>
             {% endfor %}
@@ -42,9 +42,9 @@
         </div>
 
         <div class="col-md-2">
-          <label class="form-label small fw-bold text-muted">Entity Type</label>
+          <label class="form-label small fw-bold text-muted">Entity type</label>
           <select name="entity_type" class="form-select form-select-sm">
-            <option value="">All Entities</option>
+            <option value="">All entities</option>
             {% for e in ['data_record', 'data_category', 'user', 'notification', 'report', 'audit_log', 'system'] %}
               <option value="{{ e }}" {{ 'selected' if e == filter_entity else '' }}>{{ e | replace('_', ' ') | title }}</option>
             {% endfor %}
@@ -52,23 +52,23 @@
         </div>
 
         <div class="col-md-2">
-          <label class="form-label small fw-bold text-muted">Search Keyword</label>
+          <label class="form-label small fw-bold text-muted">Search keyword</label>
           <input type="text" name="q_search" class="form-control form-control-sm" placeholder="Action or keyword..." value="{{ filter_search or '' }}">
         </div>
 
         <div class="col-md-2">
-          <label class="form-label small fw-bold text-muted">Start Date</label>
+          <label class="form-label small fw-bold text-muted">Start date</label>
           <input type="date" name="start_date" class="form-control form-control-sm" value="{{ filter_start_date or '' }}">
         </div>
 
         <div class="col-md-2">
-          <label class="form-label small fw-bold text-muted">End Date</label>
+          <label class="form-label small fw-bold text-muted">End date</label>
           <input type="date" name="end_date" class="form-control form-control-sm" value="{{ filter_end_date or '' }}">
         </div>
 
         <div class="col-md-auto d-flex gap-2">
           <button type="submit" class="btn btn-dark btn-sm px-3">
-            <i class="bi bi-funnel"></i> Filter
+            Filter
           </button>
           <a href="/audit" class="btn btn-outline-secondary btn-sm px-2" title="Reset Filters">
             <i class="bi bi-arrow-counterclockwise"></i>
@@ -91,7 +91,7 @@
       {% if rows | length == 0 %}
         <div class="empty-state">
           <i class="bi bi-search empty-state-icon"></i>
-          <div class="empty-state-title">No Matching Entries</div>
+          <div class="empty-state-title">No matching entries</div>
           <p class="empty-state-description">No audit log entries match your filter criteria. Try adjusting your filters.</p>
         </div>
       {% else %}
@@ -103,17 +103,17 @@
                   <th class="text-nowrap" style="width: 150px;">Timestamp (UTC)</th>
                   <th class="text-nowrap" style="width: 120px;">Action</th>
                   <th class="text-nowrap" style="width: 140px;">Entity</th>
-                  <th class="text-nowrap" style="width: 140px;">Performed By</th>
+                  <th class="text-nowrap" style="width: 140px;">Performed by</th>
                   <th class="text-nowrap" style="width: 110px;">IP Address</th>
-                  <th style="min-width: 220px;">Details Payload</th>
-                  <th class="text-nowrap text-end pe-3" style="width: 130px;">Row Hash</th>
+                  <th style="min-width: 220px;">Details payload</th>
+                  <th class="text-nowrap text-end pe-3" style="width: 130px;">Row hash</th>
                 </tr>
               </thead>
               <tbody>
                 {% for r in rows %}
                   <tr>
                     <td class="font-mono" style="color: var(--sd-gray-400); font-size: var(--sd-text-xs);">#{{ r.id }}</td>
-                    <td class="text-nowrap font-mono" style="font-size: var(--sd-text-xs);">{{ r.created_at.strftime('%Y-%m-%d %H:%M:%S') if r.created_at else '—' }}</td>
+                    <td class="text-nowrap font-mono" style="font-size: var(--sd-text-xs);">{{ r.created_at.strftime('%Y-%m-%d %H:%M:%S') if r.created_at else 'None' }}</td>
                     <td>
                       {% set action_class = 'audit-action ' ~ ('audit-action-create' if 'create' in r.action else ('audit-action-update' if 'update' in r.action or 'reassign' in r.action else ('audit-action-dispose' if 'dispose' in r.action else ('audit-action-delete' if 'delete' in r.action else ('audit-action-approve' if 'approve' in r.action else ('audit-action-login' if 'login' in r.action else 'audit-action-update')))))) %}
                       <span class="{{ action_class }}">
@@ -130,7 +130,7 @@
                       {% if r.performed_by %}
                         <span class="fw-semibold text-dark break-words">{{ user_map.get(r.performed_by, 'User #' ~ r.performed_by) }}</span>
                       {% else %}
-                        <span class="badge bg-light text-muted border">System / Automated</span>
+                        <span class="badge bg-light text-muted border">System / automated</span>
                       {% endif %}
                     </td>
                     <td class="font-mono text-nowrap" style="font-size: var(--sd-text-xs); color: var(--sd-gray-400);">{{ r.ip_address or '127.0.0.1' }}</td>
@@ -140,7 +140,7 @@
                           {{ r.details }}
                         </div>
                       {% else %}
-                        <span class="text-muted">—</span>
+                        <span class="text-muted">None</span>
                       {% endif %}
                     </td>
                     <td class="text-end pe-3">
@@ -149,7 +149,7 @@
                           {{ r.row_hash[:14] }}…
                         </span>
                       {% else %}
-                        <span class="text-muted small">—</span>
+                        <span class="text-muted small">None</span>
                       {% endif %}
                     </td>
                   </tr>

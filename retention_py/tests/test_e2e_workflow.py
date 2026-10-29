@@ -1,3 +1,4 @@
+from app.core.clock import business_today
 import pytest
 from datetime import date, timedelta, datetime, timezone
 from sqlalchemy import create_engine
@@ -125,14 +126,14 @@ class TestE2ERetentionWorkflow:
             category_id=cat.id,
             record_reference="E2E-HR-001",
             data_subject_type="employee",
-            collection_date=date.today() - timedelta(days=367),
-            retention_end_date=date.today() - timedelta(days=2),
+            collection_date=business_today() - timedelta(days=367),
+            retention_end_date=business_today() - timedelta(days=2),
             status="active",
             legal_hold=False,
         )
         e2e_db.add(record)
         e2e_db.commit()
-        assert record.retention_end_date < date.today()
+        assert record.retention_end_date < business_today()
 
     def test_04_create_upcoming_record(self, e2e_db, e2e_org):
         """Create a record approaching deadline in 10 days."""
@@ -145,14 +146,14 @@ class TestE2ERetentionWorkflow:
             category_id=cat.id,
             record_reference="E2E-HR-002",
             data_subject_type="employee",
-            collection_date=date.today() - timedelta(days=355),
-            retention_end_date=date.today() + timedelta(days=10),
+            collection_date=business_today() - timedelta(days=355),
+            retention_end_date=business_today() + timedelta(days=10),
             status="active",
             legal_hold=False,
         )
         e2e_db.add(record)
         e2e_db.commit()
-        assert record.retention_end_date > date.today()
+        assert record.retention_end_date > business_today()
 
     def test_05_create_dual_approval_record(self, e2e_db, e2e_org):
         """Create a record that needs dual approval for disposal."""
@@ -165,8 +166,8 @@ class TestE2ERetentionWorkflow:
             category_id=med_cat.id,
             record_reference="E2E-MED-001",
             data_subject_type="patient",
-            collection_date=date.today() - timedelta(days=2557),
-            retention_end_date=date.today() - timedelta(days=5),
+            collection_date=business_today() - timedelta(days=2557),
+            retention_end_date=business_today() - timedelta(days=5),
             status="active",
             legal_hold=False,
         )
@@ -268,8 +269,8 @@ class TestE2ERetentionWorkflow:
             category_id=cat.id,
             record_reference="E2E-HOLD-001",
             data_subject_type="employee",
-            collection_date=date.today() - timedelta(days=400),
-            retention_end_date=date.today() - timedelta(days=30),
+            collection_date=business_today() - timedelta(days=400),
+            retention_end_date=business_today() - timedelta(days=30),
             status="active",
             legal_hold=False,
         )
