@@ -1,22 +1,30 @@
 {% extends "public_layout.html" %}
 {% block page_styles %}
-  <link rel="stylesheet" href="/static/css/landing.css?v=2">
+  <link rel="stylesheet" href="/static/css/landing.css?v=3">
 {% endblock %}
 {% block content %}
 <main class="safedata-home">
   <section class="sd-hero" aria-labelledby="hero-title">
-    <div class="container sd-container">
-      <h1 id="hero-title">Know the day every record you hold must be deleted.</h1>
-      <p class="sd-lead">SafeData keeps a retention clock on each record your organisation holds. The clock starts when the data is collected, when consent is withdrawn, or when a customer relationship ends. Owners are told before the date, deletions are approved and logged, and the log can be shown to a regulator.</p>
-      <div class="sd-actions">
-        <a href="/register" class="btn btn-lg sd-button-primary">Start your 14-day free trial</a>
-        <a href="#how-it-works" class="btn btn-lg sd-button-secondary">How the clock works</a>
+    <div class="container sd-container sd-hero-grid">
+      <div class="sd-hero-copy">
+        <h1 id="hero-title">Know the day every record you hold must be deleted.</h1>
+        <p class="sd-lead">SafeData keeps a retention clock on each record your organisation holds. The clock starts when the data is collected, when consent is withdrawn, or when a customer relationship ends. Owners are told before the date, deletions are approved and logged, and the log can be shown to a regulator.</p>
+        <div class="sd-actions">
+          <a href="/register" class="btn btn-lg sd-button-primary">Start your 14-day free trial</a>
+          <a href="#how-it-works" class="btn btn-lg sd-button-secondary">How the clock works</a>
+        </div>
+        <p class="sd-note">No credit card required. Cancel anytime.</p>
       </div>
-      <p class="sd-note">No credit card required. Cancel anytime.</p>
-      <figure class="sd-shot">
-        <img src="/static/img/product/data-collection.webp" width="1600" height="1098" alt="The SafeData Data collection page listing records with the day each clock started, its deletion date and the days left" fetchpriority="high">
-        <figcaption>The Data collection page, shown with sample records.</figcaption>
-      </figure>
+      <div class="sd-board" role="group" aria-label="Sample retention clocks">
+        <div class="sd-board-head"><span>Retention clocks</span><span>Sample records</span></div>
+        <ul class="sd-recs">
+          <li class="sd-rec is-ok"><div class="what"><b>Invoice INV-2041</b><small>Kept 6 years from the invoice date</small></div><div class="left">1,412 days</div><i class="track"><i class="fill p80"></i></i></li>
+          <li class="sd-rec is-ok"><div class="what"><b>KYC file, account closed</b><small>Kept 5 years after closure</small></div><div class="left">212 days</div><i class="track"><i class="fill p35"></i></i></li>
+          <li class="sd-rec is-soon"><div class="what"><b>Webinar sign-up 8841</b><small>Consent withdrawn, deleted after 7 days</small></div><div class="left">4 days</div><i class="track"><i class="fill p12"></i></i></li>
+          <li class="sd-rec is-due"><div class="what"><b>Newsletter sign-up 8790</b><small>Deletion date reached. Disposed tonight and logged</small></div><div class="left">Due today</div><i class="track"><i class="fill p3"></i></i></li>
+          <li class="sd-rec is-hold"><div class="what"><b>Support ticket 5517</b><small>On legal hold until it is lifted</small></div><div class="left">Paused</div><i class="track"><i class="fill p50"></i></i></li>
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -93,6 +101,13 @@
         <li><strong>Evidence attachments</strong> kept with each record.</li>
       </ul>
       <p class="sd-disclaimer">SafeData tracks references and decisions; your own systems hold the data itself and carry out the deletion it instructs. Using SafeData supports compliance but does not make an organisation compliant on its own, and it is not legal advice.</p>
+    </div>
+  </section>
+
+  <section class="sd-section sd-peek" aria-labelledby="peek-title">
+    <div class="container sd-container">
+      <h2 id="peek-title">A look inside</h2>
+      <figure class="sd-thumb"><img src="/static/img/product/data-collection.webp" width="1600" height="1098" alt="The SafeData Data collection page listing records with the day each clock started, its deletion date and the days left" loading="lazy"><figcaption>The Data collection page lists every record with its countdown. Sample records.</figcaption></figure>
     </div>
   </section>
 
